@@ -26,3 +26,9 @@
         (persp-save)
         (setq persp-current-name name)
         (set-window-configuration conf)))))
+
+(define-prefix-command 'perspective 'perspective-map)
+(global-set-key (read-kbd-macro "C-S-s") perspective-map)
+
+(global-set-key (read-kbd-macro "C-S-s n") 'persp-new)
+(global-set-key (read-kbd-macro "C-S-s s") 'persp-switch)
