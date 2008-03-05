@@ -4,28 +4,34 @@
 
 (defvar perspectives-hash (make-hash-table :test 'equal :size 10))
 
-(defvar persp-current-name "main")
+(defvar persp-curr-name "main")
+(defvar persp-curr-buffers (buffer-list))
 
 (defun persp-save ()
-  (puthash persp-current-name (current-window-configuration) perspectives-hash))
+  (puthash persp-curr-name
+           (list (current-window-configuration) persp-curr-buffers)
+           perspectives-hash))
 
 (defun persp-new (name)
   (interactive "sNew perspective: \n")
   (persp-save)
-  (setq persp-current-name name)
-  (switch-to-buffer (concat "*scratch* (" name ")"))
-  (lisp-interaction-mode)
-  (delete-other-windows)
-  (current-window-configuration))
+  (let ((buffer (switch-to-buffer (concat "*scratch* (" name ")"))))
+    (lisp-interaction-mode)
+    (delete-other-windows)
+    (setq persp-curr-name name)
+    (setq persp-curr-buffers (list buffer))
+    name))
 
 (defun persp-switch (name)
   (interactive "sPerspective name: \n")
-  (if (equal name persp-current-name) (current-window-configuration)
-    (let ((conf (gethash name perspectives-hash)))
-      (if (null conf) (persp-new name)
+  (if (equal name (car current-perspective)) name
+    (let ((persp (gethash name perspectives-hash)))
+      (if (null persp) (persp-new name)
         (persp-save)
-        (setq persp-current-name name)
-        (set-window-configuration conf)))))
+        (setq persp-curr-name name)
+        (set-window-configuration (car persp))
+        (setq persp-curr-buffers (cadr persp))
+        name))))
 
 (define-prefix-command 'perspective 'perspective-map)
 (global-set-key (read-kbd-macro "C-S-s") perspective-map)
