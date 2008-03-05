@@ -6,14 +6,23 @@
 
 (defvar persp-current-name "main")
 
+(defun persp-save ()
+  (puthash persp-current-name (current-window-configuration) perspectives-hash))
+
+(defun persp-new (name)
+  (interactive "sNew perspective: \n")
+  (persp-save)
+  (setq persp-current-name name)
+  (switch-to-buffer (concat "*scratch* (" name ")"))
+  (lisp-interaction-mode)
+  (delete-other-windows)
+  (current-window-configuration))
+
 (defun persp-switch (name)
   (interactive "sPerspective name: \n")
-  (let ((curr-conf (current-window-configuration))
-        conf)
-    (if (equal name persp-current-name) curr-conf
-      (setq conf (gethash name perspectives-hash))
-      (if (null conf) curr-conf
-        (remhash name perspectives-hash)
-        (puthash persp-current-name curr-conf perspectives-hash)
+  (if (equal name persp-current-name) (current-window-configuration)
+    (let ((conf (gethash name perspectives-hash)))
+      (if (null conf) (persp-new name)
+        (persp-save)
         (setq persp-current-name name)
         (set-window-configuration conf)))))
