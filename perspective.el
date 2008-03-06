@@ -2,6 +2,8 @@
 ;; Copyright (C) 2008 Nathan Weizenbaum <nex342@gmail.com>
 ;; Licensed under the same terms as Emacs.
 
+(eval-when-compile (require 'cl))
+
 (defvar perspectives-hash (make-hash-table :test 'equal :size 10))
 
 (defvar persp-curr-name "main")
@@ -22,6 +24,13 @@
     (setq persp-curr-buffers (list buffer))
     name))
 
+(defun persp-reactivate-buffers (buffers)
+  (loop for buf in (reverse buffers)
+        if (not (null (buffer-name buf)))
+          collect buf into living-buffers
+          and do (switch-to-buffer buf)
+        finally return (reverse living-buffers)))
+
 (defun persp-switch (name)
   (interactive "sPerspective name: \n")
   (if (equal name (car current-perspective)) name
@@ -29,8 +38,8 @@
       (if (null persp) (persp-new name)
         (persp-save)
         (setq persp-curr-name name)
+        (setq persp-curr-buffers (persp-reactivate-buffers (cadr persp)))
         (set-window-configuration (car persp))
-        (setq persp-curr-buffers (cadr persp))
         name))))
 
 (defun persp-add-buffer (buffer)
