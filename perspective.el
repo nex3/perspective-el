@@ -9,6 +9,10 @@
 (defvar persp-curr-name "main")
 (defvar persp-curr-buffers (buffer-list))
 
+(defun persp-names ()
+  (loop for name being the hash-keys of perspectives-hash
+      collect name))
+
 (defun persp-save ()
   (puthash persp-curr-name
            (list (current-window-configuration) (persp-remove-dups persp-curr-buffers))
@@ -40,7 +44,9 @@
         finally return (reverse living-buffers)))
 
 (defun persp-switch (name)
-  (interactive "sPerspective name: \n")
+  (interactive "i")
+  (if (null name)
+      (setq name (completing-read "Perspective name: " (persp-names))))
   (if (equal name persp-curr-name) name
     (let ((persp (gethash name perspectives-hash)))
       (if (null persp) (persp-new name)
