@@ -53,15 +53,23 @@
           and do (switch-to-buffer buf)
         finally return (reverse living-buffers)))
 
+(defun persp-intersperse (list val)
+  (if (or (null list) (null (cdr list))) list
+    (cons (car list)
+          (cons val
+                (persp-intersperse (cdr list) val)))))
+
 (defun persp-update-modestring ()
   (setq persp-modestring
-        (concat "[" (mapconcat 'persp-format-name (persp-names) "|") "]")))
+        (append '("[")
+                (persp-intersperse (mapcar 'persp-format-name (persp-names)) "|")
+                '("]"))))
 
 (defun persp-format-name (name)
   (if (not (equal name persp-curr-name)) name
-      (let ((name (concat name)))
-        (add-text-properties 0 (length name) '(face persp-selected-face) name)
-        name)))
+    (let ((name (concat name)))
+      (add-text-properties 0 (length name) '(face persp-selected-face) name)
+      name)))
 
 (defun persp-switch (name)
   (interactive "i")
