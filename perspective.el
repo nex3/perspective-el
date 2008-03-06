@@ -9,14 +9,14 @@
 (defvar persp-curr-name "main")
 (defvar persp-curr-buffers (buffer-list))
 
-(defun persp-names ()
-  (loop for name being the hash-keys of perspectives-hash
-      collect name))
-
 (defun persp-save ()
   (puthash persp-curr-name
            (list (current-window-configuration) (persp-remove-dups persp-curr-buffers))
            perspectives-hash))
+
+(defun persp-names ()
+  (loop for name being the hash-keys of perspectives-hash
+      collect name))
 
 (defun persp-new (name)
   (interactive "sNew perspective: \n")
@@ -69,3 +69,5 @@
 
 (global-set-key (read-kbd-macro "C-S-s n") 'persp-new)
 (global-set-key (read-kbd-macro "C-S-s s") 'persp-switch)
+
+(persp-save)
