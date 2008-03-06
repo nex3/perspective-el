@@ -8,8 +8,9 @@
 
 (defvar persp-curr-name "main")
 (defvar persp-curr-buffers (buffer-list))
-
 (defvar persp-last-name nil)
+
+(defvar persp-modestring)
 
 (defun persp-save ()
   (puthash persp-curr-name
@@ -17,8 +18,10 @@
            perspectives-hash))
 
 (defun persp-names ()
-  (loop for name being the hash-keys of perspectives-hash
-      collect name))
+  (sort
+   (loop for name being the hash-keys of perspectives-hash
+         collect name)
+   'string<))
 
 (defun persp-new (name)
   (interactive "sNew perspective: \n")
@@ -28,7 +31,7 @@
     (delete-other-windows)
     (setq persp-curr-name name)
     (setq persp-curr-buffers (list buffer))
-    name))
+    (persp-save)))
 
 (defun persp-remove-dups (list &optional test)
   (let ((seen (make-hash-table :test (or test 'equal))))
@@ -45,19 +48,24 @@
           and do (switch-to-buffer buf)
         finally return (reverse living-buffers)))
 
+(defun persp-update-modestring ()
+  (setq persp-modestring
+        (concat "[" (mapconcat (lambda (name) name) (persp-names) "|") "]")))
+
 (defun persp-switch (name)
   (interactive "i")
   (if (null name) (setq name (completing-read "Perspective name: " (persp-names)
                                               nil nil persp-last-name)))
   (if (equal name persp-curr-name) name
     (let ((persp (gethash name perspectives-hash)))
+      (setq persp-last-name persp-curr-name)
       (if (null persp) (persp-new name)
         (persp-save)
-        (setq persp-last-name persp-curr-name)
         (setq persp-curr-name name)
         (setq persp-curr-buffers (persp-reactivate-buffers (cadr persp)))
-        (set-window-configuration (car persp))
-        name))))
+        (set-window-configuration (car persp)))
+      (persp-update-modestring)
+      name)))
 
 (defun persp-add-buffer (buffer)
   (interactive "bAdd buffer to perspective: \n")
@@ -74,3 +82,6 @@
 (global-set-key (read-kbd-macro "C-S-s s") 'persp-switch)
 
 (persp-save)
+(setq global-mode-string (or global-mode-string '("")))
+(if (not (memq 'persp-modestring global-mode-string))
+    (setq global-mode-string (append global-mode-string '(persp-modestring))))
