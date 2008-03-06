@@ -9,6 +9,8 @@
 (defvar persp-curr-name "main")
 (defvar persp-curr-buffers (buffer-list))
 
+(defvar persp-last-name nil)
+
 (defun persp-save ()
   (puthash persp-curr-name
            (list (current-window-configuration) (persp-remove-dups persp-curr-buffers))
@@ -45,12 +47,13 @@
 
 (defun persp-switch (name)
   (interactive "i")
-  (if (null name)
-      (setq name (completing-read "Perspective name: " (persp-names))))
+  (if (null name) (setq name (completing-read "Perspective name: " (persp-names)
+                                              nil nil persp-last-name)))
   (if (equal name persp-curr-name) name
     (let ((persp (gethash name perspectives-hash)))
       (if (null persp) (persp-new name)
         (persp-save)
+        (setq persp-last-name persp-curr-name)
         (setq persp-curr-name name)
         (setq persp-curr-buffers (persp-reactivate-buffers (cadr persp)))
         (set-window-configuration (car persp))
