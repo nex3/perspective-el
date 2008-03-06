@@ -41,7 +41,7 @@
 
 (defun persp-switch (name)
   (interactive "sPerspective name: \n")
-  (if (equal name (car current-perspective)) name
+  (if (equal name persp-curr-name) name
     (let ((persp (gethash name perspectives-hash)))
       (if (null persp) (persp-new name)
         (persp-save)
