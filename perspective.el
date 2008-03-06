@@ -7,7 +7,7 @@
 (defvar perspectives-hash (make-hash-table :test 'equal :size 10))
 
 (defvar persp-curr-name "main")
-(defvar persp-curr-buffers (buffer-list))
+(defvar persp-curr-buffers nil)
 (defvar persp-last-name nil)
 
 (defvar persp-modestring)
@@ -73,7 +73,17 @@
 
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   (persp-add-buffer buffer))
-(ad-activate 'switch-to-buffer)
+
+(defun persp-init ()
+  (setq persp-curr-buffers (buffer-list))
+  (persp-save)
+  (ad-activate 'switch-to-buffer)
+
+  (setq global-mode-string (or global-mode-string '("")))
+  (if (not (memq 'persp-modestring global-mode-string))
+      (setq global-mode-string (append global-mode-string '(persp-modestring))))
+  (persp-update-modestring))
+
 
 (define-prefix-command 'perspective 'perspective-map)
 (global-set-key (read-kbd-macro "C-S-s") perspective-map)
@@ -81,7 +91,4 @@
 (global-set-key (read-kbd-macro "C-S-s n") 'persp-new)
 (global-set-key (read-kbd-macro "C-S-s s") 'persp-switch)
 
-(persp-save)
-(setq global-mode-string (or global-mode-string '("")))
-(if (not (memq 'persp-modestring global-mode-string))
-    (setq global-mode-string (append global-mode-string '(persp-modestring))))
+(persp-init)
