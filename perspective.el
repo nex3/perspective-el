@@ -11,6 +11,11 @@
 (defvar persp-last-name nil)
 
 (defvar persp-modestring)
+(put 'persp-modestring 'risky-local-variable t)
+
+(defface persp-selected-face
+  '((default (:weight bold :foreground "Blue")))
+  "The face used to highlight the current perspective on the modeline.")
 
 (defun persp-save ()
   (puthash persp-curr-name
@@ -50,7 +55,13 @@
 
 (defun persp-update-modestring ()
   (setq persp-modestring
-        (concat "[" (mapconcat (lambda (name) name) (persp-names) "|") "]")))
+        (concat "[" (mapconcat 'persp-format-name (persp-names) "|") "]")))
+
+(defun persp-format-name (name)
+  (if (not (equal name persp-curr-name)) name
+      (let ((name (concat name)))
+        (add-text-properties 0 (length name) '(face persp-selected-face) name)
+        name)))
 
 (defun persp-switch (name)
   (interactive "i")
