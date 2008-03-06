@@ -33,6 +33,14 @@
         (setq persp-curr-buffers (cadr persp))
         name))))
 
+(defun persp-add-buffer (buffer)
+  (interactive "bAdd buffer to perspective: \n")
+  (push (get-buffer buffer) persp-curr-buffers))
+
+(defadvice switch-to-buffer (after persp-add-buffer-adv)
+  (persp-add-buffer buffer))
+(ad-activate 'switch-to-buffer)
+
 (define-prefix-command 'perspective 'perspective-map)
 (global-set-key (read-kbd-macro "C-S-s") perspective-map)
 
