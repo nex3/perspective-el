@@ -11,7 +11,7 @@
 
 (defun persp-save ()
   (puthash persp-curr-name
-           (list (current-window-configuration) persp-curr-buffers)
+           (list (current-window-configuration) (persp-remove-dups persp-curr-buffers))
            perspectives-hash))
 
 (defun persp-new (name)
@@ -23,6 +23,14 @@
     (setq persp-curr-name name)
     (setq persp-curr-buffers (list buffer))
     name))
+
+(defun persp-remove-dups (list &optional test)
+  (let ((seen (make-hash-table :test (or test 'equal))))
+    (loop for item in list
+          if (not (gethash item seen))
+            collect item into result
+            and do (puthash item t seen)
+          finally return result)))
 
 (defun persp-reactivate-buffers (buffers)
   (loop for buf in (reverse buffers)
