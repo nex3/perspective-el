@@ -28,6 +28,15 @@
          collect name)
    'string<))
 
+(defun persp-prompt (&optional require-match)
+  (completing-read "Perspective name: " (persp-names)
+                   nil require-match persp-last-name))
+
+(defmacro with-perspective (name &rest body)
+  `(let ((persp-curr-name ,name)
+         (persp-curr-buffers (cadr (gethash ,name perspectives-hash))))
+     ,@body))
+
 (defun persp-new (name)
   (interactive "sNew perspective: \n")
   (persp-save)
@@ -73,8 +82,7 @@
 
 (defun persp-switch (name)
   (interactive "i")
-  (if (null name) (setq name (completing-read "Perspective name: " (persp-names)
-                                              nil nil persp-last-name)))
+  (if (null name) (setq name (persp-prompt)))
   (if (equal name persp-curr-name) name
     (let ((persp (gethash name perspectives-hash)))
       (setq persp-last-name persp-curr-name)
@@ -85,6 +93,18 @@
         (set-window-configuration (car persp)))
       (persp-update-modestring)
       name)))
+
+(defun persp-find-some ()
+  (cond
+   (persp-last-name persp-last-name)
+   ((gethash "main" perspectives-hash) "main")
+   ((> (hash-table-count perspectives-hash) 0) (car (persp-names)))
+   (t (progn
+        (setq persp-curr-name "main")
+        (setq persp-curr-buffers (buffer-list))
+        (persp-save)
+        (persp-update-modestring)
+        "main"))))
 
 (defun persp-add-buffer (buffer)
   (interactive "bAdd buffer to perspective: \n")
@@ -106,6 +126,16 @@
         (t (bury-buffer buffer)))
   (setq persp-curr-buffers (remq buffer persp-curr-buffers)))
 
+(defun persp-kill (name)
+  (interactive "i")
+  (if (null name) (setq name (persp-prompt t)))
+  (with-perspective name
+    (mapcar 'persp-remove-buffer persp-curr-buffers))
+  (setq persp-curr-name nil)
+  (setq persp-last-name nil)
+  (remhash name perspectives-hash)
+  (persp-switch (persp-find-some)))
+
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   (persp-add-buffer buffer))
 
@@ -126,5 +156,6 @@
 (global-set-key (read-kbd-macro "C-x p n") 'persp-new)
 (global-set-key (read-kbd-macro "C-x p s") 'persp-switch)
 (global-set-key (read-kbd-macro "C-x p r") 'persp-remove-buffer)
+(global-set-key (read-kbd-macro "C-x p k") 'persp-kill)
 
 (persp-init)
