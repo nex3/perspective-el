@@ -30,8 +30,11 @@
    'string<))
 
 (defun persp-prompt (&optional default require-match)
-  (completing-read "Perspective name: " (persp-names)
-                   nil require-match (or default persp-curr-name))))
+  (completing-read (concat "Perspective name"
+                           (if default (concat " (default " default ")") "")
+                           ": ")
+                   (persp-names)
+                   nil require-match nil nil default))
 
 (defmacro with-perspective (name &rest body)
   `(let ((persp-curr-name ,name)
@@ -129,7 +132,7 @@
 
 (defun persp-kill (name)
   (interactive "i")
-  (if (null name) (setq name (persp-prompt nil t)))
+  (if (null name) (setq name (persp-prompt persp-curr-name t)))
   (with-perspective name
     (mapcar 'persp-remove-buffer persp-curr-buffers))
   (setq persp-curr-name nil)
