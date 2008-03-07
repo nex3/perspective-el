@@ -17,7 +17,7 @@ perspective was last active).
 BUFFERS is a list of buffer objects that are associated with this
 perspective.")
 
-(defvar persp-curr-name "main"
+(defvar persp-curr-name nil
   "The name of the current perspective.")
 
 (defvar persp-curr-buffers nil
@@ -220,6 +220,7 @@ See also `persp-add-buffer'."
 
 (defun persp-init ()
   "Initialize the perspectives system."
+  (setq persp-curr-name "main")
   (setq persp-curr-buffers (buffer-list))
   (persp-save)
   (ad-activate 'switch-to-buffer)
@@ -238,4 +239,5 @@ See also `persp-add-buffer'."
 (global-set-key (read-kbd-macro "C-x p r") 'persp-remove-buffer)
 (global-set-key (read-kbd-macro "C-x p k") 'persp-kill)
 
-(persp-init)
+(if (null persp-curr-name)
+    (persp-init))
