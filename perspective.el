@@ -29,9 +29,9 @@
          collect name)
    'string<))
 
-(defun persp-prompt (&optional require-match)
+(defun persp-prompt (&optional default require-match)
   (completing-read "Perspective name: " (persp-names)
-                   nil require-match persp-last-name))
+                   nil require-match (or default persp-curr-name))))
 
 (defmacro with-perspective (name &rest body)
   `(let ((persp-curr-name ,name)
@@ -83,7 +83,7 @@
 
 (defun persp-switch (name)
   (interactive "i")
-  (if (null name) (setq name (persp-prompt)))
+  (if (null name) (setq name (persp-prompt persp-last-name)))
   (if (equal name persp-curr-name) name
     (let ((persp (gethash name perspectives-hash)))
       (setq persp-last-name persp-curr-name)
@@ -129,7 +129,7 @@
 
 (defun persp-kill (name)
   (interactive "i")
-  (if (null name) (setq name (persp-prompt t)))
+  (if (null name) (setq name (persp-prompt nil t)))
   (with-perspective name
     (mapcar 'persp-remove-buffer persp-curr-buffers))
   (setq persp-curr-name nil)
