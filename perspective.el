@@ -105,9 +105,9 @@
 
 
 (define-prefix-command 'perspective 'perspective-map)
-(global-set-key (read-kbd-macro "C-S-s") perspective-map)
+(global-set-key (read-kbd-macro "C-x p") perspective-map)
 
-(global-set-key (read-kbd-macro "C-S-s n") 'persp-new)
-(global-set-key (read-kbd-macro "C-S-s s") 'persp-switch)
+(global-set-key (read-kbd-macro "C-x p n") 'persp-new)
+(global-set-key (read-kbd-macro "C-x p s") 'persp-switch)
 
 (persp-init)
