@@ -18,9 +18,10 @@
   "The face used to highlight the current perspective on the modeline.")
 
 (defun persp-save ()
-  (puthash persp-curr-name
-           (list (current-window-configuration) (persp-remove-dups persp-curr-buffers))
-           perspectives-hash))
+  (if persp-curr-name
+      (puthash persp-curr-name
+               (list (current-window-configuration) (persp-remove-dups persp-curr-buffers))
+               perspectives-hash)))
 
 (defun persp-names ()
   (sort
@@ -114,8 +115,8 @@
   (interactive "bRemove buffer from perspective: \n")
   (setq buffer (get-buffer buffer))
   ; Only kill the buffer if no other perspectives are using it
-  (cond ((loop for persp being the hash-values of perspectives-hash
-               unless (equal (car persp) persp-curr-name)
+  (cond ((loop for persp being the hash-values of perspectives-hash using (hash-keys name)
+               unless (equal name persp-curr-name)
                if (memq buffer (cadr persp)) return nil
                finally return t)
          (kill-buffer buffer))
