@@ -90,6 +90,22 @@
   (interactive "bAdd buffer to perspective: \n")
   (push (get-buffer buffer) persp-curr-buffers))
 
+(defun persp-remove-buffer (buffer)
+  (interactive "bRemove buffer from perspective: \n")
+  (setq buffer (get-buffer buffer))
+  ; Only kill the buffer if no other perspectives are using it
+  (cond ((loop for persp being the hash-values of perspectives-hash
+               unless (equal (car persp) persp-curr-name)
+               if (memq buffer (cadr persp)) return nil
+               finally return t)
+         (kill-buffer buffer))
+        ;; Make the buffer go away if we can see it.
+        ;; TODO: Is it possible to tell if it's visible at all,
+        ;;       rather than just the current buffer?
+        ((eq buffer (current-buffer)) (bury-buffer))
+        (t (bury-buffer buffer)))
+  (setq persp-curr-buffers (remq buffer persp-curr-buffers)))
+
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   (persp-add-buffer buffer))
 
@@ -109,5 +125,6 @@
 
 (global-set-key (read-kbd-macro "C-x p n") 'persp-new)
 (global-set-key (read-kbd-macro "C-x p s") 'persp-switch)
+(global-set-key (read-kbd-macro "C-x p r") 'persp-remove-buffer)
 
 (persp-init)
