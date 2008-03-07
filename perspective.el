@@ -241,3 +241,5 @@ See also `persp-add-buffer'."
 
 (if (null persp-curr-name)
     (persp-init))
+
+(provide 'perspective)
