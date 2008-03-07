@@ -232,12 +232,12 @@ See also `persp-add-buffer'."
 
 
 (define-prefix-command 'perspective 'perspective-map)
-(global-set-key (read-kbd-macro "C-x p") perspective-map)
+(global-set-key (read-kbd-macro "C-x x") perspective-map)
 
-(global-set-key (read-kbd-macro "C-x p n") 'persp-new)
-(global-set-key (read-kbd-macro "C-x p s") 'persp-switch)
-(global-set-key (read-kbd-macro "C-x p r") 'persp-remove-buffer)
-(global-set-key (read-kbd-macro "C-x p k") 'persp-kill)
+(global-set-key (read-kbd-macro "C-x x n") 'persp-new)
+(global-set-key (read-kbd-macro "C-x x s") 'persp-switch)
+(global-set-key (read-kbd-macro "C-x x r") 'persp-remove-buffer)
+(global-set-key (read-kbd-macro "C-x x k") 'persp-kill)
 
 (if (null persp-curr-name)
     (persp-init))
