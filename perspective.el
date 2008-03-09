@@ -129,6 +129,11 @@ For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
       (add-text-properties 0 (length name) '(face persp-selected-face) name)
       name)))
 
+(defun persp-get-quick (char)
+  "Returns the name of the first perspective, alphabetically, that begins with CHAR."
+  (loop for persp in (persp-names)
+        if (eq (string-to-char persp) char) return persp))
+
 (defun persp-switch (name)
   "Switch to the perspective given by NAME. If it doesn't exist,
 create a new perspective and switch to that.
@@ -148,6 +153,15 @@ and the perspective's window configuration is restored."
         (set-window-configuration (car persp)))
       (persp-update-modestring)
       name)))
+
+(defun persp-switch-quick (char)
+  "Switches to the first perspective, alphabetically, that begins with CHAR.
+
+See `persp-switch', `persp-get-quick'."
+  (interactive "c")
+  (let ((persp (persp-get-quick char)))
+    (if persp (persp-switch persp)
+      (error (concat "No perspective name begins with " (string char))))))
 
 (defun persp-find-some ()
   "Returns the name of a valid perspective.
