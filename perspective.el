@@ -212,6 +212,16 @@ perspective and no others are killed."
   (remhash name perspectives-hash)
   (persp-switch (persp-find-some)))
 
+(defun persp-rename (name)
+  "Rename the current perspective to NAME."
+  (interactive "sNew name: ")
+  (if (gethash name perspectives-hash)
+      (error (concat "Perspective " name " already exists"))
+    (remhash persp-curr-name perspectives-hash)
+    (setq persp-curr-name name)
+    (persp-save)
+    (persp-update-modestring)))
+
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
 
@@ -238,6 +248,7 @@ See also `persp-add-buffer'."
 (global-set-key (read-kbd-macro "C-x x s") 'persp-switch)
 (global-set-key (read-kbd-macro "C-x x r") 'persp-remove-buffer)
 (global-set-key (read-kbd-macro "C-x x k") 'persp-kill)
+(global-set-key (read-kbd-macro "C-x x n") 'persp-rename)
 
 (if (null persp-curr-name)
     (persp-init))
