@@ -247,7 +247,7 @@ See also `persp-add-buffer'."
 (global-set-key (read-kbd-macro "C-x x n") 'persp-new)
 (global-set-key (read-kbd-macro "C-x x s") 'persp-switch)
 (global-set-key (read-kbd-macro "C-x x k") 'persp-remove-buffer)
-(global-set-key (read-kbd-macro "C-x x K") 'persp-kill)
+(global-set-key (read-kbd-macro "C-x x c") 'persp-kill)
 (global-set-key (read-kbd-macro "C-x x r") 'persp-rename)
 
 (if (null persp-curr-name)
