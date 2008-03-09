@@ -254,6 +254,16 @@ See also `persp-add-buffer'."
       (setq global-mode-string (append global-mode-string '(persp-modestring))))
   (persp-update-modestring))
 
+(defun quick-perspective-keys ()
+  "Binds all C-S-letter key combinations to switch to the first
+perspective beginning with the given letter."
+  (loop for c from ?a to ?z
+        do (global-set-key
+            (read-kbd-macro (concat "C-S-" (string c)))
+            `(lambda ()
+               (interactive)
+               (persp-switch-quick ,c)))))
+
 
 (define-prefix-command 'perspective 'perspective-map)
 (global-set-key (read-kbd-macro "C-x x") perspective-map)
