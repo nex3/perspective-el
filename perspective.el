@@ -1,5 +1,7 @@
 ;; perspective.el --- switch between named "perspectives" of the editor
 ;; Copyright (C) 2008 Nathan Weizenbaum <nex342@gmail.com>
+;;               2008 Will Farrington   <wcfarrington@gmail.com>
+;;
 ;; Licensed under the same terms as Emacs.
 
 (eval-when-compile (require 'cl))
@@ -27,6 +29,9 @@ perspective.")
 (defvar persp-modestring nil
   "The string displayed in the modeline representing the perspectives.")
 (put 'persp-modestring 'risky-local-variable t)
+
+(defvar persp-show-modestring t
+  "Determines if `persp-modestring' is shown in the modeline.")
 
 (defface persp-selected-face
   '((default (:weight bold :foreground "Blue")))
@@ -151,7 +156,7 @@ and the perspective's window configuration is restored."
         (setq persp-curr-name name)
         (setq persp-curr-buffers (persp-reactivate-buffers (cadr persp)))
         (set-window-configuration (car persp)))
-      (persp-update-modestring)
+      (if persp-show-modestring (persp-update-modestring))
       name)))
 
 (defun persp-switch-quick (char)
@@ -183,7 +188,7 @@ create a new main perspective and return \"main\"."
         (setq persp-curr-name "main")
         (setq persp-curr-buffers (buffer-list))
         (persp-save)
-        (persp-update-modestring)
+        (if persp-show-modestring (persp-update-modestring))
         "main"))))
 
 (defun persp-add-buffer (buffer)
@@ -234,7 +239,7 @@ perspective and no others are killed."
     (remhash persp-curr-name perspectives-hash)
     (setq persp-curr-name name)
     (persp-save)
-    (persp-update-modestring)))
+    (if persp-show-modestring (persp-update-modestring))))
 
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
@@ -249,10 +254,12 @@ See also `persp-add-buffer'."
   (persp-save)
   (ad-activate 'switch-to-buffer)
 
-  (setq global-mode-string (or global-mode-string '("")))
-  (if (not (memq 'persp-modestring global-mode-string))
-      (setq global-mode-string (append global-mode-string '(persp-modestring))))
-  (persp-update-modestring))
+  (if persp-show-modestring
+      (progn
+        setq global-mode-string (or global-mode-string '(""))
+        (if (not (memq 'persp-modestring global-mode-string))
+            (setq global-mode-string (append global-mode-string '(persp-modestring))))
+        (persp-update-modestring))))
 
 (defun quick-perspective-keys ()
   "Binds all C-S-letter key combinations to switch to the first
