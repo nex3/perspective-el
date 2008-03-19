@@ -274,14 +274,17 @@ perspective beginning with the given letter."
                (persp-switch-quick ,c)))))
 
 (defun persp-turn-off-modestring ()
+  (interactive)
   (setq persp-modestring nil)
   (setq persp-show-modestring nil))
 
 (defun persp-turn-on-modestring ()
+  (interactive)
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
 (defun turn-on-persp ()
+  (interactive)
   (persp-init))
 
 (define-prefix-command 'perspective 'perspective-map)
