@@ -82,7 +82,9 @@ Lisp-interaction buffer called \"*scratch* (NAME)\"."
     (delete-other-windows)
     (setq persp-curr-name name)
     (setq persp-curr-buffers (list buffer))
-    (persp-save)))
+    (persp-save))
+
+  (if persp-show-modestring (persp-update-modestring)))
 
 (defun persp-remove-dups (list &optional test)
   "Remove duplicate items from LIST.
