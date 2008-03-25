@@ -1,4 +1,4 @@
-;; perspective.el --- switch between named "perspectives" of the editor
+I;; perspective.el --- switch between named "perspectives" of the editor
 ;; Copyright (C) 2008 Nathan Weizenbaum <nex342@gmail.com>
 ;;               2008 Will Farrington   <wcfarrington@gmail.com>
 ;;
@@ -84,7 +84,7 @@ Lisp-interaction buffer called \"*scratch* (NAME)\"."
     (setq persp-curr-buffers (list buffer))
     (persp-save))
 
-  (if persp-show-modestring (persp-update-modestring)))
+  (persp-update-modestring))
 
 (defun persp-remove-dups (list &optional test)
   "Remove duplicate items from LIST.
@@ -123,11 +123,13 @@ For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
                 (persp-intersperse (cdr list) val)))))
 
 (defun persp-update-modestring ()
-  "Update `persp-modestring' to reflect the current perspectives."
-  (setq persp-modestring
-        (append '("[")
-                (persp-intersperse (mapcar 'persp-format-name (persp-names)) "|")
-                '("]"))))
+  "Update `persp-modestring' to reflect the current
+perspectives. Has no effect when `persp-show-modestring' is nil."
+  (when persp-show-modestring
+    (setq persp-modestring
+          (append '("[")
+                  (persp-intersperse (mapcar 'persp-format-name (persp-names)) "|")
+                  '("]")))))
 
 (defun persp-format-name (name)
   "Format the perspective name given by NAME for display in `persp-modestring'."
@@ -158,7 +160,7 @@ and the perspective's window configuration is restored."
         (setq persp-curr-name name)
         (setq persp-curr-buffers (persp-reactivate-buffers (cadr persp)))
         (set-window-configuration (car persp)))
-      (if persp-show-modestring (persp-update-modestring))
+      (persp-update-modestring)
       name)))
 
 (defun persp-switch-quick (char)
@@ -190,7 +192,7 @@ create a new main perspective and return \"main\"."
         (setq persp-curr-name "main")
         (setq persp-curr-buffers (buffer-list))
         (persp-save)
-        (if persp-show-modestring (persp-update-modestring))
+        (persp-update-modestring)
         "main"))))
 
 (defun persp-add-buffer (buffer)
@@ -241,7 +243,7 @@ perspective and no others are killed."
     (remhash persp-curr-name perspectives-hash)
     (setq persp-curr-name name)
     (persp-save)
-    (if persp-show-modestring (persp-update-modestring))))
+    (persp-update-modestring)))
 
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
