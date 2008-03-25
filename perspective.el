@@ -285,10 +285,6 @@ perspective beginning with the given letter."
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
-(defun turn-on-persp ()
-  (interactive)
-  (persp-init))
-
 (define-prefix-command 'perspective 'perspective-map)
 (global-set-key (read-kbd-macro "C-x x") perspective-map)
 
