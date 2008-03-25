@@ -253,6 +253,7 @@ See also `persp-add-buffer'."
 
 (defun persp-init ()
   "Initialize the perspectives system."
+  (interactive)
   (setq persp-curr-name "main")
   (setq persp-curr-buffers (buffer-list))
   (persp-save)
@@ -287,7 +288,7 @@ perspective beginning with the given letter."
 
 (define-prefix-command 'perspective 'perspective-map)
 (global-set-key (read-kbd-macro "C-x x") perspective-map)
-
+i
 (global-set-key (read-kbd-macro "C-x x n") 'persp-new)
 (global-set-key (read-kbd-macro "C-x x s") 'persp-switch)
 (global-set-key (read-kbd-macro "C-x x k") 'persp-remove-buffer)
