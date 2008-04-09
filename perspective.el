@@ -261,10 +261,10 @@ See also `persp-add-buffer'."
 
   (if persp-show-modestring
       (progn
-        (setq global-mode-string (or global-mode-string '(""))
+        (setq global-mode-string (or global-mode-string '("")))
         (if (not (memq 'persp-modestring global-mode-string))
             (setq global-mode-string (append global-mode-string '(persp-modestring))))
-        (persp-update-modestring)))))
+        (persp-update-modestring))))
 
 (defun quick-perspective-keys ()
   "Binds all C-S-letter key combinations to switch to the first
