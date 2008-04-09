@@ -34,7 +34,7 @@ perspective.")
   "Determines if `persp-modestring' is shown in the modeline.")
 
 (defface persp-selected-face
-  '((default (:weight bold :foreground "Blue")))
+  '((t (:weight bold :foreground "Blue")))
   "The face used to highlight the current perspective on the modeline.")
 
 (defun persp-save ()
