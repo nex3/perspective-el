@@ -269,11 +269,11 @@ See also `persp-add-buffer'."
 
 (defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
   "Restore the old perspective when exiting a recursive edit."
-  (persp-switch persp-recursive-name))
+  (if persp-recursive-name (persp-switch persp-recursive-name)))
 
 (defadvice abort-recursive-edit (before persp-restore-after-recursive-edit)
   "Restore the old perspective when aborting a recursive edit."
-  (persp-switch persp-recursive-name))
+  (if persp-recursive-name (persp-switch persp-recursive-name)))
 
 (defun persp-init ()
   "Initialize the perspectives system."
