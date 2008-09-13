@@ -158,7 +158,7 @@ and the perspective's window configuration is restored."
     (let ((persp (gethash name perspectives-hash)))
       (setq persp-last-name persp-curr-name)
       (if (null persp) (persp-new name)
-        (unless dont-save (persp-save))
+        (persp-save)
         (setq persp-curr-name name)
         (setq persp-curr-buffers (persp-reactivate-buffers (cadr persp)))
         (set-window-configuration (car persp)))
