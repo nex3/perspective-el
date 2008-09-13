@@ -124,6 +124,16 @@ For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
           (cons val
                 (persp-intersperse (cdr list) val)))))
 
+(defconst persp-mode-line-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [mode-line down-mouse-1] 'persp-mode-line-click)
+    map))
+
+(defun persp-mode-line-click (event)
+  "Select the clicked perspective."
+  (interactive "e")
+  (persp-switch (format "%s" (car (posn-string (event-start event))))))
+
 (defun persp-update-modestring ()
   "Update `persp-modestring' to reflect the current
 perspectives. Has no effect when `persp-show-modestring' is nil."
@@ -135,10 +145,12 @@ perspectives. Has no effect when `persp-show-modestring' is nil."
 
 (defun persp-format-name (name)
   "Format the perspective name given by NAME for display in `persp-modestring'."
-  (if (not (equal name persp-curr-name)) name
-    (let ((name (concat name)))
-      (add-text-properties 0 (length name) '(face persp-selected-face) name)
-      name)))
+  (let ((string-name (format "%s" name)))
+    (if (equal name persp-curr-name)
+        (propertize string-name 'face 'persp-selected-face)
+      (propertize string-name
+                  'local-map persp-mode-line-map
+                  'mouse-face 'mode-line-highlight))))
 
 (defun persp-get-quick (char)
   "Returns the name of the first perspective, alphabetically, that begins with CHAR."
