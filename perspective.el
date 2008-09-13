@@ -36,7 +36,7 @@ perspective.")
   "Determines if `persp-modestring' is shown in the modeline.")
 
 (defface persp-selected-face
-  '((default (:weight bold :foreground "Blue")))
+  '((t (:weight bold :foreground "Blue")))
   "The face used to highlight the current perspective on the modeline.")
 
 (defun persp-save ()
@@ -288,10 +288,10 @@ See also `persp-add-buffer'."
 
   (if persp-show-modestring
       (progn
-        (setq global-mode-string (or global-mode-string '(""))
+        (setq global-mode-string (or global-mode-string '("")))
         (if (not (memq 'persp-modestring global-mode-string))
             (setq global-mode-string (append global-mode-string '(persp-modestring))))
-        (persp-update-modestring)))))
+        (persp-update-modestring))))
 
 (defun quick-perspective-keys ()
   "Binds all C-S-letter key combinations to switch to the first
