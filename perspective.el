@@ -1,6 +1,5 @@
 ;; perspective.el --- switch between named "perspectives" of the editor
 ;; Copyright (C) 2008 Nathan Weizenbaum <nex342@gmail.com>
-;;               2008 Will Farrington   <wcfarrington@gmail.com>
 ;;
 ;; Licensed under the same terms as Emacs.
 
@@ -21,6 +20,9 @@ perspective.")
 
 (defvar persp-curr-name nil
   "The name of the current perspective.")
+
+(defvar persp-recursive-name nil
+  "The name of the current perspective before beginning a recursive edit.")
 
 (defvar persp-curr-buffers nil
   "A list of buffers associated with the current perspective.")
@@ -156,7 +158,7 @@ and the perspective's window configuration is restored."
     (let ((persp (gethash name perspectives-hash)))
       (setq persp-last-name persp-curr-name)
       (if (null persp) (persp-new name)
-        (persp-save)
+        (unless dont-save (persp-save))
         (setq persp-curr-name name)
         (setq persp-curr-buffers (persp-reactivate-buffers (cadr persp)))
         (set-window-configuration (car persp)))
@@ -251,6 +253,28 @@ perspective and no others are killed."
 See also `persp-add-buffer'."
   (persp-add-buffer buffer))
 
+(defadvice recursive-edit (around persp-preserve-for-recursive-edit)
+  "Preserve the current perspective when entering a recursive edit."
+  (persp-save)
+  (let ((persp-recursive-name persp-curr-name) (old-hash (copy-hash-table perspectives-hash)))
+    ad-do-it
+    ;; We want the buffer lists that were created in the recursive edit,
+    ;; but not the window configurations
+    (maphash (lambda (key val) 
+               (let ((persp (gethash key old-hash)))
+                 (if (not persp) (setcdr persp (cdr val))
+                   (puthash key val old-hash))))
+             perspectives-hash)
+    (setq perspectives-hash old-hash)))
+
+(defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
+  "Restore the old perspective when exiting a recursive edit."
+  (persp-switch persp-recursive-name))
+
+(defadvice abort-recursive-edit (before persp-restore-after-recursive-edit)
+  "Restore the old perspective when aborting a recursive edit."
+  (persp-switch persp-recursive-name))
+
 (defun persp-init ()
   "Initialize the perspectives system."
   (interactive)
@@ -258,6 +282,9 @@ See also `persp-add-buffer'."
   (setq persp-curr-buffers (buffer-list))
   (persp-save)
   (ad-activate 'switch-to-buffer)
+  (ad-activate 'recursive-edit)
+  (ad-activate 'exit-recursive-edit)
+  (ad-activate 'abort-recursive-edit)
 
   (if persp-show-modestring
       (progn
