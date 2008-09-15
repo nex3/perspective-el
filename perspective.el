@@ -5,8 +5,15 @@
 
 (eval-when-compile (require 'cl))
 
-(defvar perspectives-hash (make-hash-table :test 'equal :size 10)
-  "A hash containing all perspectives. The keys are the
+(defvar persp-initialized nil
+  "Non-nil if the perspectives system has been initialized.")
+
+;; make-variable-frame-local is obsolete according to the docs,
+;; but I don't want to have to manually munge frame-parameters
+;; all the time so I'm using it anyway.
+(make-variable-frame-local
+ (defvar perspectives-hash nil
+   "A hash containing all perspectives. The keys are the
 perspetives' names. The values are of the
 form (WINDOW-CONFIGURATION BUFFERS).
 
@@ -16,20 +23,24 @@ saved (if this isn't the current perspective, this is when the
 perspective was last active).
 
 BUFFERS is a list of buffer objects that are associated with this
-perspective.")
+perspective."))
 
-(defvar persp-curr-name nil
-  "The name of the current perspective.")
+(make-variable-frame-local
+ (defvar persp-curr-name nil
+   "The name of the current perspective."))
 
-(defvar persp-recursive-name nil
-  "The name of the current perspective before beginning a recursive edit.")
+(make-variable-frame-local
+ (defvar persp-recursive-name nil
+   "The name of the current perspective before beginning a recursive edit."))
 
-(defvar persp-curr-buffers nil
-  "A list of buffers associated with the current perspective.")
-(defvar persp-last-name nil)
+(make-variable-frame-local
+ (defvar persp-curr-buffers nil
+   "A list of buffers associated with the current perspective."))
+(make-variable-frame-local (defvar persp-last-name nil))
 
-(defvar persp-modestring nil
-  "The string displayed in the modeline representing the perspectives.")
+(make-variable-frame-local
+ (defvar persp-modestring nil
+   "The string displayed in the modeline representing the perspectives."))
 (put 'persp-modestring 'risky-local-variable t)
 
 (defvar persp-show-modestring t
@@ -286,19 +297,35 @@ See also `persp-add-buffer'."
 (defun persp-init ()
   "Initialize the perspectives system."
   (interactive)
-  (setq persp-curr-name "main")
-  (setq persp-curr-buffers (buffer-list))
-  (persp-save)
   (ad-activate 'switch-to-buffer)
   (ad-activate 'recursive-edit)
   (ad-activate 'exit-recursive-edit)
+  (add-hook 'after-make-frame-functions 'persp-init-frame)
 
-  (if persp-show-modestring
-      (progn
-        (setq global-mode-string (or global-mode-string '("")))
-        (if (not (memq 'persp-modestring global-mode-string))
-            (setq global-mode-string (append global-mode-string '(persp-modestring))))
-        (persp-update-modestring))))
+  (persp-init-frame (selected-frame))
+  (setq persp-curr-buffers (buffer-list))
+  (setq persp-initialized t))
+
+(defun persp-init-frame (frame)
+  "Initialize the perspectives system in FRAME
+\(by default, the current frame)."
+  (with-selected-frame frame
+    (modify-frame-parameters
+     frame
+     `((perspectives-hash) (persp-curr-name) (persp-curr-buffers) (persp-recursive-name) (persp-modestring)))
+
+    ;; Don't set these variables in modify-frame-parameters
+    ;; because that won't do anything if they've already been accessed
+    (setq perspectives-hash (make-hash-table :test 'equal :size 10))
+    (setq persp-curr-name "main")
+    (setq persp-curr-buffers (list (current-buffer)))
+    (persp-save)
+
+    (when persp-show-modestring
+      (setq global-mode-string (or global-mode-string '("")))
+      (unless (memq 'persp-modestring global-mode-string)
+        (setq global-mode-string (append global-mode-string '(persp-modestring))))
+      (persp-update-modestring))))
 
 (defun quick-perspective-keys ()
   "Binds all C-S-letter key combinations to switch to the first
@@ -329,7 +356,7 @@ perspective beginning with the given letter."
 (global-set-key (read-kbd-macro "C-x x c") 'persp-kill)
 (global-set-key (read-kbd-macro "C-x x r") 'persp-rename)
 
-(if (null persp-curr-name)
-    (persp-init))
+(unless persp-initialized
+  (persp-init))
 
 (provide 'perspective)
