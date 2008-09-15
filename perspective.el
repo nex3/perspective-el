@@ -163,10 +163,26 @@ perspectives. Has no effect when `persp-show-modestring' is nil."
                   'local-map persp-mode-line-map
                   'mouse-face 'mode-line-highlight))))
 
-(defun persp-get-quick (char)
-  "Returns the name of the first perspective, alphabetically, that begins with CHAR."
-  (loop for persp in (persp-names)
-        if (eq (string-to-char persp) char) return persp))
+(defun persp-get-quick (char &optional prev)
+  "Returns the name of the first perspective, alphabetically,
+that begins with CHAR.
+
+PREV can be the name of a perspective. If it's passed,
+this will try to return the perspective alphabetically after PREV.
+This is used for cycling between perspectives."
+  (persp-get-quick-helper char prev (persp-names)))
+
+(defun persp-get-quick-helper (char prev names)
+  "A helper method for `persp-get-quick'."
+  (if (null names) nil
+    (let ((name (car names)))
+      (cond
+       ((and (null prev) (eq (string-to-char name) char)) name)
+       ((equal name prev)
+        (if (and (not (null (cdr names))) (eq (string-to-char (cadr names)) char))
+            (cadr names)
+          (persp-get-quick char)))
+       (t (persp-get-quick-helper char prev (cdr names)))))))
 
 (defun persp-switch (name)
   "Switch to the perspective given by NAME. If it doesn't exist,
@@ -191,9 +207,14 @@ and the perspective's window configuration is restored."
 (defun persp-switch-quick (char)
   "Switches to the first perspective, alphabetically, that begins with CHAR.
 
+Sets `this-command' (and thus `last-command') to (persp-switch-quick . CHAR).
+
 See `persp-switch', `persp-get-quick'."
   (interactive "c")
-  (let ((persp (persp-get-quick char)))
+  (let ((persp (if (and (consp last-command) (eq (car last-command) this-command))
+                   (persp-get-quick char (cdr last-command))
+                 (persp-get-quick char))))
+    (setq this-command (cons this-command persp))
     (if persp (persp-switch persp)
       (error (concat "No perspective name begins with " (string char))))))
 
