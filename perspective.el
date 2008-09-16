@@ -441,6 +441,7 @@ perspective beginning with the given letter."
 (global-set-key (read-kbd-macro "C-x x k") 'persp-remove-buffer)
 (global-set-key (read-kbd-macro "C-x x c") 'persp-kill)
 (global-set-key (read-kbd-macro "C-x x r") 'persp-rename)
+(global-set-key (read-kbd-macro "C-x x i") 'persp-import)
 
 (unless persp-initialized
   (persp-init))
