@@ -64,6 +64,24 @@ perspective."))
          collect name)
    'string<))
 
+(defun persp-union (&rest lists)
+  "Returns the union of each sublist of LISTS."
+  (loop for l on lists
+        append (if (null (cdr l)) (car l)
+                 (let ((list1 (car l)) (list2 (cadr l)))
+                   (loop for el in list1
+                         unless (member el list2) collect el)))))
+
+(defun persp-all-names (&optional not-frame)
+  "Return a list of the perspective names for all frames
+except NOT-FRAME (if passed)."
+  (apply 'persp-union
+         (mapcar
+          (lambda (frame)
+            (unless (equal frame not-frame)
+              (with-selected-frame frame (persp-names))))
+          (frame-list))))
+
 (defun persp-prompt (&optional default require-match)
   "Prompt for the name of a perspective.
 
@@ -78,6 +96,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
 
 (defmacro with-perspective (name &rest body)
   "Evaluate BODY with the perspective given by NAME as the current perspective."
+  (declare (indent 1))
   `(let ((persp-curr-name ,name)
          (persp-curr-buffers (cadr (gethash ,name perspectives-hash))))
      ,@body))
@@ -290,6 +309,37 @@ perspective and no others are killed."
     (setq persp-curr-name name)
     (persp-save)
     (persp-update-modestring)))
+
+(defun* persp-all-get (name &optional not-frame)
+  "Returns the list of buffers for a perspective named NAME from any
+frame other than NOT-FRAME.
+
+This doesn't return the window configuration because those can't be
+copied across frames."
+  (dolist (frame (frame-list))
+    (unless (equal frame not-frame)
+      (with-selected-frame frame
+        (persp-save)
+        (let ((persp (gethash name perspectives-hash)))
+          (if persp (return-from persp-all-get (cadr persp))))))))
+
+(defun* persp-import (name)
+  "Import a perspective named NAME from another frame."
+  ;; TODO: Have some way of selecting which frame the perspective is imported from.
+  (interactive "i")
+  (unless name
+    (setq name (completing-read "Import perspective: " (persp-all-names (selected-frame)) nil t)))
+  (if (and (gethash name perspectives-hash)
+           (not (yes-or-no-p (concat "Perspective `" name "' already exits. Continue? "))))
+      (return-from persp-import))
+  (let ((buffers (persp-all-get name (selected-frame))))
+    (if (null buffers)
+        (error "Perspective `%s' doesn't exist in another frame." name))
+    (puthash name (list (current-window-configuration) buffers) perspectives-hash)
+    (persp-update-modestring)
+    (persp-switch name)
+    (switch-to-buffer (car buffers))
+    (delete-other-windows)))
 
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
