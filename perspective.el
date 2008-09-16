@@ -265,7 +265,21 @@ create a new main perspective and return \"main\"."
 
 See also `persp-switch' and `persp-remove-buffer'."
   (interactive "bAdd buffer to perspective: \n")
-  (push (get-buffer buffer) persp-curr-buffers))
+  (push (get-buffer buffer) persp-curr-buffers)
+  (persp-save))
+
+(defun* persp-buffer-in-other-p (buffer)
+  "Returns nil if BUFFER is only in the current perspective.
+Otherwise, returns (FRAME . NAME), the frame and name of another
+perspective that has the buffer."
+  (loop for frame in (frame-list)
+        do (loop for persp being the hash-values of (with-selected-frame frame perspectives-hash)
+                   using (hash-keys name)
+                 if (and (not (and (equal frame (selected-frame))
+                                   (equal name persp-curr-name)))
+                         (memq buffer (cadr persp)))
+                   do (return-from persp-buffer-in-other-p (cons frame name))))
+  nil)
 
 (defun persp-remove-buffer (buffer)
   "Disassociate BUFFER with the current perspective.
@@ -274,17 +288,15 @@ See also `persp-switch' and `persp-add-buffer'."
   (interactive "bRemove buffer from perspective: \n")
   (setq buffer (get-buffer buffer))
   ; Only kill the buffer if no other perspectives are using it
-  (cond ((loop for persp being the hash-values of perspectives-hash using (hash-keys name)
-               unless (equal name persp-curr-name)
-               if (memq buffer (cadr persp)) return nil
-               finally return t)
+  (cond ((not (persp-buffer-in-other-p buffer))
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
         ;; TODO: Is it possible to tell if it's visible at all,
         ;;       rather than just the current buffer?
         ((eq buffer (current-buffer)) (bury-buffer))
         (t (bury-buffer buffer)))
-  (setq persp-curr-buffers (remq buffer persp-curr-buffers)))
+  (setq persp-curr-buffers (remq buffer persp-curr-buffers))
+  (persp-save))
 
 (defun persp-kill (name)
   "Kill the perspective given by NAME.
