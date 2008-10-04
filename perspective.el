@@ -109,13 +109,11 @@ The new perspective initially has only one buffer: a
 Lisp-interaction buffer called \"*scratch* (NAME)\"."
   (interactive "sNew perspective: \n")
   (persp-save)
+  (setq persp-curr-name name)
+  (setq persp-curr-buffers nil)
   (let ((buffer (switch-to-buffer (concat "*scratch* (" name ")"))))
     (lisp-interaction-mode)
-    (delete-other-windows)
-    (setq persp-curr-name name)
-    (setq persp-curr-buffers (list buffer))
-    (persp-save))
-
+    (delete-other-windows))
   (persp-update-modestring))
 
 (defun persp-remove-dups (list &optional test)
