@@ -353,6 +353,43 @@ copied across frames."
         (let ((persp (gethash name perspectives-hash)))
           (if persp (return-from persp-all-get (cadr persp))))))))
 
+(defun persp-read-buffer (prompt &optional def require-match)
+  "A replacement for the built-in `read-buffer', meant to be used with
+`read-buffer-function'. Return the name of the buffer selected, only
+selecting from buffers within the current perspective.
+
+With a prefix arg, uses the old `read-buffer' instead."
+  (let ((read-buffer-function nil))
+    (if current-prefix-arg
+        (read-buffer prompt def require-match)
+      ;; TODO: Let-bind buffer-name-history to use persp-local history
+      ;;
+      ;; Most of this is taken from `minibuffer-with-setup-hook',
+      ;; slightly modified because it's not a macro.
+      ;; The only functional difference is that the append argument
+      ;; to add-hook is t, so that it'll be run after the hook added
+      ;; by `read-buffer-to-switch'.
+      (let ((rb-completion-table (persp-complete-buffer))
+            (persp-read-buffer-hook))
+        (setq persp-read-buffer-hook
+              (lambda ()
+                (remove-hook 'minibuffer-setup-hook persp-read-buffer-hook)
+                (setq minibuffer-completion-table rb-completion-table)))
+        (unwind-protect
+            (progn
+              (add-hook 'minibuffer-setup-hook persp-read-buffer-hook t)
+              (read-buffer prompt def require-match))
+          (remove-hook 'minibuffer-setup-hook persp-read-buffer-hook))))))
+
+(defun persp-complete-buffer ()
+  "Perform completion on all buffers within the current perspective."
+  (apply-partially 'completion-table-with-predicate
+                   (or minibuffer-completion-table 'internal-complete-buffer)
+                   (lambda (name)
+                     (member (if (consp name) (car name) name)
+                             (mapcar 'buffer-name persp-curr-buffers)))
+                   nil))
+
 (defun* persp-import (name &optional dont-switch)
   "Import a perspective named NAME from another frame.  If DONT-SWITCH
 is non-nil or with prefix arg, don't switch to the new perspective."
@@ -399,6 +436,7 @@ See also `persp-add-buffer'."
   "Restore the old perspective when exiting a recursive edit."
   (if persp-recursive-name (persp-switch persp-recursive-name)))
 
+;; TODO: Make this a mode
 (defun persp-init ()
   "Initialize the perspectives system."
   (interactive)
@@ -406,6 +444,7 @@ See also `persp-add-buffer'."
   (ad-activate 'recursive-edit)
   (ad-activate 'exit-recursive-edit)
   (add-hook 'after-make-frame-functions 'persp-init-frame)
+  (setq read-buffer-function 'persp-read-buffer)
 
   (persp-init-frame (selected-frame))
   (setq persp-curr-buffers (buffer-list))
