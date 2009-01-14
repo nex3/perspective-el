@@ -25,13 +25,23 @@ See also `with-temp-buffer'."
            (if (buffer-live-p ,old-buffer)
                (set-buffer ,old-buffer)))))))
 
-(defvar persp-initialized nil
-  "Non-nil if the perspectives system has been initialized.")
-
 (defstruct (perspective
             (:conc-name persp-)
             (:constructor make-persp-internal))
   name window-configuration buffers)
+
+(defvar persp-mode-map (make-sparse-keymap)
+  "Keymap for perspective-mode.")
+
+(define-prefix-command 'perspective 'perspective-map)
+(define-key persp-mode-map (kbd "C-x x") perspective-map)
+
+(define-key persp-mode-map (kbd "C-x x n") 'persp-new)
+(define-key persp-mode-map (kbd "C-x x s") 'persp-switch)
+(define-key persp-mode-map (kbd "C-x x k") 'persp-remove-buffer)
+(define-key persp-mode-map (kbd "C-x x c") 'persp-kill)
+(define-key persp-mode-map (kbd "C-x x r") 'persp-rename)
+(define-key persp-mode-map (kbd "C-x x i") 'persp-import)
 
 ;; make-variable-frame-local is obsolete according to the docs,
 ;; but I don't want to have to manually munge frame-parameters
@@ -296,7 +306,7 @@ See also `persp-switch' and `persp-remove-buffer'."
   (interactive "bAdd buffer to perspective: \n")
   (push (get-buffer buffer) (persp-buffers persp-curr)))
 
-(defun* persp-buffer-in-other-p (buffer)
+(defun* persp-bufferx-in-other-p (buffer)
   "Returns nil if BUFFER is only in the current perspective.
 Otherwise, returns (FRAME . NAME), the frame and name of another
 perspective that has the buffer."
@@ -450,18 +460,28 @@ See also `persp-add-buffer'."
   (if persp-recursive-name (persp-switch (persp-name persp-recursive))))
 
 ;; TODO: Make this a mode
-(defun persp-init ()
-  "Initialize the perspectives system."
-  (interactive)
-  (ad-activate 'switch-to-buffer)
-  (ad-activate 'recursive-edit)
-  (ad-activate 'exit-recursive-edit)
-  (add-hook 'after-make-frame-functions 'persp-init-frame)
-  (setq read-buffer-function 'persp-read-buffer)
+;;;###autoload
+(define-minor-mode persp-mode
+  "Toggle perspective mode.
+When active, keeps track of multiple 'perspectives',
+named collections of buffers and window configurations."
+  :global t
+  :keymap persp-mode-map
+  (if persp-mode
+      (progn
+        (ad-activate 'switch-to-buffer)
+        (ad-activate 'recursive-edit)
+        (ad-activate 'exit-recursive-edit)
+        (add-hook 'after-make-frame-functions 'persp-init-frame)
+        (setq read-buffer-function 'persp-read-buffer)
 
-  (persp-init-frame (selected-frame))
-  (setf (persp-buffers persp-curr) (buffer-list))
-  (setq persp-initialized t))
+        (persp-init-frame (selected-frame))
+        (setf (persp-buffers persp-curr) (buffer-list)))
+    (ad-deactivate-regexp "^persp-.*")
+    (remove-hook 'after-make-frame-functions 'persp-init-frame)
+    (setq read-buffer-function nil)
+    (setq perspectives-hash nil)
+    (setq global-mode-string (delq 'persp-modestring global-mode-string))))
 
 (defun persp-init-frame (frame)
   "Initialize the perspectives system in FRAME
@@ -486,7 +506,7 @@ See also `persp-add-buffer'."
   "Binds all C-S-letter key combinations to switch to the first
 perspective beginning with the given letter."
   (loop for c from ?a to ?z
-        do (global-set-key
+        do (define-key persp-mode-map
             (read-kbd-macro (concat "C-S-" (string c)))
             `(lambda ()
                (interactive)
@@ -501,18 +521,5 @@ perspective beginning with the given letter."
   (interactive)
   (setq persp-show-modestring t)
   (persp-update-modestring))
-
-(define-prefix-command 'perspective 'perspective-map)
-(global-set-key (read-kbd-macro "C-x x") perspective-map)
-
-(global-set-key (read-kbd-macro "C-x x n") 'persp-new)
-(global-set-key (read-kbd-macro "C-x x s") 'persp-switch)
-(global-set-key (read-kbd-macro "C-x x k") 'persp-remove-buffer)
-(global-set-key (read-kbd-macro "C-x x c") 'persp-kill)
-(global-set-key (read-kbd-macro "C-x x r") 'persp-rename)
-(global-set-key (read-kbd-macro "C-x x i") 'persp-import)
-
-(unless persp-initialized
-  (persp-init))
 
 (provide 'perspective)
