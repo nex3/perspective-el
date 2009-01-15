@@ -28,7 +28,7 @@ See also `with-temp-buffer'."
 (defstruct (perspective
             (:conc-name persp-)
             (:constructor make-persp-internal))
-  name window-configuration buffers)
+  name window-configuration buffers buffer-history)
 
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
@@ -95,6 +95,7 @@ perspective."))
 (defun persp-save ()
   "Save the current window configuration to `persp-curr'"
   (when persp-curr
+    (setf (persp-buffer-history persp-curr) buffer-name-history)
     (setf (persp-window-configuration persp-curr) (current-window-configuration))))
 
 (defun persp-names ()
@@ -262,6 +263,7 @@ and the perspective's window configuration is restored."
   (persp-save)
   (setq persp-curr persp)
   (persp-reactivate-buffers (persp-buffers persp))
+  (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp)))
 
 (defun persp-switch-quick (char)
@@ -379,8 +381,6 @@ With a prefix arg, uses the old `read-buffer' instead."
   (let ((read-buffer-function nil))
     (if current-prefix-arg
         (read-buffer prompt def require-match)
-      ;; TODO: Let-bind buffer-name-history to use persp-local history
-      ;;
       ;; Most of this is taken from `minibuffer-with-setup-hook',
       ;; slightly modified because it's not a macro.
       ;; The only functional difference is that the append argument
