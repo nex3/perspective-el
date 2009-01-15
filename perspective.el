@@ -508,7 +508,8 @@ named collections of buffers and window configurations."
       (persp-update-modestring))))
 
 (defun persp-set-ido-buffers ()
-  (setq ido-temp-list (mapcar 'buffer-name (persp-buffers persp-curr))))
+  (setq ido-temp-list
+        (remq nil (mapcar 'buffer-name (persp-buffers persp-curr)))))
 
 (defun quick-perspective-keys ()
   "Binds all C-S-letter key combinations to switch to the first
