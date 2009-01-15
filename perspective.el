@@ -50,7 +50,8 @@ See also `with-temp-buffer'."
  (defvar perspectives-hash nil
    "A hash containing all perspectives. The keys are the
 perspetives' names. The values are persp structs,
-with the fields NAME, WINDOW-CONFIGURATION, and BUFFERS.
+with the fields NAME, WINDOW-CONFIGURATION, BUFFERS,
+and BUFFER-HISTORY.
 
 NAME is the name of the perspective.
 
@@ -60,6 +61,9 @@ saved (if this isn't the current perspective, this is when the
 perspective was last active).
 
 BUFFERS is a list of buffer objects that are associated with this
+perspective.
+
+BUFFER-HISTORY is the list of buffer history values for this
 perspective."))
 
 (make-variable-frame-local
