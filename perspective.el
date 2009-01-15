@@ -312,7 +312,7 @@ See also `persp-switch' and `persp-remove-buffer'."
   (interactive "bAdd buffer to perspective: \n")
   (push (get-buffer buffer) (persp-buffers persp-curr)))
 
-(defun* persp-bufferx-in-other-p (buffer)
+(defun* persp-buffer-in-other-p (buffer)
   "Returns nil if BUFFER is only in the current perspective.
 Otherwise, returns (FRAME . NAME), the frame and name of another
 perspective that has the buffer."
