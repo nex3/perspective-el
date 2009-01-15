@@ -476,12 +476,14 @@ named collections of buffers and window configurations."
         (ad-activate 'recursive-edit)
         (ad-activate 'exit-recursive-edit)
         (add-hook 'after-make-frame-functions 'persp-init-frame)
+        (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
 
         (persp-init-frame (selected-frame))
         (setf (persp-buffers persp-curr) (buffer-list)))
     (ad-deactivate-regexp "^persp-.*")
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
+    (remove-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
     (setq read-buffer-function nil)
     (setq perspectives-hash nil)
     (setq global-mode-string (delq 'persp-modestring global-mode-string))))
@@ -504,6 +506,10 @@ named collections of buffers and window configurations."
       (unless (memq 'persp-modestring global-mode-string)
         (setq global-mode-string (append global-mode-string '(persp-modestring))))
       (persp-update-modestring))))
+
+(defun persp-set-ido-buffers ()
+  (setq ido-temp-list
+        (remq nil (mapcar 'buffer-name (persp-buffers persp-curr)))))
 
 (defun quick-perspective-keys ()
   "Binds all C-S-letter key combinations to switch to the first
