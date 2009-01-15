@@ -459,7 +459,6 @@ See also `persp-add-buffer'."
   "Restore the old perspective when exiting a recursive edit."
   (if persp-recursive-name (persp-switch (persp-name persp-recursive))))
 
-;; TODO: Make this a mode
 ;;;###autoload
 (define-minor-mode persp-mode
   "Toggle perspective mode.
