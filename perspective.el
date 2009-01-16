@@ -386,12 +386,12 @@ With a prefix arg, uses the old `read-buffer' instead."
 
 (defun persp-complete-buffer ()
   "Perform completion on all buffers within the current perspective."
-  (apply-partially 'completion-table-with-predicate
-                   (or minibuffer-completion-table 'internal-complete-buffer)
-                   (lambda (name)
-                     (member (if (consp name) (car name) name)
-                             (mapcar 'buffer-name (persp-buffers persp-curr))))
-                   nil))
+  (lexical-let ((persp-names (mapcar 'buffer-name (persp-buffers persp-curr))))
+    (apply-partially 'completion-table-with-predicate
+                     (or minibuffer-completion-table 'internal-complete-buffer)
+                     (lambda (name)
+                       (member (if (consp name) (car name) name) persp-names))
+                     nil)))
 
 (defun* persp-import (name &optional dont-switch)
   "Import a perspective named NAME from another frame.  If DONT-SWITCH
