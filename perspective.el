@@ -41,6 +41,7 @@ See also `with-temp-buffer'."
 (define-key persp-mode-map (kbd "C-x x k") 'persp-remove-buffer)
 (define-key persp-mode-map (kbd "C-x x c") 'persp-kill)
 (define-key persp-mode-map (kbd "C-x x r") 'persp-rename)
+(define-key persp-mode-map (kbd "C-x x a") 'persp-add-buffer)
 (define-key persp-mode-map (kbd "C-x x i") 'persp-import)
 
 ;; make-variable-frame-local is obsolete according to the docs,
