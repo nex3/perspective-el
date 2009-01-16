@@ -268,7 +268,7 @@ See `persp-switch', `persp-get-quick'."
 This function tries to return the \"most appropriate\"
 perspective to switch to. It tries:
 
-  * The perspective given by `persp-last-name'.
+  * The perspective given by `persp-last'.
   * The main perspective.
   * The first existing perspective, alphabetically.
 
@@ -334,8 +334,10 @@ perspective and no others are killed."
     (mapcar 'persp-remove-buffer (persp-buffers persp-curr)))
   (remhash name perspectives-hash)
   (persp-update-modestring)
-  (if (equal name (persp-name persp-curr))
-      (persp-switch (persp-find-some))))
+  (when (equal name (persp-name persp-last))
+    (setq persp-last nil))
+  (when (equal name (persp-name persp-curr))
+    (persp-switch (persp-find-some))))
 
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
