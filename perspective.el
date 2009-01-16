@@ -143,12 +143,12 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
 name NAME, and switch to the new perspective.
 
 The new perspective initially has only one buffer: a
-Lisp-interaction buffer called \"*scratch* (NAME)\"."
+`initial-major-mode' buffer called \"*scratch* (NAME)\"."
   (interactive "sNew perspective: \n")
   (persp-save)
   (setq persp-curr (make-persp :name name))
   (switch-to-buffer (concat "*scratch* (" name ")"))
-  (lisp-interaction-mode)
+  (funcall initial-major-mode)
   (delete-other-windows)
   (persp-update-modestring))
 
