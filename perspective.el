@@ -333,6 +333,7 @@ perspective and no others are killed."
   (with-perspective name
     (mapcar 'persp-remove-buffer (persp-buffers persp-curr)))
   (remhash name perspectives-hash)
+  (persp-update-modestring)
   (if (equal name (persp-name persp-curr))
       (persp-switch (persp-find-some))))
 
