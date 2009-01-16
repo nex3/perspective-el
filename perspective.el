@@ -159,21 +159,6 @@ Lisp-interaction buffer called \"*scratch* (NAME)\"."
   (delete-other-windows)
   (persp-update-modestring))
 
-(defun persp-remove-dups (list &optional test)
-  "Remove duplicate items from LIST.
-
-TEST is a hash table test used to determine if two elements are
-equal. It defaults to `equal', but can also be set to `eq',
-`eql', or a test defined by `define-hash-table-test'.
-
-For example, (persp-remove-dups '(1 2 1 3 2 4 3 5)) gives '(1 2 3 4 5)."
-  (let ((seen (make-hash-table :test (or test 'equal))))
-    (loop for item in list
-          if (not (gethash item seen))
-            collect item into result
-            and do (puthash item t seen)
-          finally return result)))
-
 (defun persp-reactivate-buffers (buffers)
   "\"Reactivate\" BUFFERS by raising them to the top of the
 most-recently-selected list. The result is BUFFERS with all
@@ -310,7 +295,9 @@ create a new main perspective and return \"main\"."
 
 See also `persp-switch' and `persp-remove-buffer'."
   (interactive "bAdd buffer to perspective: \n")
-  (push (get-buffer buffer) (persp-buffers persp-curr)))
+  (let ((buffer (get-buffer buffer)))
+    (unless (memq buffer (persp-buffers persp-curr))
+      (push buffer (persp-buffers persp-curr)))))
 
 (defun* persp-buffer-in-other-p (buffer)
   "Returns nil if BUFFER is only in the current perspective.
