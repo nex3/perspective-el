@@ -3,7 +3,7 @@
 ;;
 ;; Licensed under the same terms as Emacs.
 
-(eval-when-compile (require 'cl))
+(require 'cl)
 
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
@@ -110,23 +110,15 @@ perspective."))
          collect name)
    'string<))
 
-(defun persp-union (&rest lists)
-  "Returns the union of each sublist of LISTS."
-  (loop for l on lists
-        append (if (null (cdr l)) (car l)
-                 (let ((list1 (car l)) (list2 (cadr l)))
-                   (loop for el in list1
-                         unless (member el list2) collect el)))))
-
 (defun persp-all-names (&optional not-frame)
   "Return a list of the perspective names for all frames
 except NOT-FRAME (if passed)."
-  (apply 'persp-union
-         (mapcar
-          (lambda (frame)
-            (unless (equal frame not-frame)
-              (with-selected-frame frame (persp-names))))
-          (frame-list))))
+  (reduce 'union
+          (mapcar
+           (lambda (frame)
+             (unless (equal frame not-frame)
+               (with-selected-frame frame (persp-names))))
+           (frame-list))))
 
 (defun persp-prompt (&optional default require-match)
   "Prompt for the name of a perspective.
@@ -172,14 +164,14 @@ See also `other-buffer'."
           and do (switch-to-buffer buf)
         finally return (reverse living-buffers)))
 
-(defun persp-intersperse (list val)
+(defun persp-intersperse (list interspersed-val)
   "Insert VAL between every pair of items in LIST and return the resulting list.
 
 For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
-  (if (or (null list) (null (cdr list))) list
-    (cons (car list)
-          (cons val
-                (persp-intersperse (cdr list) val)))))
+  (reverse
+   (reduce
+    (lambda (list el) (if list (list* el interspersed-val list) (list el)))
+    list :initial-value nil)))
 
 (defconst persp-mode-line-map
   (let ((map (make-sparse-keymap)))
