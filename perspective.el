@@ -337,7 +337,8 @@ perspective and no others are killed."
   (when (equal name (persp-name persp-last))
     (setq persp-last nil))
   (when (equal name (persp-name persp-curr))
-    (persp-switch (persp-find-some))))
+    ;; Don't let persp-last get set to the deleted persp.
+    (let ((persp-last persp-last)) (persp-switch (persp-find-some)))))
 
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
