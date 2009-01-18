@@ -28,7 +28,10 @@ See also `with-temp-buffer'."
 (defstruct (perspective
             (:conc-name persp-)
             (:constructor make-persp-internal))
-  name window-configuration buffers buffer-history)
+  name window-configuration buffers buffer-history killed)
+
+(defalias 'persp-killed-p 'persp-killed
+  "Return whether the perspective CL-X has been killed.")
 
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
@@ -90,6 +93,14 @@ perspective."))
 (defface persp-selected-face
   '((t (:weight bold :foreground "Blue")))
   "The face used to highlight the current perspective on the modeline.")
+
+(defun check-persp (persp)
+  "Raise an error if PERSP has been killed."
+  (cond
+   ((not persp)
+    (error "Expected perspective, was nil"))
+   ((persp-killed-p persp)
+    (error "Using killed perspective `%s'" (persp-name persp)))))
 
 (defun make-persp (&rest args)
   "Create a new perspective struct and put it in `perspectives-hash'."
@@ -242,6 +253,7 @@ and the perspective's window configuration is restored."
 
 (defun persp-activate (persp)
   "Activate the perspective given by the persp struct PERSP."
+  (check-persp persp)
   (persp-save)
   (setq persp-curr persp)
   (persp-reactivate-buffers (persp-buffers persp))
@@ -331,7 +343,8 @@ perspective and no others are killed."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (persp-name persp-curr) t)))
   (with-perspective name
-    (mapcar 'persp-remove-buffer (persp-buffers persp-curr)))
+    (mapcar 'persp-remove-buffer (persp-buffers persp-curr))
+    (setf (persp-killed persp-curr) t))
   (remhash name perspectives-hash)
   (persp-update-modestring)
   (when (equal name (persp-name persp-last))
