@@ -115,17 +115,16 @@ for the perspective."
     (while (keywordp (car args))
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
-    (when args
-      ;; Body form given
-      (setq keywords
-            `(:window-configuration
-              (save-excursion
-                (save-window-excursion
-                  ,@args
-                  (current-window-configuration)))
-              ,@keywords)))
     `(let ((persp (make-persp-internal ,@keywords)))
        (puthash (persp-name persp) persp perspectives-hash)
+       ,(when args
+          ;; Body form given
+          `(with-perspective (persp-name persp)
+             (setf (persp-window-configuration persp-curr)
+                   (save-excursion
+                     (save-window-excursion
+                       ,@args
+                       (current-window-configuration))))))
        persp)))
 
 (defun persp-save ()
