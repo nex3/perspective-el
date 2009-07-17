@@ -28,7 +28,7 @@ See also `with-temp-buffer'."
 (defstruct (perspective
             (:conc-name persp-)
             (:constructor make-persp-internal))
-  name buffers killed
+  name buffers killed local-variables
   (buffer-history buffer-name-history)
   (window-configuration (current-window-configuration)))
 
@@ -56,7 +56,7 @@ See also `with-temp-buffer'."
    "A hash containing all perspectives. The keys are the
 perspetives' names. The values are persp structs,
 with the fields NAME, WINDOW-CONFIGURATION, BUFFERS,
-and BUFFER-HISTORY.
+BUFFER-HISTORY, KILLED, and LOCAL-VARIABLES.
 
 NAME is the name of the perspective.
 
@@ -69,7 +69,12 @@ BUFFERS is a list of buffer objects that are associated with this
 perspective.
 
 BUFFER-HISTORY is the list of buffer history values for this
-perspective."))
+perspective.
+
+KILLED is non-nil if the perspective has been killed.
+
+LOCAL-VARIABLES is an alist from variable names to their
+perspective-local values."))
 
 (make-variable-frame-local
  (defvar persp-curr nil
@@ -116,6 +121,8 @@ for the perspective."
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
     `(let ((persp (make-persp-internal ,@keywords)))
+       (when persp-curr
+         (setf (persp-local-variables persp) (persp-local-variables persp-curr)))
        (puthash (persp-name persp) persp perspectives-hash)
        ,(when args
           ;; Body form given
@@ -128,8 +135,15 @@ for the perspective."
        persp)))
 
 (defun persp-save ()
-  "Save the current window configuration to `persp-curr'"
+  "Save the current window configuration and perspective-local
+variables to `persp-curr'"
   (when persp-curr
+    (setf (persp-local-variables persp-curr)
+          (mapcar
+           (lambda (c)
+             (let ((name (car c)))
+               (list name (symbol-value name))))
+           (persp-local-variables persp-curr)))
     (setf (persp-buffer-history persp-curr) buffer-name-history)
     (setf (persp-window-configuration persp-curr) (current-window-configuration))))
 
@@ -187,6 +201,11 @@ See also `other-buffer'."
           collect buf into living-buffers
           and do (switch-to-buffer buf)
         finally return (reverse living-buffers)))
+
+(defun persp-set-local-variables (vars)
+  "Set the local variables given in VARS,
+which should be an alist of variable names to values."
+  (dolist (var vars) (apply 'set var)))
 
 (defun persp-intersperse (list interspersed-val)
   "Insert VAL between every pair of items in LIST and return the resulting list.
@@ -251,8 +270,9 @@ This is used for cycling between perspectives."
 create a new perspective and switch to that.
 
 Switching to a perspective means that all buffers associated with
-that perspective are reactivated (see `persp-reactivate-buffers')
-and the perspective's window configuration is restored."
+that perspective are reactivated (see `persp-reactivate-buffers'),
+the perspective's window configuration is restored, and the
+perspective's local variables are set."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (and persp-last (persp-name persp-last)))))
   (if (equal name (persp-name persp-curr)) name
@@ -269,6 +289,7 @@ and the perspective's window configuration is restored."
   (check-persp persp)
   (persp-save)
   (setq persp-curr persp)
+  (persp-set-local-variables (persp-local-variables persp))
   (persp-reactivate-buffers (persp-buffers persp))
   (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
@@ -517,6 +538,18 @@ named collections of buffers and window configurations."
     (persp-activate
      (make-persp :name "main" :buffers (list (current-buffer))
        :window-configuration (current-window-configuration)))))
+
+(defun persp-make-variable-persp-local (variable)
+  "Make VARIABLE become perspective-local.
+This means that whenever a new perspective is switched into, the
+variable will take on its local value for that perspective. When
+a new perspective is created, the variable will inherit its value
+from the current perspective at time of creation."
+  (unless (assq variable (persp-local-variables persp-curr))
+    (let ((entry (list variable (symbol-value variable))))
+      (dolist (frame (frame-list))
+        (loop for persp being the hash-values of (with-selected-frame frame perspectives-hash)
+              do (push entry (persp-local-variables persp)))))))
 
 (defun persp-set-ido-buffers ()
   (setq ido-temp-list
