@@ -109,7 +109,9 @@ perspective-local values."))
 (put 'persp-modestring 'risky-local-variable t)
 
 (defvar persp-show-modestring t
-  "Determines if `persp-modestring' is shown in the modeline.")
+  "Determines if `persp-modestring' is shown in the modeline.
+If the value is 'header, `persp-modestring' is shown in the
+header line instead.")
 
 (defface persp-selected-face
   '((t (:weight bold :foreground "Blue")))
@@ -550,9 +552,13 @@ named collections of buffers and window configurations."
     (setq perspectives-hash (make-hash-table :test 'equal :size 10))
 
     (when persp-show-modestring
-      (setq global-mode-string (or global-mode-string '("")))
-      (unless (memq 'persp-modestring global-mode-string)
-        (setq global-mode-string (append global-mode-string '(persp-modestring))))
+      (if (eq persp-show-modestring 'header)
+          (let ((val (or (default-value 'header-line-format) '(""))))
+            (unless (memq 'persp-modestring val)
+              (set-default 'header-line-format (append val '(persp-modestring)))))
+        (setq global-mode-string (or global-mode-string '("")))
+        (unless (memq 'persp-modestring global-mode-string)
+          (setq global-mode-string (append global-mode-string '(persp-modestring)))))
       (persp-update-modestring))
 
     (persp-activate
