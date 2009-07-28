@@ -35,6 +35,21 @@ See also `with-temp-buffer'."
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
+(defvar persp-mode-hook nil
+  "A hook that's run after persp-mode has been activated.")
+
+(defvar persp-created-hook nil
+  "A hook that's run after a perspective has been created.
+Run with the newly created perspective as `persp-curr'.")
+
+(defvar persp-killed-hook nil
+  "A hook that's run just before a perspective is destroyed.
+Run with the perspective to be destroyed as `persp-curr'.")
+
+(defvar persp-activated-hook nil
+  "A hook that's run after a perspective has been activated.
+Run with the activated perspective active.")
+
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
 
@@ -124,14 +139,15 @@ for the perspective."
        (when persp-curr
          (setf (persp-local-variables persp) (persp-local-variables persp-curr)))
        (puthash (persp-name persp) persp perspectives-hash)
-       ,(when args
-          ;; Body form given
-          `(with-perspective (persp-name persp)
-             (setf (persp-window-configuration persp-curr)
+       (with-perspective (persp-name persp)
+         ,(when args
+            ;; Body form given
+            `(setf (persp-window-configuration persp-curr)
                    (save-excursion
                      (save-window-excursion
                        ,@args
-                       (current-window-configuration))))))
+                       (current-window-configuration)))))
+         (run-hooks 'persp-created-hook))
        persp)))
 
 (defun persp-save ()
@@ -293,7 +309,8 @@ perspective's local variables are set."
   (persp-reactivate-buffers (persp-buffers persp))
   (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
-  (persp-update-modestring))
+  (persp-update-modestring)
+  (run-hooks 'persp-activated-hook))
 
 (defun persp-switch-quick (char)
   "Switches to the first perspective, alphabetically, that begins with CHAR.
@@ -378,6 +395,7 @@ perspective and no others are killed."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (persp-name persp-curr) t)))
   (with-perspective name
+    (run-hooks 'persp-killed-hook)
     (mapcar 'persp-remove-buffer (persp-buffers persp-curr))
     (setf (persp-killed persp-curr) t))
   (remhash name perspectives-hash)
@@ -509,7 +527,9 @@ named collections of buffers and window configurations."
         (setq read-buffer-function 'persp-read-buffer)
 
         (persp-init-frame (selected-frame))
-        (setf (persp-buffers persp-curr) (buffer-list)))
+        (setf (persp-buffers persp-curr) (buffer-list))
+
+        (run-hooks 'persp-mode-hook))
     (ad-deactivate-regexp "^persp-.*")
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
     (remove-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
