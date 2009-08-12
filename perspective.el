@@ -354,8 +354,9 @@ create a new main perspective and return \"main\"."
 
 See also `persp-switch' and `persp-remove-buffer'."
   (interactive
-   (let ((read-buffer-function nil))
-     (read-buffer "Add buffer to perspective: ")))
+   (list
+    (let ((read-buffer-function nil))
+      (read-buffer "Add buffer to perspective: "))))
   (let ((buffer (get-buffer buffer)))
     (unless (memq buffer (persp-buffers persp-curr))
       (push buffer (persp-buffers persp-curr)))))
