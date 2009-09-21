@@ -497,7 +497,7 @@ See also `persp-add-buffer'."
 (defadvice recursive-edit (around persp-preserve-for-recursive-edit)
   "Preserve the current perspective when entering a recursive edit."
   (persp-save)
-  (let ((persp-recursive-name (persp-name persp-curr))
+  (let ((persp-recursive persp-curr)
         (old-hash (copy-hash-table perspectives-hash)))
     ad-do-it
     ;; We want the buffer lists that were created in the recursive edit,
@@ -511,7 +511,7 @@ See also `persp-add-buffer'."
 
 (defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
   "Restore the old perspective when exiting a recursive edit."
-  (if persp-recursive-name (persp-switch (persp-name persp-recursive))))
+  (if persp-recursive (persp-switch (persp-name persp-recursive))))
 
 ;;;###autoload
 (define-minor-mode persp-mode
