@@ -3,6 +3,22 @@
 ;;
 ;; Licensed under the same terms as Emacs.
 
+
+;;; Commentary:
+
+;; This package provides tagged workspaces in Emacs, similar to
+;; workspaces in windows managers such as Awesome and XMonad (and
+;; somewhat similar to multiple desktops in Gnome or Spaces in OS X).
+
+;; perspective.el provides multiple workspaces (or "perspectives") for
+;; each Emacs frame. This makes it easy to work on many separate projects
+;; without getting lost in all the buffers.
+
+;; Each perspective is composed of a window configuration and a set of
+;; buffers. Switching to a perspective activates its window
+;; configuration, and when in a perspective only its buffers are
+;; available by default.
+
 (require 'cl)
 
 ;; This is only available in Emacs >23,
