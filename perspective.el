@@ -11,15 +11,17 @@
 ;; somewhat similar to multiple desktops in Gnome or Spaces in OS X).
 
 ;; perspective.el provides multiple workspaces (or "perspectives") for
-;; each Emacs frame. This makes it easy to work on many separate projects
+;; each Emacs frame.  This makes it easy to work on many separate projects
 ;; without getting lost in all the buffers.
 
 ;; Each perspective is composed of a window configuration and a set of
-;; buffers. Switching to a perspective activates its window
+;; buffers.  Switching to a perspective activates its window
 ;; configuration, and when in a perspective only its buffers are
 ;; available by default.
 
 (require 'cl)
+
+;;; Code:
 
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
@@ -70,7 +72,7 @@ them in Emacs >= 23.2.  In older versions, this is identical to
   "Return whether the perspective CL-X has been killed.")
 
 (defvar persp-mode-hook nil
-  "A hook that's run after persp-mode has been activated.")
+  "A hook that's run after `persp-mode' has been activated.")
 
 (defvar persp-created-hook nil
   "A hook that's run after a perspective has been created.
@@ -187,8 +189,9 @@ for the perspective."
        persp)))
 
 (defun persp-save ()
-  "Save the current window configuration and perspective-local
-variables to `persp-curr'"
+  "Save the current perspective state.
+Specifically, save the current window configuration and
+perspective-local variables to `persp-curr'"
   (when persp-curr
     (setf (persp-local-variables persp-curr)
           (mapcar
@@ -207,8 +210,8 @@ variables to `persp-curr'"
    'string<))
 
 (defun persp-all-names (&optional not-frame)
-  "Return a list of the perspective names for all frames
-except NOT-FRAME (if passed)."
+  "Return a list of the perspective names for all frames.
+Excludes NOT-FRAME, if given."
   (reduce 'union
           (mapcar
            (lambda (frame)
@@ -229,23 +232,23 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
                    nil require-match nil nil default))
 
 (defmacro with-perspective (name &rest body)
-  "Evaluate BODY with the perspective given by NAME as the current perspective."
+  "Switch to the perspective given by NAME while evaluating BODY."
   (declare (indent 1))
   `(persp-frame-local-let ((persp-curr (gethash ,name perspectives-hash)))
      ,@body))
 
 (defun persp-new (name)
-  "Return a new perspective with name NAME, initialized with
-an `initial-major-mode' buffer called \"*scratch* (NAME)\"."
+  "Return a new perspective with name NAME.
+The new perspective will start with only an `initial-major-mode'
+buffer called \"*scratch* (NAME)\"."
   (make-persp :name name
     (switch-to-buffer (concat "*scratch* (" name ")"))
     (funcall initial-major-mode)
     (delete-other-windows)))
 
 (defun persp-reactivate-buffers (buffers)
-  "\"Reactivate\" BUFFERS by raising them to the top of the
-most-recently-selected list. The result is BUFFERS with all
-non-living buffers removed.
+  "Raise BUFFERS to the top of the most-recently-selected list.
+Returns BUFFERS with all non-living buffers removed.
 
 See also `other-buffer'."
   (loop for buf in (reverse buffers)
@@ -255,12 +258,14 @@ See also `other-buffer'."
         finally return (reverse living-buffers)))
 
 (defun persp-set-local-variables (vars)
-  "Set the local variables given in VARS,
-which should be an alist of variable names to values."
+  "Set the local variables given in VARS.
+VARS should be an alist of variable names to values."
   (dolist (var vars) (apply 'set var)))
 
 (defun persp-intersperse (list interspersed-val)
-  "Insert VAL between every pair of items in LIST and return the resulting list.
+  "Intersperse a value into a list.
+Return a new list made from taking LIST and inserting
+INTERSPERSED-VAL between every pair of items.
 
 For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
   (reverse
@@ -274,13 +279,14 @@ For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
     map))
 
 (defun persp-mode-line-click (event)
-  "Select the clicked perspective."
+  "Select the clicked perspective.
+EVENT is the click event triggering this function call."
   (interactive "e")
   (persp-switch (format "%s" (car (posn-string (event-start event))))))
 
 (defun persp-update-modestring ()
-  "Update `persp-modestring' to reflect the current
-perspectives. Has no effect when `persp-show-modestring' is nil."
+  "Update `persp-modestring' to reflect the current perspectives.
+Has no effect when `persp-show-modestring' is nil."
   (when persp-show-modestring
     (setq persp-modestring
           (append '("[")
@@ -297,16 +303,15 @@ perspectives. Has no effect when `persp-show-modestring' is nil."
                   'mouse-face 'mode-line-highlight))))
 
 (defun persp-get-quick (char &optional prev)
-  "Returns the name of the first perspective, alphabetically,
-that begins with CHAR.
+  "Return the name of the first perspective that begins with CHAR.
+Perspectives are sorted alphabetically.
 
-PREV can be the name of a perspective. If it's passed,
+PREV can be the name of a perspective.  If it's passed,
 this will try to return the perspective alphabetically after PREV.
 This is used for cycling between perspectives."
   (persp-get-quick-helper char prev (persp-names)))
 
 (defun persp-get-quick-helper (char prev names)
-  "A helper method for `persp-get-quick'."
   (if (null names) nil
     (let ((name (car names)))
       (cond
@@ -318,8 +323,8 @@ This is used for cycling between perspectives."
        (t (persp-get-quick-helper char prev (cdr names)))))))
 
 (defun persp-switch (name)
-  "Switch to the perspective given by NAME. If it doesn't exist,
-create a new perspective and switch to that.
+  "Switch to the perspective given by NAME.
+If it doesn't exist, create a new perspective and switch to that.
 
 Switching to a perspective means that all buffers associated with
 that perspective are reactivated (see `persp-reactivate-buffers'),
@@ -349,7 +354,7 @@ perspective's local variables are set."
   (run-hooks 'persp-activated-hook))
 
 (defun persp-switch-quick (char)
-  "Switches to the first perspective, alphabetically, that begins with CHAR.
+  "Switch to the first perspective, alphabetically, that begins with CHAR.
 
 Sets `this-command' (and thus `last-command') to (persp-switch-quick . CHAR).
 
@@ -363,10 +368,10 @@ See `persp-switch', `persp-get-quick'."
       (error (concat "No perspective name begins with " (string char))))))
 
 (defun persp-find-some ()
-  "Returns the name of a valid perspective.
+  "Return the name of a valid perspective.
 
 This function tries to return the \"most appropriate\"
-perspective to switch to. It tries:
+perspective to switch to.  It tries:
 
   * The perspective given by `persp-last'.
   * The main perspective.
@@ -466,9 +471,10 @@ copied across frames."
           (if persp (return-from persp-all-get (persp-buffers persp))))))))
 
 (defun persp-read-buffer (prompt &optional def require-match)
-  "A replacement for the built-in `read-buffer', meant to be used with
-`read-buffer-function'. Return the name of the buffer selected, only
-selecting from buffers within the current perspective.
+  "A replacement for the built-in `read-buffer'.
+Meant to be used with `read-buffer-function'. Return the name of
+the buffer selected, only selecting from buffers within the
+current perspective.
 
 With a prefix arg, uses the old `read-buffer' instead."
   (let ((read-buffer-function nil))
@@ -513,7 +519,7 @@ is non-nil or with prefix arg, don't switch to the new perspective."
   (let ((buffers (persp-all-get name (selected-frame)))
         persp)
     (if (null buffers)
-        (error "Perspective `%s' doesn't exist in another frame." name))
+        (error "Perspective `%s' doesn't exist in another frame" name))
     (setq persp (make-persp :name name :buffers buffers
                   (switch-to-buffer (car buffers))
                   (delete-other-windows)))
@@ -575,8 +581,8 @@ named collections of buffers and window configurations."
     (setq global-mode-string (delq 'persp-modestring global-mode-string))))
 
 (defun persp-init-frame (frame)
-  "Initialize the perspectives system in FRAME
-\(by default, the current frame)."
+  "Initialize the perspectives system in FRAME.
+By default, this uses the current frame."
   (with-selected-frame frame
     (modify-frame-parameters
      frame
@@ -603,7 +609,7 @@ named collections of buffers and window configurations."
 (defun persp-make-variable-persp-local (variable)
   "Make VARIABLE become perspective-local.
 This means that whenever a new perspective is switched into, the
-variable will take on its local value for that perspective. When
+variable will take on its local value for that perspective.  When
 a new perspective is created, the variable will inherit its value
 from the current perspective at time of creation."
   (unless (assq variable (persp-local-variables persp-curr))
@@ -618,7 +624,8 @@ from the current perspective at time of creation."
           (or (remove-if (lambda (name) (eq (string-to-char name) ? )) names) names))))
 
 (defun quick-perspective-keys ()
-  "Binds all C-S-letter key combinations to switch to the first
+  "Bind quick key commands to switch to perspectives.
+All C-S-letter key combinations are bound to switch to the first
 perspective beginning with the given letter."
   (loop for c from ?a to ?z
         do (define-key persp-mode-map
@@ -628,13 +635,17 @@ perspective beginning with the given letter."
                (persp-switch-quick ,c)))))
 
 (defun persp-turn-off-modestring ()
+  "Deactivate the perspective modestring."
   (interactive)
   (setq persp-modestring nil)
   (setq persp-show-modestring nil))
 
 (defun persp-turn-on-modestring ()
+  "Activate the perspective modestring."
   (interactive)
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
 (provide 'perspective)
+
+;;; perspective.el ends here
