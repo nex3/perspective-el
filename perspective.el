@@ -25,6 +25,24 @@ See also `with-temp-buffer'."
            (if (buffer-live-p ,old-buffer)
                (set-buffer ,old-buffer)))))))
 
+(defmacro persp-frame-local-let (bindings &rest body)
+  "Like `let', but properly handles frame-local variables.
+Bind variables according to BINDINGS then eval BODY.
+
+In Emacs >= 23.2, frame-local variables are not reset after a
+`let' expression.  This hacks around that by manually resetting
+them in Emacs >= 23.2.  In older versions, this is identical to
+`let'."
+  (declare (indent 1))
+  (if (or (< emacs-major-version 23)
+          (and (= emacs-major-version 23) (< emacs-minor-version 2)))
+      `(let ,bindings ,@body)
+    (let ((binding-syms (mapcar (lambda (binding) (cons (car binding) (gensym))) bindings)))
+      `(let ,(mapcar (lambda (binding) (list (cdr binding) (car binding))) binding-syms)
+         (unwind-protect
+             (let ,bindings ,@body)
+           ,@(mapcar (lambda (binding) (list 'setq (car binding) (cdr binding))) binding-syms))))))
+
 (defstruct (perspective
             (:conc-name persp-)
             (:constructor make-persp-internal))
@@ -197,7 +215,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
 (defmacro with-perspective (name &rest body)
   "Evaluate BODY with the perspective given by NAME as the current perspective."
   (declare (indent 1))
-  `(let ((persp-curr (gethash ,name perspectives-hash)))
+  `(persp-frame-local-let ((persp-curr (gethash ,name perspectives-hash)))
      ,@body))
 
 (defun persp-new (name)
@@ -407,7 +425,7 @@ perspective and no others are killed."
     (setq persp-last nil))
   (when (equal name (persp-name persp-curr))
     ;; Don't let persp-last get set to the deleted persp.
-    (let ((persp-last persp-last)) (persp-switch (persp-find-some)))))
+    (persp-frame-local-let ((persp-last persp-last)) (persp-switch (persp-find-some)))))
 
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
@@ -497,8 +515,8 @@ See also `persp-add-buffer'."
 (defadvice recursive-edit (around persp-preserve-for-recursive-edit)
   "Preserve the current perspective when entering a recursive edit."
   (persp-save)
-  (let ((persp-recursive persp-curr)
-        (old-hash (copy-hash-table perspectives-hash)))
+  (persp-frame-local-let ((persp-recursive persp-curr)
+                          (old-hash (copy-hash-table perspectives-hash)))
     ad-do-it
     ;; We want the buffer lists that were created in the recursive edit,
     ;; but not the window configurations
