@@ -62,10 +62,17 @@ them in Emacs >= 23.2.  In older versions, this is identical to
           (and (= emacs-major-version 23) (< emacs-minor-version 2)))
       `(let ,bindings ,@body)
     (let ((binding-syms (mapcar (lambda (binding) (cons (car binding) (gensym))) bindings)))
-      `(let ,(mapcar (lambda (binding) (list (cdr binding) (car binding))) binding-syms)
+      `(let ,(mapcar (lambda (binding)
+                       (list (cdr binding)
+                             (let ((name (car binding)))
+                               `(if (boundp ',name) ,name nil))))
+                     binding-syms)
          (unwind-protect
              (let ,bindings ,@body)
-           ,@(mapcar (lambda (binding) (list 'setq (car binding) (cdr binding))) binding-syms))))))
+           ,@(mapcar (lambda (binding)
+                       (let ((name (car binding)))
+                         `(when (boundp ',name) (setq ,name ,(cdr binding)))))
+                     binding-syms))))))
 
 (defstruct (perspective
             (:conc-name persp-)
