@@ -352,7 +352,6 @@ perspective's local variables are set."
       (setq persp-last persp-curr)
       (when (null persp)
         (setq persp (persp-new name)))
-      (persp-save)
       (persp-activate persp)
       name)))
 
