@@ -73,7 +73,8 @@ them in Emacs >= 23.2.  In older versions, this is identical to
                                  `(when (boundp ',name) ,name))))
                        binding-syms)
            (unwind-protect
-               (progn ,@(setmap bindings))
+               (progn ,@(setmap bindings)
+                      ,@body)
              ,@(setmap binding-syms)))))))
 
 (defstruct (perspective
