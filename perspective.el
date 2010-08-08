@@ -546,7 +546,9 @@ is non-nil or with prefix arg, don't switch to the new perspective."
   "Add BUFFER to the current perspective.
 
 See also `persp-add-buffer'."
-  (persp-add-buffer (ad-get-arg 0)))
+  (let ((buf (ad-get-arg 0)))
+    (when buf
+      (persp-add-buffer buf))))
 
 (defadvice recursive-edit (around persp-preserve-for-recursive-edit)
   "Preserve the current perspective when entering a recursive edit."
