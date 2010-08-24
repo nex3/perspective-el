@@ -550,6 +550,17 @@ See also `persp-add-buffer'."
     (when buf
       (persp-add-buffer buf))))
 
+(defadvice display-buffer (after persp-add-buffer-adv)
+  "Add BUFFER to the perspective for the frame on which it's displayed.
+
+See also `persp-add-buffer'."
+  (when ad-return-value
+    (let ((buf (ad-get-arg 0))
+          (frame (window-frame ad-return-value)))
+      (when (and buf frame)
+        (with-selected-frame frame
+          (persp-add-buffer buf))))))
+
 (defadvice recursive-edit (around persp-preserve-for-recursive-edit)
   "Preserve the current perspective when entering a recursive edit."
   (persp-save)
@@ -579,6 +590,7 @@ named collections of buffers and window configurations."
   (if persp-mode
       (progn
         (ad-activate 'switch-to-buffer)
+        (ad-activate 'display-buffer)
         (ad-activate 'recursive-edit)
         (ad-activate 'exit-recursive-edit)
         (add-hook 'after-make-frame-functions 'persp-init-frame)
