@@ -250,8 +250,14 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
 (defmacro with-perspective (name &rest body)
   "Switch to the perspective given by NAME while evaluating BODY."
   (declare (indent 1))
-  `(persp-frame-local-let ((persp-curr (gethash ,name perspectives-hash)))
-     ,@body))
+  (let ((old (gensym)))
+    `(progn
+       (let ((,old (persp-name persp-curr)))
+         (unwind-protect
+             (progn
+               (persp-switch ,name)
+               ,@body)
+           (persp-switch ,old))))))
 
 (defun persp-new (name)
   "Return a new perspective with name NAME.
