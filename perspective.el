@@ -5,7 +5,7 @@
 
 ;; Author: Nathan Weizenbaum
 ;; URL: http://github.com/nex3/perspective-el
-;; Version: 1.3
+;; Version: 1.4
 ;; Created: 2008-03-05
 ;; By: Nathan Weizenbaum
 ;; Keywords: workspace, convenience, frames
