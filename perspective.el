@@ -652,6 +652,20 @@ from the current perspective at time of creation."
         (loop for persp being the hash-values of (with-selected-frame frame perspectives-hash)
               do (push entry (persp-local-variables persp)))))))
 
+(defmacro persp-setup-for (name &rest body)
+  "Add code that should be run to set up the perspective named NAME.
+Whenever a new perspective named NAME is created, runs BODY in
+it. In addition, if one exists already, runs BODY in it immediately."
+  (declare (indent 1))
+  `(progn
+     (add-hook 'persp-created-hook
+               (lambda ()
+                 (when (string= (persp-name persp-curr) ,name)
+                   ,@body))
+               'append)
+     (when (gethash ,name perspectives-hash)
+       (with-perspective ,name ,@body))))
+
 (defun persp-set-ido-buffers ()
   (setq ido-temp-list
         (let ((names (remq nil (mapcar 'buffer-name (persp-buffers persp-curr)))))
