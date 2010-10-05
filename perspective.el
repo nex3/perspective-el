@@ -206,11 +206,7 @@ for the perspective."
        (with-perspective (persp-name persp)
          ,(when args
             ;; Body form given
-            `(setf (persp-window-configuration persp-curr)
-                   (save-excursion
-                     (save-window-excursion
-                       ,@args
-                       (current-window-configuration)))))
+            `(save-excursion ,@args))
          (run-hooks 'persp-created-hook))
        persp)))
 
