@@ -169,6 +169,16 @@ header line instead.")
   '((t (:weight bold :foreground "Blue")))
   "The face used to highlight the current perspective on the modeline.")
 
+(defmacro persp-protect (&rest body)
+  "Wrap BODY to disable persp-mode when it errors out.
+This prevents the persp-mode from completely breaking Emacs."
+  (declare (indent 0))
+  `(condition-case err
+       (progn ,@body)
+     ((debug error)
+      (message "Error initializing persp-mode: %S" err)
+      (persp-mode -1))))
+
 (defun check-persp (persp)
   "Raise an error if PERSP has been killed."
   (cond
@@ -498,25 +508,26 @@ the buffer selected, only selecting from buffers within the
 current perspective.
 
 With a prefix arg, uses the old `read-buffer' instead."
-  (let ((read-buffer-function nil))
-    (if current-prefix-arg
-        (read-buffer prompt def require-match)
-      ;; Most of this is taken from `minibuffer-with-setup-hook',
-      ;; slightly modified because it's not a macro.
-      ;; The only functional difference is that the append argument
-      ;; to add-hook is t, so that it'll be run after the hook added
-      ;; by `read-buffer-to-switch'.
-      (let ((rb-completion-table (persp-complete-buffer))
-            (persp-read-buffer-hook))
-        (setq persp-read-buffer-hook
-              (lambda ()
-                (remove-hook 'minibuffer-setup-hook persp-read-buffer-hook)
-                (setq minibuffer-completion-table rb-completion-table)))
-        (unwind-protect
-            (progn
-              (add-hook 'minibuffer-setup-hook persp-read-buffer-hook t)
-              (read-buffer prompt def require-match))
-          (remove-hook 'minibuffer-setup-hook persp-read-buffer-hook))))))
+  (persp-protect
+    (let ((read-buffer-function nil))
+      (if current-prefix-arg
+          (read-buffer prompt def require-match)
+        ;; Most of this is taken from `minibuffer-with-setup-hook',
+        ;; slightly modified because it's not a macro.
+        ;; The only functional difference is that the append argument
+        ;; to add-hook is t, so that it'll be run after the hook added
+        ;; by `read-buffer-to-switch'.
+        (let ((rb-completion-table (persp-complete-buffer))
+              (persp-read-buffer-hook))
+          (setq persp-read-buffer-hook
+                (lambda ()
+                  (remove-hook 'minibuffer-setup-hook persp-read-buffer-hook)
+                  (setq minibuffer-completion-table rb-completion-table)))
+          (unwind-protect
+              (progn
+                (add-hook 'minibuffer-setup-hook persp-read-buffer-hook t)
+                (read-buffer prompt def require-match))
+            (remove-hook 'minibuffer-setup-hook persp-read-buffer-hook)))))))
 
 (defun persp-complete-buffer ()
   "Perform completion on all buffers within the current perspective."
@@ -552,39 +563,43 @@ is non-nil or with prefix arg, don't switch to the new perspective."
   "Add BUFFER to the current perspective.
 
 See also `persp-add-buffer'."
-  (let ((buf (ad-get-arg 0)))
-    (when buf
-      (persp-add-buffer buf))))
+  (persp-protect
+    (let ((buf (ad-get-arg 0)))
+      (when buf
+        (persp-add-buffer buf)))))
 
 (defadvice display-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the perspective for the frame on which it's displayed.
 
 See also `persp-add-buffer'."
-  (when ad-return-value
-    (let ((buf (ad-get-arg 0))
-          (frame (window-frame ad-return-value)))
-      (when (and buf frame)
-        (with-selected-frame frame
-          (persp-add-buffer buf))))))
+  (persp-protect
+    (when ad-return-value
+      (let ((buf (ad-get-arg 0))
+            (frame (window-frame ad-return-value)))
+        (when (and buf frame)
+          (with-selected-frame frame
+            (persp-add-buffer buf)))))))
 
 (defadvice recursive-edit (around persp-preserve-for-recursive-edit)
   "Preserve the current perspective when entering a recursive edit."
-  (persp-save)
-  (persp-frame-local-let ((persp-recursive persp-curr)
-                          (old-hash (copy-hash-table perspectives-hash)))
-    ad-do-it
-    ;; We want the buffer lists that were created in the recursive edit,
-    ;; but not the window configurations
-    (maphash (lambda (key new-persp)
-               (let ((persp (gethash key old-hash)))
-                 (when persp
-                   (setf (persp-buffers persp) (persp-buffers new-persp)))))
-             perspectives-hash)
-    (setq perspectives-hash old-hash)))
+  (persp-protect
+    (persp-save)
+    (persp-frame-local-let ((persp-recursive persp-curr)
+                            (old-hash (copy-hash-table perspectives-hash)))
+      ad-do-it
+      ;; We want the buffer lists that were created in the recursive edit,
+      ;; but not the window configurations
+      (maphash (lambda (key new-persp)
+                 (let ((persp (gethash key old-hash)))
+                   (when persp
+                     (setf (persp-buffers persp) (persp-buffers new-persp)))))
+               perspectives-hash)
+      (setq perspectives-hash old-hash))))
 
 (defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
   "Restore the old perspective when exiting a recursive edit."
-  (if persp-recursive (persp-switch (persp-name persp-recursive))))
+  (persp-protect
+    (if persp-recursive (persp-switch (persp-name persp-recursive)))))
 
 ;;;###autoload
 (define-minor-mode persp-mode
@@ -594,7 +609,7 @@ named collections of buffers and window configurations."
   :global t
   :keymap persp-mode-map
   (if persp-mode
-      (progn
+      (persp-protect
         (ad-activate 'switch-to-buffer)
         (ad-activate 'display-buffer)
         (ad-activate 'recursive-edit)
