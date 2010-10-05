@@ -262,12 +262,12 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   (declare (indent 1))
   (let ((old (gensym)))
     `(progn
-       (let ((,old (persp-name persp-curr)))
+       (let ((,old (when persp-curr (persp-name persp-curr))))
          (unwind-protect
              (progn
                (persp-switch ,name)
                ,@body)
-           (persp-switch ,old))))))
+           (when ,old (persp-switch ,old)))))))
 
 (defun persp-new (name)
   "Return a new perspective with name NAME.
@@ -364,7 +364,7 @@ the perspective's window configuration is restored, and the
 perspective's local variables are set."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (and persp-last (persp-name persp-last)))))
-  (if (equal name (persp-name persp-curr)) name
+  (if (and persp-curr (equal name (persp-name persp-curr))) name
     (let ((persp (gethash name perspectives-hash)))
       (setq persp-last persp-curr)
       (when (null persp)
