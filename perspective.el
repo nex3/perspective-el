@@ -550,7 +550,9 @@ is non-nil or with prefix arg, don't switch to the new perspective."
     (if (null buffers)
         (error "Perspective `%s' doesn't exist in another frame" name))
     (setq persp (make-persp :name name :buffers buffers
-                  (switch-to-buffer (car buffers))
+                  (switch-to-buffer (loop for buffer in buffers
+                                          if (buffer-live-p buffer)
+                                          return buffer))
                   (delete-other-windows)))
     (if dont-switch
         (persp-update-modestring)
