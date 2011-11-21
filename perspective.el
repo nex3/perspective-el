@@ -88,6 +88,10 @@ them in Emacs >= 23.2.  In older versions, this is identical to
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
+(defvar persp-interactive-completion-function
+  (if ido-mode 'ido-completing-read 'completing-read)
+  "The function which is used by perspective.el to interactivly complete user input")
+
 (defvar persp-mode-hook nil
   "A hook that's run after `persp-mode' has been activated.")
 
@@ -261,7 +265,7 @@ Excludes NOT-FRAME, if given."
 DEFAULT is a default value for the prompt.
 
 REQUIRE-MATCH can take the same values as in `completing-read'."
-  (completing-read (concat "Perspective name"
+  (funcall persp-interactive-completion-function (concat "Perspective name"
                            (if default (concat " (default " default ")") "")
                            ": ")
                    (persp-names)
@@ -272,12 +276,14 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   (declare (indent 1))
   (let ((old (gensym)))
     `(progn
-       (let ((,old (when persp-curr (persp-name persp-curr))))
+       (let ((,old (when persp-curr (persp-name persp-curr)))
+             (last-persp-cache persp-last))
          (unwind-protect
              (progn
                (persp-switch ,name)
                ,@body)
-           (when ,old (persp-switch ,old)))))))
+           (when ,old (persp-switch ,old)))
+         (setq persp-last last-persp-cache)))))
 
 (defun persp-new (name)
   "Return a new perspective with name NAME.
@@ -554,7 +560,8 @@ is non-nil or with prefix arg, don't switch to the new perspective."
   ;; TODO: Have some way of selecting which frame the perspective is imported from.
   (interactive "i\nP")
   (unless name
-    (setq name (completing-read "Import perspective: " (persp-all-names (selected-frame)) nil t)))
+    (setq name (funcall persp-interactive-completion-function
+                        "Import perspective: " (persp-all-names (selected-frame)) nil t)))
   (if (and (gethash name perspectives-hash)
            (not (yes-or-no-p (concat "Perspective `" name "' already exits. Continue? "))))
       (return-from persp-import))
