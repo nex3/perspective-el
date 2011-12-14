@@ -603,17 +603,17 @@ See also `persp-add-buffer'."
   "Preserve the current perspective when entering a recursive edit."
   (persp-protect
     (persp-save)
-    (persp-frame-local-let ((persp-recursive persp-curr)
-                            (old-hash (copy-hash-table perspectives-hash)))
-      ad-do-it
-      ;; We want the buffer lists that were created in the recursive edit,
-      ;; but not the window configurations
-      (maphash (lambda (key new-persp)
-                 (let ((persp (gethash key old-hash)))
-                   (when persp
-                     (setf (persp-buffers persp) (persp-buffers new-persp)))))
-               perspectives-hash)
-      (setq perspectives-hash old-hash))))
+    (persp-frame-local-let ((persp-recursive persp-curr))
+      (let ((old-hash (copy-hash-table perspectives-hash)))
+        ad-do-it
+        ;; We want the buffer lists that were created in the recursive edit,
+        ;; but not the window configurations
+        (maphash (lambda (key new-persp)
+                   (let ((persp (gethash key old-hash)))
+                     (when persp
+                       (setf (persp-buffers persp) (persp-buffers new-persp)))))
+                 perspectives-hash)
+        (setq perspectives-hash old-hash)))))
 
 (defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
   "Restore the old perspective when exiting a recursive edit."
