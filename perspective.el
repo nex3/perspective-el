@@ -245,8 +245,9 @@ perspective-local variables to `persp-curr'"
 (defun persp-names ()
   "Return a list of the names of all perspectives, sorted alphabetically."
   (sort
-   (loop for name being the hash-keys of perspectives-hash
-         collect name)
+   (when perspectives-hash
+     (loop for name being the hash-keys of perspectives-hash
+	   collect name))
    'string<))
 
 (defun persp-all-names (&optional not-frame)
@@ -452,6 +453,7 @@ See also `persp-switch' and `persp-remove-buffer'."
 Otherwise, returns (FRAME . NAME), the frame and name of another
 perspective that has the buffer."
   (loop for frame in (frame-list)
+	when (with-selected-frame frame perspectives-hash)
         do (loop for persp being the hash-values of (with-selected-frame frame perspectives-hash)
                  if (and (not (and (equal frame (selected-frame))
                                    (equal (persp-name persp) (persp-name persp-curr))))
@@ -466,14 +468,15 @@ perspective that has the buffer."
 See also `persp-switch' and `persp-add-buffer'."
   (interactive "bRemove buffer from perspective: \n")
   (setq buffer (get-buffer buffer))
-  ; Only kill the buffer if no other perspectives are using it
-  (cond ((not (persp-buffer-in-other-p buffer))
-         (kill-buffer buffer))
-        ;; Make the buffer go away if we can see it.
-        ;; TODO: Is it possible to tell if it's visible at all,
-        ;;       rather than just the current buffer?
-        ((eq buffer (current-buffer)) (bury-buffer))
-        (t (bury-buffer buffer)))
+  (when (buffer-live-p buffer)
+    ;; Only kill the buffer if no other perspectives are using it
+    (cond ((not (persp-buffer-in-other-p buffer))
+	   (kill-buffer buffer))
+	  ;; Make the buffer go away if we can see it.
+	  ;; TODO: Is it possible to tell if it's visible at all,
+	  ;;       rather than just the current buffer?
+	  ((eq buffer (current-buffer)) (bury-buffer))
+	  (t (bury-buffer buffer))))
   (setf (persp-buffers persp-curr) (remq buffer (persp-buffers persp-curr))))
 
 (defun persp-kill (name)
@@ -514,8 +517,9 @@ copied across frames."
   (dolist (frame (frame-list))
     (unless (equal frame not-frame)
       (with-selected-frame frame
-        (let ((persp (gethash name perspectives-hash)))
-          (if persp (return-from persp-all-get (persp-buffers persp))))))))
+	(when perspectives-hash
+	  (let ((persp (gethash name perspectives-hash)))
+	    (if persp (return-from persp-all-get (persp-buffers persp)))))))))
 
 (defun persp-read-buffer (prompt &optional def require-match)
   "A replacement for the built-in `read-buffer'.
