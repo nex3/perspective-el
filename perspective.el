@@ -414,6 +414,21 @@ See `persp-switch', `persp-get-quick'."
     (if persp (persp-switch persp)
       (persp-error (concat "No perspective name begins with " (string char))))))
 
+(defun persp-curr-position (offset)
+  (+ offset
+     (position (persp-name persp-curr)
+               (persp-all-names))))
+
+(defun persp-next ()
+  "Switch to next perspective"
+  (interactive)
+  (persp-switch (nth (persp-curr-position -1) (persp-all-names))))
+
+(defun persp-prev ()
+  "Switch to previous perspective"
+  (interactive)
+  (persp-switch (nth (persp-curr-position +1) (persp-all-names))))
+
 (defun persp-find-some ()
   "Return the name of a valid perspective.
 
