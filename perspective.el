@@ -636,8 +636,7 @@ named collections of buffers and window configurations."
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
-
-        (persp-init-frame (selected-frame))
+	(mapcar 'persp-init-frame (frame-list))
         (setf (persp-buffers persp-curr) (buffer-list))
 
         (run-hooks 'persp-mode-hook))
