@@ -121,6 +121,10 @@ Run with the activated perspective active.")
 (define-key persp-mode-map (kbd "C-x x r") 'persp-rename)
 (define-key persp-mode-map (kbd "C-x x a") 'persp-add-buffer)
 (define-key persp-mode-map (kbd "C-x x i") 'persp-import)
+(define-key persp-mode-map (kbd "C-x x n") 'persp-next)
+(define-key persp-mode-map (kbd "C-x x <right>") 'persp-next)
+(define-key persp-mode-map (kbd "C-x x p") 'persp-prev)
+(define-key persp-mode-map (kbd "C-x x <left>") 'persp-prev)
 
 ;; make-variable-frame-local is obsolete according to the docs,
 ;; but I don't want to have to manually munge frame-parameters
@@ -415,6 +419,20 @@ See `persp-switch', `persp-get-quick'."
     (setq this-command (cons this-command persp))
     (if persp (persp-switch persp)
       (persp-error (concat "No perspective name begins with " (string char))))))
+
+(defun persp-curr-position ()
+  "Retun the index of the current perpsective in `persp-all-names'."
+  (position (persp-name persp-curr) (persp-all-names))))
+
+(defun persp-next ()
+  "Switch to next perspective (to the right)."
+  (interactive)
+  (persp-switch (nth (1+ (persp-curr-position)) (persp-all-names))))
+
+(defun persp-prev ()
+  "Switch to previous perspective (to the left)."
+  (interactive)
+  (persp-switch (nth (1- (persp-curr-position)) (persp-all-names))))
 
 (defun persp-find-some ()
   "Return the name of a valid perspective.
