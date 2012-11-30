@@ -63,20 +63,22 @@ them in Emacs >= 23.2.  In older versions, this is identical to
           (and (= emacs-major-version 23) (< emacs-minor-version 2)))
       `(let ,bindings ,@body)
     (let ((binding-syms (mapcar (lambda (binding) (list (car binding) (gensym))) bindings)))
-      (flet ((setmap (bdgs)
-                     (mapcar (lambda (binding)
-                               (let ((name (car binding)))
-                                 `(when (boundp ',name) (setq ,name ,(cadr binding)))))
-                             bdgs)))
-        `(let ,(mapcar (lambda (binding)
-                         (list (cadr binding)
-                               (let ((name (car binding)))
-                                 `(when (boundp ',name) ,name))))
-                       binding-syms)
-           (unwind-protect
-               (progn ,@(setmap bindings)
-                      ,@body)
-             ,@(setmap binding-syms)))))))
+      ;; Each binding-sym is a pair (ORIGINAL-VALUE . WAS-BOUND).
+      `(let ,(mapcar (lambda (binding)
+                       (list (cadr binding)
+                             (let ((name (car binding)))
+                               `(cons (when (boundp ',name) ,name)
+                                      (boundp ',name)))))
+                     binding-syms)
+         (unwind-protect
+             (progn ,@(mapcar (lambda (binding) `(setq ,(car binding) ,(cadr binding))) bindings)
+                    ,@body)
+           ;; After the body, reset the original value of each binding sym if
+           ;; there was one, unbind it if there wasn't.
+           ,@(mapcar (lambda (binding)
+                       `(if (cdr ,(cadr binding))
+                            (setq ,(car binding) (car ,(cadr binding)))
+                          (makunbound ',(car binding)))) binding-syms))))))
 
 (defstruct (perspective
             (:conc-name persp-)
