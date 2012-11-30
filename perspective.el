@@ -119,6 +119,10 @@ Run with the activated perspective active.")
 (define-key persp-mode-map (kbd "C-x x r") 'persp-rename)
 (define-key persp-mode-map (kbd "C-x x a") 'persp-add-buffer)
 (define-key persp-mode-map (kbd "C-x x i") 'persp-import)
+(define-key persp-mode-map (kbd "C-x x n") 'persp-next)
+(define-key persp-mode-map (kbd "C-x x <right>") 'persp-next)
+(define-key persp-mode-map (kbd "C-x x p") 'persp-prev)
+(define-key persp-mode-map (kbd "C-x x <left>") 'persp-prev)
 
 ;; make-variable-frame-local is obsolete according to the docs,
 ;; but I don't want to have to manually munge frame-parameters
