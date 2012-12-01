@@ -1,12 +1,12 @@
 ;;; perspective.el --- switch between named "perspectives" of the editor
 
-;; Copyright (C) 2008-2010 Nathan Weizenbaum <nex342@gmail.com>
+;; Copyright (C) 2008-2012 Nathan Weizenbaum <nex342@gmail.com>
 ;;
 ;; Licensed under the same terms as Emacs.
 
 ;; Author: Nathan Weizenbaum
 ;; URL: http://github.com/nex3/perspective-el
-;; Version: 1.7
+;; Version: 1.8
 ;; Created: 2008-03-05
 ;; By: Nathan Weizenbaum
 ;; Keywords: workspace, convenience, frames
