@@ -723,15 +723,15 @@ it. In addition, if one exists already, runs BODY in it immediately."
   "Restrict the ido buffer to the current perspective."
   (let ((persp-names
          (remq nil (mapcar 'buffer-name (persp-buffers persp-curr))))
-        (indices (make-hash-table)))
-    (let ((i 0))
-      (dolist (elt ido-temp-list)
-        (puthash elt i indices)
-        (setq i (1+ i))))
+        (indices (make-hash-table :test 'equal)))
+    (loop for elt in ido-temp-list
+          for i upfrom 0
+          do (puthash (copy-sequence elt) i indices))
     (setq ido-temp-list
-          (sort persp-names (lambda (a b)
-                              (< (gethash a indices 10000)
-                                 (gethash b indices 10000)))))))
+          (let ((length (length ido-temp-list)))
+            (sort persp-names (lambda (a b)
+                                (< (gethash (copy-sequence a) indices length)
+                                   (gethash (copy-sequence b) indices length))))))))
 
 (defun quick-perspective-keys ()
   "Bind quick key commands to switch to perspectives.
