@@ -422,7 +422,7 @@ See `persp-switch', `persp-get-quick'."
 
 (defun persp-curr-position ()
   "Retun the index of the current perpsective in `persp-all-names'."
-  (position (persp-name persp-curr) (persp-all-names))))
+  (position (persp-name persp-curr) (persp-all-names)))
 
 (defun persp-next ()
   "Switch to next perspective (to the right)."
