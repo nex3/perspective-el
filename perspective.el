@@ -47,6 +47,16 @@ header line instead."
                  (const :tag "Modeline" t)
                  (const :tag "Header" 'header)))
 
+(defcustom persp-modestring-dividers '("[" "]" "|")
+  "Plist of strings used to created `persp-modestring'.
+First string is the start of the modestring, second is the
+closing of the mode string, and the last is the divider between
+perspectives."
+  :group 'perspective-mode
+  :type '(list (string :tag "Open")
+               (string :tag "Close")
+               (string :tag "Divider")))
+               
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
 (unless (fboundp 'with-selected-frame)
@@ -354,10 +364,14 @@ EVENT is the click event triggering this function call."
   "Update `persp-modestring' to reflect the current perspectives.
 Has no effect when `persp-show-modestring' is nil."
   (when persp-show-modestring
-    (setq persp-modestring
-          (append '("[")
-                  (persp-intersperse (mapcar 'persp-format-name (persp-names)) "|")
-                  '("]")))))
+    (let ((open (list (nth 0 persp-modestring-dividers)))
+          (close (list (nth 1 persp-modestring-dividers)))
+          (sep (nth 2 persp-modestring-dividers)))
+     (setq persp-modestring
+           (append open
+                   (persp-intersperse (mapcar 'persp-format-name
+                                              (persp-names)) sep)
+                   close)))))
 
 (defun persp-format-name (name)
   "Format the perspective name given by NAME for display in `persp-modestring'."
