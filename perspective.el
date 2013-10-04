@@ -37,6 +37,15 @@
   "Name used for the initial perspective when enabling `persp-mode'."
   :type 'string
   :group 'perspective-mode)
+  
+(defcustom persp-show-modestring t
+  "Determines if `persp-modestring' is shown in the modeline.
+If the value is 'header, `persp-modestring' is shown in the
+header line instead."
+  :group 'perspective-mode
+  :type '(choice (const :tag "Off" nil)
+                 (const :tag "Modeline" t)
+                 (const :tag "Header" 'header)))
 
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
@@ -178,11 +187,6 @@ perspective-local values."))
  (defvar persp-modestring nil
    "The string displayed in the modeline representing the perspectives."))
 (put 'persp-modestring 'risky-local-variable t)
-
-(defvar persp-show-modestring t
-  "Determines if `persp-modestring' is shown in the modeline.
-If the value is 'header, `persp-modestring' is shown in the
-header line instead.")
 
 (defvar persp-protected nil
   "Whether a perspective error should cause persp-mode to be disabled.
