@@ -34,8 +34,7 @@
   "Customization for Perspective mode")
 
 (defcustom persp-initial-frame-name "main"
-  "Name used for the initial perspective created when enabling
-  persp-mode."
+  "Name used for the initial perspective when enabling `persp-mode'."
   :type 'string
   :group 'perspective-mode)
 
