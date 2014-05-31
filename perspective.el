@@ -37,7 +37,7 @@
   "Name used for the initial perspective when enabling `persp-mode'."
   :type 'string
   :group 'perspective-mode)
-  
+
 (defcustom persp-show-modestring t
   "Determines if `persp-modestring' is shown in the modeline.
 If the value is 'header, `persp-modestring' is shown in the
@@ -56,7 +56,7 @@ perspectives."
   :type '(list (string :tag "Open")
                (string :tag "Close")
                (string :tag "Divider")))
-               
+
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
 (unless (fboundp 'with-selected-frame)
@@ -147,6 +147,7 @@ Run with the activated perspective active.")
 (define-key persp-mode-map (kbd "C-x x c") 'persp-kill)
 (define-key persp-mode-map (kbd "C-x x r") 'persp-rename)
 (define-key persp-mode-map (kbd "C-x x a") 'persp-add-buffer)
+(define-key persp-mode-map (kbd "C-x x A") 'persp-set-buffer)
 (define-key persp-mode-map (kbd "C-x x i") 'persp-import)
 (define-key persp-mode-map (kbd "C-x x n") 'persp-next)
 (define-key persp-mode-map (kbd "C-x x <right>") 'persp-next)
@@ -492,6 +493,17 @@ See also `persp-switch' and `persp-remove-buffer'."
   (let ((buffer (get-buffer buffer)))
     (unless (memq buffer (persp-buffers persp-curr))
       (push buffer (persp-buffers persp-curr)))))
+
+(defun persp-set-buffer (buffer-name)
+  "Associate BUFFER-NAME to current perspective and remove it from any other."
+  (cond ((get-buffer buffer-name)
+         (persp-add-buffer buffer-name)
+         (while (persp-buffer-in-other-p (get-buffer buffer-name))
+           (setq current-perspective persp-curr)
+           (persp-switch (cdr (persp-buffer-in-other-p (get-buffer buffer-name))))
+           (persp-remove-buffer buffer-name)
+           (persp-switch (persp-name current-perspective))))
+        (t (message "buffer %s doesn't exist" buffer-name))))
 
 (defun* persp-buffer-in-other-p (buffer)
   "Returns nil if BUFFER is only in the current perspective.
