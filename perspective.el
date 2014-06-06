@@ -495,14 +495,17 @@ See also `persp-switch' and `persp-remove-buffer'."
       (push buffer (persp-buffers persp-curr)))))
 
 (defun persp-set-buffer (buffer-name)
-  "Associate BUFFER-NAME to current perspective and remove it from any other."
+  "Associate BUFFER-NAME with the current perspective and remove it from any other."
+  (interactive
+   (list
+    (let ((read-buffer-function nil))
+      (read-buffer "Set buffer to perspective: "))))
   (cond ((get-buffer buffer-name)
          (persp-add-buffer buffer-name)
-         (while (persp-buffer-in-other-p (get-buffer buffer-name))
-           (setq current-perspective persp-curr)
-           (persp-switch (cdr (persp-buffer-in-other-p (get-buffer buffer-name))))
-           (persp-remove-buffer buffer-name)
-           (persp-switch (persp-name current-perspective))))
+         (loop for other-persp = (persp-buffer-in-other-p (get-buffer buffer-name))
+               while other-persp
+               do (with-perspective (cdr other-persp)
+                    (persp-remove-buffer buffer-name))))
         (t (message "buffer %s doesn't exist" buffer-name))))
 
 (defun* persp-buffer-in-other-p (buffer)
