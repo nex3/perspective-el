@@ -1,8 +1,11 @@
+# Perspective for Emacs
+
+## Description
 This package provides tagged workspaces in Emacs, similar to workspaces in
 windows managers such as Awesome and XMonad (and somewhat similar to multiple
 desktops in Gnome or Spaces in OS X).
 
-perspective.el provides multiple workspaces (or "perspectives") for each Emacs
+`perspective.el` provides multiple workspaces (or "perspectives") for each Emacs
 frame. This makes it easy to work on many separate projects without getting lost
 in all the buffers.
 
@@ -15,3 +18,24 @@ package-install`. Alternately, you may put it in your load path and run
 `(require 'perspective)`.
 
 [Marmalade]: http://marmalade-repo.org/
+
+## Usage
+
+To active perspective use `(persp-mode)`
+
+Command are all prefixed by `C-x x`.
+Here are the main commands:
+
+
+### Key			--    Command
+- `s`			--  `'persp-switch`
+- `k`			--  `'persp-remove-buffer`
+- `c`			--  `'persp-kill`
+- `r`			--  `'persp-rename`
+- `a`			--  `'persp-add-buffer`
+- `A`			--  `'persp-set-buffer`
+- `i`			--  `'persp-import`
+- `n`			--  `'persp-next`
+- `<rigth>`  	--  `'persp-next`
+- `p`			--  `'persp-prev`
+- `<left>`		--  `'persp-prev`
