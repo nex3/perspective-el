@@ -21,21 +21,17 @@ package-install`. Alternately, you may put it in your load path and run
 
 ## Usage
 
-To active perspective use `(persp-mode)`
+To activate perspective use `(persp-mode)`.
 
-Command are all prefixed by `C-x x`.
-Here are the main commands:
+Commands are all prefixed by `C-x x`. Here are the main commands:
 
-
-### Key			--    Command
-- `s`			--  `'persp-switch`
-- `k`			--  `'persp-remove-buffer`
-- `c`			--  `'persp-kill`
-- `r`			--  `'persp-rename`
-- `a`			--  `'persp-add-buffer`
-- `A`			--  `'persp-set-buffer`
-- `i`			--  `'persp-import`
-- `n`			--  `'persp-next`
-- `<rigth>`  	--  `'persp-next`
-- `p`			--  `'persp-prev`
-- `<left>`		--  `'persp-prev`
+### Key       --    Command
+- `s`                   --  `persp-switch`:
+- `k`                   --  `persp-remove-buffer`
+- `c`                   --  `persp-kill`
+- `r`                   --  `persp-rename`
+- `a`                   --  `persp-add-buffer`
+- `A`                   --  `persp-set-buffer`
+- `i`                   --  `persp-import`
+- `n`, `<right>`        --  `persp-next`
+- `p`, `<left>`             --  `persp-prev`
