@@ -57,7 +57,7 @@ perspectives."
                (string :tag "Close")
                (string :tag "Divider")))
 
-(defcustom persp-mode-prefix-key "C-z"
+(defcustom persp-mode-prefix-key "C-x x"
   "Prefix key to activate perspective-map"
   :group 'perspective-mode
   :type 'string
