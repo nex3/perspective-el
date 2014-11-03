@@ -708,6 +708,14 @@ named collections of buffers and window configurations."
     (setq perspectives-hash nil)
     (setq global-mode-string (delq 'persp-modestring global-mode-string))))
 
+(defun turn-on-persp-mode ()
+  (when (not persp-mode)
+    (persp-mode 1)))
+
+;;;###autoload
+(define-globalized-minor-mode global-persp-mode
+  persp-mode turn-on-persp-mode)
+
 (defun persp-init-frame (frame)
   "Initialize the perspectives system in FRAME.
 By default, this uses the current frame."
