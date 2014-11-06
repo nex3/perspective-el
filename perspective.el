@@ -57,11 +57,17 @@ perspectives."
                (string :tag "Close")
                (string :tag "Divider")))
 
-(defcustom persp-mode-prefix-key "C-x x"
+(defcustom persp-mode-prefix-key (kbd "C-x x")
   "Prefix key to activate perspective-map"
   :group 'perspective-mode
-  :type 'string
-  )
+  :set (lambda (sym value)
+	 (when (and (bound-and-true-p persp-mode-map)
+		    (bound-and-true-p perspective-map))
+	   (substitute-key-definition 'perspective-map nil
+				      persp-mode-map)
+	   (define-key persp-mode-map value 'perspective-map))
+	 (set-default sym value))
+  :type 'key-sequence)
 
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
@@ -146,7 +152,7 @@ Run with the activated perspective active.")
   "Keymap for perspective-mode.")
 
 (define-prefix-command 'perspective-map)
-(define-key persp-mode-map (kbd persp-mode-prefix-key) 'perspective-map)
+(define-key persp-mode-map persp-mode-prefix-key 'perspective-map)
 
 (define-key perspective-map (kbd "s") 'persp-switch)
 (define-key perspective-map (kbd "k") 'persp-remove-buffer)
