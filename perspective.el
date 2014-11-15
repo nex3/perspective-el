@@ -136,23 +136,21 @@ Run with the perspective to be destroyed as `persp-curr'.")
   "A hook that's run after a perspective has been activated.
 Run with the activated perspective active.")
 
-(defvar persp-mode-map (make-sparse-keymap)
+(defvar persp-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-x x s") 'persp-switch)
+    (define-key map (kbd "C-x x k") 'persp-remove-buffer)
+    (define-key map (kbd "C-x x c") 'persp-kill)
+    (define-key map (kbd "C-x x r") 'persp-rename)
+    (define-key map (kbd "C-x x a") 'persp-add-buffer)
+    (define-key map (kbd "C-x x A") 'persp-set-buffer)
+    (define-key map (kbd "C-x x i") 'persp-import)
+    (define-key map (kbd "C-x x n")       'persp-next)
+    (define-key map (kbd "C-x x <right>") 'persp-next)
+    (define-key map (kbd "C-x x p")       'persp-prev)
+    (define-key map (kbd "C-x x <left>")  'persp-prev)
+    map)
   "Keymap for perspective-mode.")
-
-(define-prefix-command 'perspective 'perspective-map)
-(define-key persp-mode-map (kbd "C-x x") perspective-map)
-
-(define-key persp-mode-map (kbd "C-x x s") 'persp-switch)
-(define-key persp-mode-map (kbd "C-x x k") 'persp-remove-buffer)
-(define-key persp-mode-map (kbd "C-x x c") 'persp-kill)
-(define-key persp-mode-map (kbd "C-x x r") 'persp-rename)
-(define-key persp-mode-map (kbd "C-x x a") 'persp-add-buffer)
-(define-key persp-mode-map (kbd "C-x x A") 'persp-set-buffer)
-(define-key persp-mode-map (kbd "C-x x i") 'persp-import)
-(define-key persp-mode-map (kbd "C-x x n") 'persp-next)
-(define-key persp-mode-map (kbd "C-x x <right>") 'persp-next)
-(define-key persp-mode-map (kbd "C-x x p") 'persp-prev)
-(define-key persp-mode-map (kbd "C-x x <left>") 'persp-prev)
 
 ;; make-variable-frame-local is obsolete according to the docs,
 ;; but I don't want to have to manually munge frame-parameters
