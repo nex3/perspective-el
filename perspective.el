@@ -29,6 +29,8 @@
 
 (require 'cl-lib)
 
+(defvar ido-temp-list)
+
 ;;; Code:
 
 (defgroup perspective-mode 'nil
@@ -546,7 +548,7 @@ perspective and no others are killed."
   (if (null name) (setq name (persp-prompt (persp-name persp-curr) t)))
   (with-perspective name
     (run-hooks 'persp-killed-hook)
-    (mapcar 'persp-remove-buffer (persp-buffers persp-curr))
+    (mapc 'persp-remove-buffer (persp-buffers persp-curr))
     (setf (persp-killed persp-curr) t))
   (remhash name perspectives-hash)
   (persp-update-modestring)
@@ -697,7 +699,7 @@ named collections of buffers and window configurations."
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
-        (mapcar 'persp-init-frame (frame-list))
+        (mapc 'persp-init-frame (frame-list))
         (setf (persp-buffers persp-curr) (buffer-list))
 
         (run-hooks 'persp-mode-hook))
