@@ -6,6 +6,7 @@
 
 ;; Author: Nathan Weizenbaum
 ;; URL: http://github.com/nex3/perspective-el
+;; Package-Requires: ((cl-lib "0.5"))
 ;; Version: 1.10
 ;; Created: 2008-03-05
 ;; By: Nathan Weizenbaum
@@ -26,7 +27,7 @@
 ;; configuration, and when in a perspective only its buffers are
 ;; available by default.
 
-(require 'cl)
+(require 'cl-lib)
 
 ;;; Code:
 
@@ -90,7 +91,7 @@ them in Emacs >= 23.2.  In older versions, this is identical to
   (if (or (< emacs-major-version 23)
           (and (= emacs-major-version 23) (< emacs-minor-version 2)))
       `(let ,bindings ,@body)
-    (let ((binding-syms (mapcar (lambda (binding) (list (car binding) (gensym))) bindings)))
+    (let ((binding-syms (mapcar (lambda (binding) (list (car binding) (cl-gensym))) bindings)))
       ;; Each binding-sym is a pair (ORIGINAL-VALUE . WAS-BOUND).
       `(let ,(mapcar (lambda (binding)
                        (list (cadr binding)
@@ -108,9 +109,9 @@ them in Emacs >= 23.2.  In older versions, this is identical to
                             (setq ,(car binding) (car ,(cadr binding)))
                           (makunbound ',(car binding)))) binding-syms))))))
 
-(defstruct (perspective
-            (:conc-name persp-)
-            (:constructor make-persp-internal))
+(cl-defstruct (perspective
+               (:conc-name persp-)
+               (:constructor make-persp-internal))
   name buffers killed local-variables
   (buffer-history buffer-name-history)
   (window-configuration (current-window-configuration)))
@@ -280,12 +281,12 @@ perspective-local variables to `persp-curr'"
 (defun persp-all-names (&optional not-frame)
   "Return a list of the perspective names for all frames.
 Excludes NOT-FRAME, if given."
-  (reduce 'union
-          (mapcar
-           (lambda (frame)
-             (unless (equal frame not-frame)
-               (with-selected-frame frame (persp-names))))
-           (frame-list))))
+  (cl-reduce 'union
+             (mapcar
+              (lambda (frame)
+                (unless (equal frame not-frame)
+                  (with-selected-frame frame (persp-names))))
+              (frame-list))))
 
 (defun persp-prompt (&optional default require-match)
   "Prompt for the name of a perspective.
@@ -302,7 +303,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
 (defmacro with-perspective (name &rest body)
   "Switch to the perspective given by NAME while evaluating BODY."
   (declare (indent 1))
-  (let ((old (gensym)))
+  (let ((old (cl-gensym)))
     `(progn
        (let ((,old (when persp-curr (persp-name persp-curr)))
              (last-persp-cache persp-last))
@@ -345,7 +346,7 @@ INTERSPERSED-VAL between every pair of items.
 
 For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
   (reverse
-   (reduce
+   (cl-reduce
     (lambda (list el) (if list (list* el interspersed-val list) (list el)))
     list :initial-value nil)))
 
@@ -448,7 +449,7 @@ See `persp-switch', `persp-get-quick'."
 
 (defun persp-curr-position ()
   "Retun the index of the current perpsective in `persp-all-names'."
-  (position (persp-name persp-curr) (persp-all-names)))
+  (cl-position (persp-name persp-curr) (persp-all-names)))
 
 (defun persp-next ()
   "Switch to next perspective (to the right)."
