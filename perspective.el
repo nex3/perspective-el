@@ -31,7 +31,8 @@
 ;;; Code:
 
 (defgroup perspective-mode 'nil
-  "Customization for Perspective mode")
+  "Customization for Perspective mode"
+  :group 'frames)
 
 (defcustom persp-initial-frame-name "main"
   "Name used for the initial perspective when enabling `persp-mode'."
