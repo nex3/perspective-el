@@ -801,4 +801,7 @@ perspective beginning with the given letter."
 
 (provide 'perspective)
 
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; End:
 ;;; perspective.el ends here
