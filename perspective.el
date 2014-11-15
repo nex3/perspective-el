@@ -6,6 +6,7 @@
 
 ;; Author: Nathan Weizenbaum
 ;; URL: http://github.com/nex3/perspective-el
+;; Package-Requires: ((cl-lib "0.5"))
 ;; Version: 1.10
 ;; Created: 2008-03-05
 ;; By: Nathan Weizenbaum
@@ -26,12 +27,15 @@
 ;; configuration, and when in a perspective only its buffers are
 ;; available by default.
 
-(require 'cl)
+(require 'cl-lib)
+
+(defvar ido-temp-list)
 
 ;;; Code:
 
 (defgroup perspective-mode 'nil
-  "Customization for Perspective mode")
+  "Customization for Perspective mode"
+  :group 'frames)
 
 (defcustom persp-initial-frame-name "main"
   "Name used for the initial perspective when enabling `persp-mode'."
@@ -89,7 +93,7 @@ them in Emacs >= 23.2.  In older versions, this is identical to
   (if (or (< emacs-major-version 23)
           (and (= emacs-major-version 23) (< emacs-minor-version 2)))
       `(let ,bindings ,@body)
-    (let ((binding-syms (mapcar (lambda (binding) (list (car binding) (gensym))) bindings)))
+    (let ((binding-syms (mapcar (lambda (binding) (list (car binding) (cl-gensym))) bindings)))
       ;; Each binding-sym is a pair (ORIGINAL-VALUE . WAS-BOUND).
       `(let ,(mapcar (lambda (binding)
                        (list (cadr binding)
@@ -107,9 +111,9 @@ them in Emacs >= 23.2.  In older versions, this is identical to
                             (setq ,(car binding) (car ,(cadr binding)))
                           (makunbound ',(car binding)))) binding-syms))))))
 
-(defstruct (perspective
-            (:conc-name persp-)
-            (:constructor make-persp-internal))
+(cl-defstruct (perspective
+               (:conc-name persp-)
+               (:constructor make-persp-internal))
   name buffers killed local-variables
   (buffer-history buffer-name-history)
   (window-configuration (current-window-configuration)))
@@ -136,23 +140,21 @@ Run with the perspective to be destroyed as `persp-curr'.")
   "A hook that's run after a perspective has been activated.
 Run with the activated perspective active.")
 
-(defvar persp-mode-map (make-sparse-keymap)
+(defvar persp-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-x x s") 'persp-switch)
+    (define-key map (kbd "C-x x k") 'persp-remove-buffer)
+    (define-key map (kbd "C-x x c") 'persp-kill)
+    (define-key map (kbd "C-x x r") 'persp-rename)
+    (define-key map (kbd "C-x x a") 'persp-add-buffer)
+    (define-key map (kbd "C-x x A") 'persp-set-buffer)
+    (define-key map (kbd "C-x x i") 'persp-import)
+    (define-key map (kbd "C-x x n")       'persp-next)
+    (define-key map (kbd "C-x x <right>") 'persp-next)
+    (define-key map (kbd "C-x x p")       'persp-prev)
+    (define-key map (kbd "C-x x <left>")  'persp-prev)
+    map)
   "Keymap for perspective-mode.")
-
-(define-prefix-command 'perspective 'perspective-map)
-(define-key persp-mode-map (kbd "C-x x") perspective-map)
-
-(define-key persp-mode-map (kbd "C-x x s") 'persp-switch)
-(define-key persp-mode-map (kbd "C-x x k") 'persp-remove-buffer)
-(define-key persp-mode-map (kbd "C-x x c") 'persp-kill)
-(define-key persp-mode-map (kbd "C-x x r") 'persp-rename)
-(define-key persp-mode-map (kbd "C-x x a") 'persp-add-buffer)
-(define-key persp-mode-map (kbd "C-x x A") 'persp-set-buffer)
-(define-key persp-mode-map (kbd "C-x x i") 'persp-import)
-(define-key persp-mode-map (kbd "C-x x n") 'persp-next)
-(define-key persp-mode-map (kbd "C-x x <right>") 'persp-next)
-(define-key persp-mode-map (kbd "C-x x p") 'persp-prev)
-(define-key persp-mode-map (kbd "C-x x <left>") 'persp-prev)
 
 ;; make-variable-frame-local is obsolete according to the docs,
 ;; but I don't want to have to manually munge frame-parameters
@@ -281,12 +283,12 @@ perspective-local variables to `persp-curr'"
 (defun persp-all-names (&optional not-frame)
   "Return a list of the perspective names for all frames.
 Excludes NOT-FRAME, if given."
-  (reduce 'union
-          (mapcar
-           (lambda (frame)
-             (unless (equal frame not-frame)
-               (with-selected-frame frame (persp-names))))
-           (frame-list))))
+  (cl-reduce 'union
+             (mapcar
+              (lambda (frame)
+                (unless (equal frame not-frame)
+                  (with-selected-frame frame (persp-names))))
+              (frame-list))))
 
 (defun persp-prompt (&optional default require-match)
   "Prompt for the name of a perspective.
@@ -303,7 +305,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
 (defmacro with-perspective (name &rest body)
   "Switch to the perspective given by NAME while evaluating BODY."
   (declare (indent 1))
-  (let ((old (gensym)))
+  (let ((old (cl-gensym)))
     `(progn
        (let ((,old (when persp-curr (persp-name persp-curr)))
              (last-persp-cache persp-last))
@@ -346,7 +348,7 @@ INTERSPERSED-VAL between every pair of items.
 
 For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
   (reverse
-   (reduce
+   (cl-reduce
     (lambda (list el) (if list (list* el interspersed-val list) (list el)))
     list :initial-value nil)))
 
@@ -449,7 +451,7 @@ See `persp-switch', `persp-get-quick'."
 
 (defun persp-curr-position ()
   "Retun the index of the current perpsective in `persp-all-names'."
-  (position (persp-name persp-curr) (persp-all-names)))
+  (cl-position (persp-name persp-curr) (persp-all-names)))
 
 (defun persp-next ()
   "Switch to next perspective (to the right)."
@@ -546,7 +548,7 @@ perspective and no others are killed."
   (if (null name) (setq name (persp-prompt (persp-name persp-curr) t)))
   (with-perspective name
     (run-hooks 'persp-killed-hook)
-    (mapcar 'persp-remove-buffer (persp-buffers persp-curr))
+    (mapc 'persp-remove-buffer (persp-buffers persp-curr))
     (setf (persp-killed persp-curr) t))
   (remhash name perspectives-hash)
   (persp-update-modestring)
@@ -697,7 +699,7 @@ named collections of buffers and window configurations."
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
-        (mapcar 'persp-init-frame (frame-list))
+        (mapc 'persp-init-frame (frame-list))
         (setf (persp-buffers persp-curr) (buffer-list))
 
         (run-hooks 'persp-mode-hook))
@@ -799,4 +801,7 @@ perspective beginning with the given letter."
 
 (provide 'perspective)
 
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; End:
 ;;; perspective.el ends here
