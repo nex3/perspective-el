@@ -28,6 +28,12 @@
 ;; available by default.
 
 (require 'cl-lib)
+
+;; 'cl' is still required because the use of 'lexical-let'.  'lexical-let' has
+;; been deprecated since emacs 24.1, and it should be replaced with true
+;; lexical bindings.  For more information, please see
+;; https://www.gnu.org/software/emacs/manual/html_node/cl/
+;; Obsolete-Lexical-Binding.html
 (require 'cl)
 
 (defvar ido-temp-list)
