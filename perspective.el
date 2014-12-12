@@ -541,8 +541,9 @@ perspective that has the buffer."
 See also `persp-switch' and `persp-add-buffer'."
   (interactive "bRemove buffer from perspective: \n")
   (setq buffer (get-buffer buffer))
-  ; Only kill the buffer if no other perspectives are using it
-  (cond ((not (persp-buffer-in-other-p buffer))
+  (cond ((not (buffer-live-p buffer)))
+        ;; Only kill the buffer if no other perspectives are using it
+        ((not (persp-buffer-in-other-p buffer))
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
         ;; TODO: Is it possible to tell if it's visible at all,
