@@ -132,6 +132,10 @@ them in Emacs >= 23.2.  In older versions, this is identical to
   (if ido-mode 'ido-completing-read 'completing-read)
   "The function which is used by perspective.el to interactivly complete user input")
 
++(defvar persp-switch-hook nil
+   "A hook that's run after `persp-switch'.
++Run with the newly created perspective as `persp-curr'.")
+
 (defvar persp-mode-hook nil
   "A hook that's run after `persp-mode' has been activated.")
 
@@ -428,7 +432,8 @@ perspective's local variables are set."
       (when (null persp)
         (setq persp (persp-new name)))
       (persp-activate persp)
-      name)))
+      name))
+  (run-hooks 'persp-switch-hook))
 
 (defun persp-activate (persp)
   "Activate the perspective given by the persp struct PERSP."
