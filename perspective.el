@@ -184,7 +184,7 @@ Run with the activated perspective active.")
 (defun persp-mode-set-prefix-key (newkey)
   "Set the prefix key to activate persp-mode"
   (substitute-key-definition 'perspective-map nil persp-mode-map)
-  (define-key persp-mode-map newkey 'perspective-map)
+  (define-key persp-mode-map newkey 'perspective-map))
 
 ;; make-variable-frame-local is obsolete according to the docs,
 ;; but I don't want to have to manually munge frame-parameters
