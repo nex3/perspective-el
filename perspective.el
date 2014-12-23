@@ -545,7 +545,7 @@ perspective that has the buffer."
   "Disassociate BUFFER with the current perspective.
 
 See also `persp-switch' and `persp-add-buffer'."
-  (interactive "bRemove buffer from perspective: \n")
+  (interactive "Remove buffer from perspective: \n")
   (setq buffer (get-buffer buffer))
   (cond ((not (buffer-live-p buffer)))
         ;; Only kill the buffer if no other perspectives are using it
@@ -794,6 +794,25 @@ it. In addition, if one exists already, runs BODY in it immediately."
             (sort persp-names (lambda (a b)
                                 (< (gethash (copy-sequence a) indices length)
                                    (gethash (copy-sequence b) indices length))))))))
+
+(defun persp-get-perspectives-for-buffer (buffer)
+  "Get the names of all of the perspectives of which `buffer` is a member."
+  (cl-loop for perspective being the hash-value of perspectives-hash
+           if (member buffer (persp-buffers perspective))
+           collect (persp-name perspective)))
+
+(defun persp-pick-perspective-by-buffer (buffer)
+  "Select a buffer and go to the perspective to which that buffer belongs. If the buffer belongs to more than one perspective completion will be used to pick the perspective to switch to. Switch the focus to the window in which said buffer is displayed if such a window exists. Otherwise display the buffer in whatever window is active in the perspective."
+  (interactive (list (funcall persp-interactive-completion-function
+                              "Buffer: " (mapcar 'buffer-name (buffer-list)))))
+  (let* ((perspectives (persp-get-perspectives-for-buffer (get-buffer buffer)))
+         (perspective (if (> (length perspectives) 1)
+                          (funcall persp-interactive-completion-function perspectives)
+                                   (car perspectives))))
+    (persp-switch perspective)
+    (if (get-buffer-window buffer)
+        (set-frame-selected-window nil (get-buffer-window buffer))
+        (switch-to-buffer buffer))))
 
 (defun quick-perspective-keys ()
   "Bind quick key commands to switch to perspectives.
