@@ -717,6 +717,7 @@ named collections of buffers and window configurations."
         (ad-activate 'exit-recursive-edit)
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
+        (add-to-list 'delete-frame-functions 'persp-frame-deleted)
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
         (setf (persp-buffers persp-curr) (buffer-list))
@@ -725,9 +726,42 @@ named collections of buffers and window configurations."
     (ad-deactivate-regexp "^persp-.*")
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
     (remove-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
+    (delete 'persp-frame-deleted 'delete-frame-functions)
     (setq read-buffer-function nil)
     (setq perspectives-hash nil)
     (setq global-mode-string (delq 'persp-modestring global-mode-string))))
+
+(defvar persp-saved-hash nil
+  "Stores perspective from the last deleted frame.")
+
+(defun persp-frame-deleted (frame)
+  "Import or save perspectives from a deleted frame.
+
+When a frame is being deleted, import its perspectives to another
+live frame if it exists.  Otherwise, if the frame being deleted
+is the last live frame, and emacs is running as a daemon, then
+store the perspectives of the frame being deleted so that they
+can be restored when a new frame is later created.
+"
+  (let ((min-num-frames (if (daemonp) 2 1)))
+    ;; Check whether the frame being deleted is the last visible frame.  In
+    ;; daemon mode, a fake fame is used, so the last visible frame occurs when
+    ;; the length of the frame list is 2.
+    (if (= (length (frame-list)) min-num-frames)
+        (when (daemonp)
+          (persp-save)
+          (setq persp-saved-hash perspectives-hash))
+      (persp-import-all-from-frame (get-other-frame) frame))))
+
+(defun persp-import-all-from-frame (to-frame from-frame)
+  "Import all perspectives from FROM-FRAME to TO-FRAME."
+  (let ((from-hash (with-selected-frame from-frame perspectives-hash))
+        (to-hash (with-selected-frame to-frame perspectives-hash)))
+    (cl-loop for name being the hash-keys of from-hash
+             when (not (gethash name to-hash)) do
+             (puthash name (gethash name from-hash)
+                      to-hash)))
+  (with-selected-frame to-frame (persp-update-modestring)))
 
 (defun persp-init-frame (frame)
   "Initialize the perspectives system in FRAME.
@@ -737,9 +771,16 @@ By default, this uses the current frame."
      frame
      '((perspectives-hash) (persp-curr) (persp-last) (persp-recursive) (persp-modestring)))
 
-    ;; Don't set these variables in modify-frame-parameters
-    ;; because that won't do anything if they've already been accessed
-    (setq perspectives-hash (make-hash-table :test 'equal :size 10))
+    ;; Restore perspectives from the last deleted frame in daemon mode.
+    (if persp-saved-hash
+        (progn
+          (setq perspectives-hash persp-saved-hash)
+          (setq persp-saved-hash nil))
+
+      ;; Don't set these variables in modify-frame-parameters because that
+      ;; won't do anything if they've already been accessed (setq
+      ;; perspectives-hash (make-hash-table :test 'equal :size 10))
+      (setq perspectives-hash (make-hash-table :test 'equal :size 10)))
 
     (when persp-show-modestring
       (if (eq persp-show-modestring 'header)
@@ -748,12 +789,13 @@ By default, this uses the current frame."
               (set-default 'header-line-format (append val '(persp-modestring)))))
         (setq global-mode-string (or global-mode-string '("")))
         (unless (memq 'persp-modestring global-mode-string)
-          (setq global-mode-string (append global-mode-string '(persp-modestring)))))
-      (persp-update-modestring))
+          (setq global-mode-string (append global-mode-string '(persp-modestring))))))
 
     (persp-activate
      (make-persp :name persp-initial-frame-name :buffers (list (current-buffer))
-       :window-configuration (current-window-configuration)))))
+       :window-configuration (current-window-configuration)))
+    ))
+
 
 (defun persp-make-variable-persp-local (variable)
   "Make VARIABLE become perspective-local.
