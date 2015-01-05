@@ -461,19 +461,25 @@ See `persp-switch', `persp-get-quick'."
     (if persp (persp-switch persp)
       (persp-error (concat "No perspective name begins with " (string char))))))
 
-(defun persp-curr-position ()
-  "Retun the index of the current perpsective in `persp-all-names'."
-  (cl-position (persp-name persp-curr) (persp-all-names)))
-
 (defun persp-next ()
   "Switch to next perspective (to the right)."
   (interactive)
-  (persp-switch (nth (1+ (persp-curr-position)) (persp-all-names))))
+  (let* ((names (persp-names))
+         (pos (cl-position (persp-name persp-curr) names)))
+    (cond
+     ((null pos) (persp-find-some))
+     ((= pos (1- (length names))))
+     (t (persp-switch (nth (1+ pos) names))))))
 
 (defun persp-prev ()
   "Switch to previous perspective (to the left)."
   (interactive)
-  (persp-switch (nth (1- (persp-curr-position)) (persp-all-names))))
+  (let* ((names (persp-names))
+         (pos (cl-position (persp-name persp-curr) names)))
+    (cond
+     ((null pos) (persp-find-some))
+     ((= pos 0))
+     (t (persp-switch (nth (1- pos) names))))))
 
 (defun persp-find-some ()
   "Return the name of a valid perspective.
