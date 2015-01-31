@@ -130,7 +130,7 @@ them in Emacs >= 23.2.  In older versions, this is identical to
 
 (defvar persp-interactive-completion-function
   (if ido-mode 'ido-completing-read 'completing-read)
-  "The function which is used by perspective.el to interactivly complete user input")
+  "The function which is used by perspective.el to interactivly complete user input.")
 
 (defvar persp-switch-hook nil
   "A hook that's run after `persp-switch'.
@@ -213,7 +213,7 @@ perspective-local values."))
 (put 'persp-modestring 'risky-local-variable t)
 
 (defvar persp-protected nil
-  "Whether a perspective error should cause persp-mode to be disabled.
+  "Whether a perspective error should cause `persp-mode' to be disabled.
 Dynamically bound by `persp-protect'.")
 
 (defface persp-selected-face
@@ -221,7 +221,7 @@ Dynamically bound by `persp-protect'.")
   "The face used to highlight the current perspective on the modeline.")
 
 (defmacro persp-protect (&rest body)
-  "Wrap BODY to disable persp-mode when it errors out.
+  "Wrap BODY to disable `persp-mode' when it errors out.
 This prevents the persp-mode from completely breaking Emacs."
   (declare (indent 0))
   (let ((persp-protected t))
@@ -802,30 +802,32 @@ it. In addition, if one exists already, runs BODY in it immediately."
            collect (persp-name perspective)))
 
 (defun persp-pick-perspective-by-buffer (buffer)
-  "Select a buffer and go to the perspective to which that buffer
-belongs. If the buffer belongs to more than one perspective
+  "Select a buffer and go to the perspective to which that buffer belongs.
+If the buffer belongs to more than one perspective
 completion will be used to pick the perspective to switch to.
 Switch the focus to the window in which said buffer is displayed
-if such a window exists. Otherwise display the buffer in whatever
+if such a window exists.  Otherwise display the buffer in whatever
 window is active in the perspective."
   (interactive (list (funcall persp-interactive-completion-function
                               "Buffer: " (mapcar 'buffer-name (buffer-list)))))
   (let* ((perspectives (persp-get-perspectives-for-buffer (get-buffer buffer)))
-         (perspective (if (> (length perspectives) 1)
-                          (funcall persp-interactive-completion-function
-                                   (format "Select the perspective in which you would like to visit %s."
-                                           buffer)
-                                   perspectives)
-                                   (car perspectives))))
+         (perspective
+          (if (> (length perspectives) 1)
+              (funcall persp-interactive-completion-function
+                       (format (concat "Select the perspective in which you "
+                                       "would like to visit %s.")
+                               buffer)
+                       perspectives)
+            (car perspectives))))
     (if (string= (persp-name persp-curr) perspective)
         ;; This allows the opening of a single buffer in more than one window
         ;; in a single perspective.
         (switch-to-buffer buffer)
       (progn
-          (persp-switch perspective)
-          (if (get-buffer-window buffer)
-              (set-frame-selected-window nil (get-buffer-window buffer))
-            (switch-to-buffer buffer))))))
+        (persp-switch perspective)
+        (if (get-buffer-window buffer)
+            (set-frame-selected-window nil (get-buffer-window buffer))
+          (switch-to-buffer buffer))))))
 
 (defun quick-perspective-keys ()
   "Bind quick key commands to switch to perspectives.
