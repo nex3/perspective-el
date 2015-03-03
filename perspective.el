@@ -68,6 +68,12 @@ perspectives."
                (string :tag "Close")
                (string :tag "Divider")))
 
+(defcustom persp-switch-wrap t
+  "Determines if `persp-next' and `persp-prev' should wrap to
+the beginning or end of the perspective list, respectively."
+  :group 'perspective-mode
+  :type 'boolean)
+
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
 (unless (fboundp 'with-selected-frame)
@@ -468,7 +474,8 @@ See `persp-switch', `persp-get-quick'."
          (pos (cl-position (persp-name persp-curr) names)))
     (cond
      ((null pos) (persp-find-some))
-     ((= pos (1- (length names))))
+     ((= pos (1- (length names)))
+      (if persp-switch-wrap (persp-switch (nth 0 names))))
      (t (persp-switch (nth (1+ pos) names))))))
 
 (defun persp-prev ()
@@ -478,7 +485,8 @@ See `persp-switch', `persp-get-quick'."
          (pos (cl-position (persp-name persp-curr) names)))
     (cond
      ((null pos) (persp-find-some))
-     ((= pos 0))
+     ((= pos 0)
+      (if persp-switch-wrap (persp-switch (nth (1- (length names)) names))))
      (t (persp-switch (nth (1- pos) names))))))
 
 (defun persp-find-some ()
