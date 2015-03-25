@@ -123,7 +123,8 @@ them in Emacs >= 23.2.  In older versions, this is identical to
                (:constructor make-persp-internal))
   name buffers killed local-variables
   (buffer-history buffer-name-history)
-  (window-configuration (current-window-configuration)))
+  (window-configuration (current-window-configuration))
+  (point-marker (point-marker)))
 
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
@@ -175,7 +176,7 @@ Run with the activated perspective active.")
    "A hash containing all perspectives. The keys are the
 perspetives' names. The values are persp structs,
 with the fields NAME, WINDOW-CONFIGURATION, BUFFERS,
-BUFFER-HISTORY, KILLED, and LOCAL-VARIABLES.
+BUFFER-HISTORY, KILLED, POINT-MARKER, and LOCAL-VARIABLES.
 
 NAME is the name of the perspective.
 
@@ -191,6 +192,8 @@ BUFFER-HISTORY is the list of buffer history values for this
 perspective.
 
 KILLED is non-nil if the perspective has been killed.
+
+POINT-MARKER is the point position in the active buffer.
 
 LOCAL-VARIABLES is an alist from variable names to their
 perspective-local values."))
@@ -282,7 +285,8 @@ perspective-local variables to `persp-curr'"
                (list name (symbol-value name))))
            (persp-local-variables persp-curr)))
     (setf (persp-buffer-history persp-curr) buffer-name-history)
-    (setf (persp-window-configuration persp-curr) (current-window-configuration))))
+    (setf (persp-window-configuration persp-curr) (current-window-configuration))
+    (setf (persp-point-marker persp-curr) (point-marker))))
 
 (defun persp-names ()
   "Return a list of the names of all perspectives, sorted alphabetically."
@@ -444,6 +448,7 @@ perspective's local variables are set."
   (persp-reactivate-buffers (persp-buffers persp))
   (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
+  (goto-char (persp-point-marker persp))
   (persp-update-modestring)
   (run-hooks 'persp-activated-hook))
 
@@ -499,7 +504,8 @@ create a new main perspective and return \"main\"."
    ((> (hash-table-count perspectives-hash) 0) (car (persp-names)))
    (t (persp-activate
        (make-persp :name persp-initial-frame-name :buffers (buffer-list)
-         :window-configuration (current-window-configuration)))
+         :window-configuration (current-window-configuration)
+         :point-marker (point-marker)))
       persp-initial-frame-name)))
 
 (defun persp-add-buffer (buffer)
@@ -753,7 +759,8 @@ By default, this uses the current frame."
 
     (persp-activate
      (make-persp :name persp-initial-frame-name :buffers (list (current-buffer))
-       :window-configuration (current-window-configuration)))))
+       :window-configuration (current-window-configuration)
+       :point-marker (point-marker)))))
 
 (defun persp-make-variable-persp-local (variable)
   "Make VARIABLE become perspective-local.
