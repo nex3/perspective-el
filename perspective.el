@@ -74,9 +74,7 @@ perspectives."
   :set (lambda (sym value)
 	 (when (and (bound-and-true-p persp-mode-map)
 		    (bound-and-true-p perspective-map))
-	   (substitute-key-definition 'perspective-map nil
-				      persp-mode-map)
-	   (define-key persp-mode-map value 'perspective-map))
+           (persp-mode-set-prefix-key value))
 	 (set-default sym value))
   :type 'key-sequence)
 
