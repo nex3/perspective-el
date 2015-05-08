@@ -9,7 +9,7 @@
 ;; Package-Requires: ((cl-lib "0.5"))
 ;; Version: 1.10
 ;; Created: 2008-03-05
-;; By: Nathan Weizenbaum
+;; By: Natalie Weizenbaum
 ;; Keywords: workspace, convenience, frames
 
 ;;; Commentary:
