@@ -178,6 +178,7 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "r") 'persp-rename)
 (define-key perspective-map (kbd "a") 'persp-add-buffer)
 (define-key perspective-map (kbd "A") 'persp-set-buffer)
+(define-key perspective-map (kbd "b") 'persp-switch-to-buffer)
 (define-key perspective-map (kbd "i") 'persp-import)
 (define-key perspective-map (kbd "n") 'persp-next)
 (define-key perspective-map (kbd "<right>") 'persp-next)
@@ -555,8 +556,10 @@ See also `persp-switch' and `persp-remove-buffer'."
 (cl-defun persp-buffer-in-other-p (buffer)
   "Returns nil if BUFFER is only in the current perspective.
 Otherwise, returns (FRAME . NAME), the frame and name of another
-perspective that has the buffer."
-  (cl-loop for frame in (frame-list)
+perspective that has the buffer.
+
+Prefers perspectives in the selected frame."
+  (cl-loop for frame in (sort (frame-list) (lambda (frame1 frame2) (eq frame2 (selected-frame))))
            do (cl-loop for persp being the hash-values of (with-selected-frame frame perspectives-hash)
                        if (and (not (and (equal frame (selected-frame))
                                          (equal (persp-name persp) (persp-name persp-curr))))
@@ -564,6 +567,20 @@ perspective that has the buffer."
                        do (cl-return-from persp-buffer-in-other-p
                             (cons frame (persp-name persp)))))
   nil)
+
+(defun persp-switch-to-buffer (buffer-or-name)
+  "Like `switch-to-buffer', but switches to another perspective if necessary."
+  (interactive
+   (list
+    (let ((read-buffer-function nil))
+      (read-buffer-to-switch "Switch to buffer: "))))
+  (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
+    (if (memq buffer (persp-buffers persp-curr))
+        (switch-to-buffer buffer)
+      (let ((other-persp (persp-buffer-in-other-p buffer)))
+        (when (eq (car-safe other-persp) (selected-frame))
+          (persp-switch (cdr other-persp)))
+        (switch-to-buffer buffer)))))
 
 (defun persp-remove-buffer (buffer)
   "Disassociate BUFFER with the current perspective.
