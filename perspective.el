@@ -69,8 +69,7 @@ perspectives."
                (string :tag "Divider")))
 
 (defcustom persp-switch-wrap t
-  "Determines if `persp-next' and `persp-prev' should wrap to
-the beginning or end of the perspective list, respectively."
+  "Whether `persp-next' and `persp-prev' should wrap."
   :group 'perspective-mode
   :type 'boolean)
 
