@@ -68,6 +68,16 @@ perspectives."
                (string :tag "Close")
                (string :tag "Divider")))
 
+(defcustom persp-mode-prefix-key (kbd "C-x x")
+  "Prefix key to activate perspective-map"
+  :group 'perspective-mode
+  :set (lambda (sym value)
+	 (when (and (bound-and-true-p persp-mode-map)
+		    (bound-and-true-p perspective-map))
+           (persp-mode-set-prefix-key value))
+	 (set-default sym value))
+  :type 'key-sequence)
+
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
 (unless (fboundp 'with-selected-frame)
@@ -151,21 +161,28 @@ Run with the perspective to be destroyed as `persp-curr'.")
   "A hook that's run after a perspective has been activated.
 Run with the activated perspective active.")
 
-(defvar persp-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-x x s") 'persp-switch)
-    (define-key map (kbd "C-x x k") 'persp-remove-buffer)
-    (define-key map (kbd "C-x x c") 'persp-kill)
-    (define-key map (kbd "C-x x r") 'persp-rename)
-    (define-key map (kbd "C-x x a") 'persp-add-buffer)
-    (define-key map (kbd "C-x x A") 'persp-set-buffer)
-    (define-key map (kbd "C-x x i") 'persp-import)
-    (define-key map (kbd "C-x x n")       'persp-next)
-    (define-key map (kbd "C-x x <right>") 'persp-next)
-    (define-key map (kbd "C-x x p")       'persp-prev)
-    (define-key map (kbd "C-x x <left>")  'persp-prev)
-    map)
+(defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
+
+(define-prefix-command 'perspective-map)
+(define-key persp-mode-map persp-mode-prefix-key 'perspective-map)
+
+(define-key perspective-map (kbd "s") 'persp-switch)
+(define-key perspective-map (kbd "k") 'persp-remove-buffer)
+(define-key perspective-map (kbd "c") 'persp-kill)
+(define-key perspective-map (kbd "r") 'persp-rename)
+(define-key perspective-map (kbd "a") 'persp-add-buffer)
+(define-key perspective-map (kbd "A") 'persp-set-buffer)
+(define-key perspective-map (kbd "i") 'persp-import)
+(define-key perspective-map (kbd "n") 'persp-next)
+(define-key perspective-map (kbd "<right>") 'persp-next)
+(define-key perspective-map (kbd "p") 'persp-prev)
+(define-key perspective-map (kbd "<left>") 'persp-prev)
+
+(defun persp-mode-set-prefix-key (newkey)
+  "Set the prefix key to activate persp-mode"
+  (substitute-key-definition 'perspective-map nil persp-mode-map)
+  (define-key persp-mode-map newkey 'perspective-map))
 
 ;; make-variable-frame-local is obsolete according to the docs,
 ;; but I don't want to have to manually munge frame-parameters
