@@ -722,6 +722,29 @@ See also `persp-add-buffer'."
           (with-selected-frame frame
             (persp-add-buffer buf)))))))
 
+(defadvice switch-to-prev-buffer (around persp-ensure-buffer-in-persp)
+  "Ensure that the selected buffer is in WINDOW's perspective."
+  (let* ((window (window-normalize-window window t))
+         (frame (window-frame window))
+         (old-buffer (window-buffer window)))
+    ad-do-it
+
+    (let ((buffer (window-buffer window)))
+      (with-selected-frame frame
+        (unless (memq buffer (persp-buffers persp-curr))
+          ;; If a buffer from outside this perspective was selected, it's because
+          ;; this perspective is out of buffers. For lack of any better option, we
+          ;; recreate the scratch buffer.
+          ;;
+          ;; If we were just in a scratch buffer, change the name slightly.
+          ;; Otherwise our new buffer will get deleted too.
+          (let ((name (concat "*scratch* (" (persp-name persp-curr) ")")))
+            (when (and bury-or-kill (equal name (buffer-name old-buffer)))
+              (setq name (concat "*scratch*  (" (persp-name persp-curr) ")")))
+            (with-selected-window window
+              (switch-to-buffer name)
+              (funcall initial-major-mode))))))))
+
 (defadvice recursive-edit (around persp-preserve-for-recursive-edit)
   "Preserve the current perspective when entering a recursive edit."
   (persp-protect
@@ -754,6 +777,7 @@ named collections of buffers and window configurations."
       (persp-protect
         (ad-activate 'switch-to-buffer)
         (ad-activate 'display-buffer)
+        (ad-activate 'switch-to-prev-buffer)
         (ad-activate 'recursive-edit)
         (ad-activate 'exit-recursive-edit)
         (add-hook 'after-make-frame-functions 'persp-init-frame)
