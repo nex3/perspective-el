@@ -4,12 +4,12 @@
 ;;
 ;; Licensed under the same terms as Emacs.
 
-;; Author: Nathan Weizenbaum
+;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
 ;; Package-Requires: ((cl-lib "0.5"))
 ;; Version: 1.10
 ;; Created: 2008-03-05
-;; By: Natalie Weizenbaum
+;; By: Natalie Weizenbaum <nex342@gmail.com>
 ;; Keywords: workspace, convenience, frames
 
 ;;; Commentary:
