@@ -1,6 +1,6 @@
 ;;; perspective.el --- switch between named "perspectives" of the editor
 
-;; Copyright (C) 2008-2012 Nathan Weizenbaum <nex342@gmail.com>
+;; Copyright (C) 2008-2015 Natalie Weizenbaum <nex342@gmail.com>
 ;;
 ;; Licensed under the same terms as Emacs.
 
