@@ -194,6 +194,8 @@ perspective.
 KILLED is non-nil if the perspective has been killed.
 
 POINT-MARKER is the point position in the active buffer.
+Otherwise, when multiple windows are visiting the same buffer,
+all but one of their points will be overwritten.
 
 LOCAL-VARIABLES is an alist from variable names to their
 perspective-local values."))
