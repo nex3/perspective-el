@@ -30,7 +30,7 @@ Commands are all prefixed by `C-x x`. Here are the main commands:
 - `k`  --  `persp-remove-buffer`: Query a buffer to remove from current perspective
 - `c`  --  `persp-kill` : Query a perspective to kill
 - `r`  --  `persp-rename`: Rename current perspective
-- `a`  --  `persp-add-buffer`: Querry an open buffer to add to current perspective
+- `a`  --  `persp-add-buffer`: Query an open buffer to add to current perspective
 - `A`  --  `persp-set-buffer`: Add buffer to current perspective and remove it from all others
 - `i`  --  `persp-import`: Import a given perspective from another frame.
 - `n`, `<right>`  --  `persp-next` : Switch to next perspective

@@ -201,7 +201,7 @@ Run with the activated perspective active.")
 (make-variable-frame-local
  (defvar perspectives-hash nil
    "A hash containing all perspectives. The keys are the
-perspetives' names. The values are persp structs,
+perspectives' names. The values are persp structs,
 with the fields NAME, WINDOW-CONFIGURATION, BUFFERS,
 BUFFER-HISTORY, KILLED, POINT-MARKER, and LOCAL-VARIABLES.
 
