@@ -189,6 +189,7 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "<right>") 'persp-next)
 (define-key perspective-map (kbd "p") 'persp-prev)
 (define-key perspective-map (kbd "<left>") 'persp-prev)
+(define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
 
 (defun persp-mode-set-prefix-key (newkey)
   "Set the prefix key to activate persp-mode"
@@ -448,6 +449,13 @@ This is used for cycling between perspectives."
             (cadr names)
           (persp-get-quick char)))
        (t (persp-get-quick-helper char prev (cdr names)))))))
+
+(defun persp-switch-last ()
+  "Switch to the perspective accessed before the current one."
+  (interactive)
+  (unless persp-last
+    (error "There is no last perspective"))
+  (persp-switch (persp-name persp-last)))
 
 (defun persp-switch (name)
   "Switch to the perspective given by NAME.
