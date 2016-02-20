@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2008-2015 Natalie Weizenbaum <nex342@gmail.com>
 ;;
-;; Licensed under the same terms as Emacs.
+;; Licensed under the same terms as Emacs and under the MIT license.
 
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
