@@ -15,7 +15,8 @@ perspective only its buffers are available by default.
 
 It's recommended that you install perspective.el from [Marmalade][] using `M-x
 package-install`. Alternately, you may put it in your load path and run
-`(require 'perspective)`.
+`(require 'perspective)`.  Users of Debian 9 or later or Ubuntu 16.04
+or later may simply `apt-get install elpa-perspective`.
 
 [Marmalade]: http://marmalade-repo.org/
 
