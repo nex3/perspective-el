@@ -591,9 +591,11 @@ See also `persp-switch' and `persp-add-buffer'."
         ((not (persp-buffer-in-other-p buffer))
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
-        ;; TODO: Is it possible to tell if it's visible at all,
-        ;;       rather than just the current buffer?
-        ((eq buffer (current-buffer)) (bury-buffer))
+        ((get-buffer-window buffer)
+         (let (win)
+           (while (setq win (get-buffer-window buffer))
+             (with-selected-window win
+               (bury-buffer)))))
         (t (bury-buffer buffer)))
   (setf (persp-buffers (persp-curr)) (remq buffer (persp-buffers (persp-curr)))))
 
