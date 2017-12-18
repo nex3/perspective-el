@@ -103,36 +103,6 @@ See also `with-temp-buffer'."
            (if (buffer-live-p ,old-buffer)
                (set-buffer ,old-buffer)))))))
 
-(defmacro persp-frame-local-let (bindings &rest body)
-  "Like `let', but properly handles frame-local variables.
-Bind variables according to BINDINGS then eval BODY.
-
-In Emacs >= 23.2, frame-local variables are not reset after a
-`let' expression.  This hacks around that by manually resetting
-them in Emacs >= 23.2.  In older versions, this is identical to
-`let'."
-  (declare (indent 1))
-  (if (or (< emacs-major-version 23)
-          (and (= emacs-major-version 23) (< emacs-minor-version 2)))
-      `(let ,bindings ,@body)
-    (let ((binding-syms (mapcar (lambda (binding) (list (car binding) (cl-gensym))) bindings)))
-      ;; Each binding-sym is a pair (ORIGINAL-VALUE . WAS-BOUND).
-      `(let ,(mapcar (lambda (binding)
-                       (list (cadr binding)
-                             (let ((name (car binding)))
-                               `(cons (when (boundp ',name) ,name)
-                                      (boundp ',name)))))
-                     binding-syms)
-         (unwind-protect
-             (progn ,@(mapcar (lambda (binding) `(setq ,(car binding) ,(cadr binding))) bindings)
-                    ,@body)
-           ;; After the body, reset the original value of each binding sym if
-           ;; there was one, unbind it if there wasn't.
-           ,@(mapcar (lambda (binding)
-                       `(if (cdr ,(cadr binding))
-                            (setq ,(car binding) (car ,(cadr binding)))
-                          (makunbound ',(car binding)))) binding-syms))))))
-
 (cl-defstruct (perspective
                (:conc-name persp-)
                (:constructor make-persp-internal))
@@ -641,8 +611,9 @@ perspective and no others are killed."
   (when (equal name (persp-name (frame-parameter nil 'persp-last)))
     (set-frame-parameter nil 'persp-last nil))
   (when (equal name (persp-name (frame-parameter nil 'persp-curr)))
+    (persp-switch (persp-find-some))
     ;; Don't let persp-last get set to the deleted persp.
-    (persp-frame-local-let ((persp-last (frame-parameter nil 'persp-last))) (persp-switch (persp-find-some)))))
+    (set-frame-parameter nil 'persp-last (frame-parameter nil 'nil))))
 
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
@@ -786,17 +757,17 @@ See also `persp-add-buffer'."
   "Preserve the current perspective when entering a recursive edit."
   (persp-protect
     (persp-save)
-    (persp-frame-local-let ((persp-recursive (frame-parameter nil 'persp-curr)))
-      (let ((old-hash (copy-hash-table (frame-parameter nil 'perspectives-hash))))
-        ad-do-it
-        ;; We want the buffer lists that were created in the recursive edit,
-        ;; but not the window configurations
-        (maphash (lambda (key new-persp)
-                   (let ((persp (gethash key old-hash)))
-                     (when persp
-                       (setf (persp-buffers persp) (persp-buffers new-persp)))))
-                 (frame-parameter nil 'perspectives-hash))
-        (set-frame-parameter nil 'perspectives-hash old-hash)))))
+    (set-frame-parameter nil 'persp-recursive (frame-parameter nil 'persp-curr))
+    (let ((old-hash (copy-hash-table (frame-parameter nil 'perspectives-hash))))
+      ad-do-it
+      ;; We want the buffer lists that were created in the recursive edit,
+      ;; but not the window configurations
+      (maphash (lambda (key new-persp)
+                 (let ((persp (gethash key old-hash)))
+                   (when persp
+                     (setf (persp-buffers persp) (persp-buffers new-persp)))))
+               (frame-parameter nil 'perspectives-hash))
+      (set-frame-parameter nil 'perspectives-hash old-hash))))
 
 (defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
   "Restore the old perspective when exiting a recursive edit."
