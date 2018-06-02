@@ -166,55 +166,6 @@ Run with the activated perspective active.")
   (substitute-key-definition 'perspective-map nil persp-mode-map)
   (define-key persp-mode-map newkey 'perspective-map))
 
-;; Keeping the variable definitions here since the docstrings might
-;; still be useful for developers.
-
-;; (make-variable-frame-local
-;;  (defvar perspectives-hash nil
-;;    "A hash containing all perspectives. The keys are the
-;; perspectives' names. The values are persp structs,
-;; with the fields NAME, WINDOW-CONFIGURATION, BUFFERS,
-;; BUFFER-HISTORY, KILLED, POINT-MARKER, and LOCAL-VARIABLES.
-
-;; NAME is the name of the perspective.
-
-;; WINDOW-CONFIGURATION is the configuration given by
-;; `current-window-configuration' last time the perspective was
-;; saved (if this isn't the current perspective, this is when the
-;; perspective was last active).
-
-;; BUFFERS is a list of buffer objects that are associated with this
-;; perspective.
-
-;; BUFFER-HISTORY is the list of buffer history values for this
-;; perspective.
-
-;; KILLED is non-nil if the perspective has been killed.
-
-;; POINT-MARKER is the point position in the active buffer.
-;; Otherwise, when multiple windows are visiting the same buffer,
-;; all but one of their points will be overwritten.
-
-;; LOCAL-VARIABLES is an alist from variable names to their
-;; perspective-local values."))
-
-;; (make-variable-frame-local
-;;  (defvar persp-curr nil
-;;    "The current perspective."))
-
-;; (make-variable-frame-local
-;;  (defvar persp-recursive nil
-;;    "The current perspective before beginning a recursive edit."))
-
-;; (make-variable-frame-local
-;;  (defvar persp-last nil
-;;    "The last perspective accessed before the current perspective."))
-
-;; (make-variable-frame-local
-;;  (defvar persp-modestring nil
-;;    "The string displayed in the modeline representing the perspectives."))
-;; (put 'persp-modestring 'risky-local-variable t)
-
 (defvar persp-protected nil
   "Whether a perspective error should cause persp-mode to be disabled.
 Dynamically bound by `persp-protect'.")
