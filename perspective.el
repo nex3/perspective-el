@@ -50,8 +50,8 @@
   :group 'perspective-mode)
 
 (defcustom persp-show-modestring t
-  "Determines if `persp-modestring' is shown in the modeline.
-If the value is 'header, `persp-modestring' is shown in the
+  "Determines if the list of perspectives is shown in the modeline.
+If the value is 'header, the list of perspectives is shown in the
 header line instead."
   :group 'perspective-mode
   :type '(choice (const :tag "Off" nil)
@@ -59,7 +59,7 @@ header line instead."
                  (const :tag "Header" 'header)))
 
 (defcustom persp-modestring-dividers '("[" "]" "|")
-  "Plist of strings used to created `persp-modestring'.
+  "Plist of strings used to create the string shown in the modeline.
 First string is the start of the modestring, second is the
 closing of the mode string, and the last is the divider between
 perspectives."
@@ -343,11 +343,11 @@ EVENT is the click event triggering this function call."
   (persp-switch (format "%s" (car (posn-string (event-start event))))))
 
 (defun persp-mode-line ()
-  "Use this in the mode-line to show up-to-date value of `persp-modestring'."
+  "Return the string displayed in the modeline representing the perspectives."
   (frame-parameter nil 'persp-modestring))
 
 (defun persp-update-modestring ()
-  "Update `persp-modestring' to reflect the current perspectives.
+  "Update the string to reflect the current perspectives.
 Has no effect when `persp-show-modestring' is nil."
   (when persp-show-modestring
     (let ((open (list (nth 0 persp-modestring-dividers)))
@@ -361,7 +361,7 @@ Has no effect when `persp-show-modestring' is nil."
 
 
 (defun persp-format-name (name)
-  "Format the perspective name given by NAME for display in `persp-modestring'."
+  "Format the perspective name given by NAME for display in the modeline."
   (let ((string-name (format "%s" name)))
     (if (equal name (persp-name (persp--current-persp)))
         (propertize string-name 'face 'persp-selected-face)
