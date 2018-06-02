@@ -359,7 +359,6 @@ Has no effect when `persp-show-modestring' is nil."
                                               (persp-names)) sep)
                    close)))))
 
-
 (defun persp-format-name (name)
   "Format the perspective name given by NAME for display in the modeline."
   (let ((string-name (format "%s" name)))
@@ -577,7 +576,7 @@ perspective and no others are killed."
   (when (equal name (persp-name (persp--current-persp)))
     (persp-switch (persp-find-some))
     ;; Don't let persp-last get set to the deleted persp.
-    (set-frame-parameter nil 'persp-last (frame-parameter nil 'nil))))
+    (set-frame-parameter nil 'persp-last (persp-find-some))))
 
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
