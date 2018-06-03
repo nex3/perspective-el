@@ -774,6 +774,7 @@ named collections of buffers and window configurations."
     (setq global-mode-string (delete '(:eval (persp-mode-line)) global-mode-string))
     (set-default 'header-line-format (delete '(:eval (persp-mode-line)) header-line-format))
     (unless (delete "" header-line-format)
+      ;; need to set header-line-format to nil to completely remove the header from the buffer
       (set-default 'header-line-format nil))))
 
 (defun persp-init-frame (frame)
