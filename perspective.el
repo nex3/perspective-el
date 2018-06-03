@@ -578,9 +578,9 @@ perspective and no others are killed."
     (setf (persp-killed (persp--current-persp)) t))
   (remhash name (frame-parameter nil 'perspectives-hash))
   (persp-update-modestring)
-  (when (equal name (persp-name (persp--last-persp)))
+  (when (and (persp--last-persp) (equal name (persp-name (persp--last-persp))))
     (set-frame-parameter nil 'persp-last nil))
-  (when (equal name (persp-name (persp--current-persp)))
+  (when (or (not (persp--current-persp)) (equal name (persp-name (persp--current-persp))))
     ;; Don't let persp-last get set to the deleted persp.
     (persp-let-frame-parameters ((persp-last (persp--last-persp)))
       (persp-switch (persp-find-some)))))
