@@ -103,6 +103,18 @@ See also `with-temp-buffer'."
            (if (buffer-live-p ,old-buffer)
                (set-buffer ,old-buffer)))))))
 
+(defmacro persp-let-frame-parameters (bindings &rest body)
+  "Like `let', but for frame parameters.
+Temporariliy set frame parameters according to BINDINGS then eval BODY.
+After BODY is evaluated, frame parameters are reset to their original values."
+  (declare (indent 1))
+  (let ((current-frame-parameters (mapcar (lambda (binding) (cons (car binding) (frame-parameter nil (car binding)))) bindings)))
+    `(unwind-protect
+         (progn ,@(mapcar (lambda (binding) `(set-frame-parameter nil (quote ,(car binding)) ,(cadr binding))) bindings)
+                ,@body)
+       ;; Revert the frame-parameters
+       (modify-frame-parameters nil (quote ,current-frame-parameters)))))
+
 (cl-defstruct (perspective
                (:conc-name persp-)
                (:constructor make-persp-internal))
@@ -160,7 +172,6 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "p") 'persp-prev)
 (define-key perspective-map (kbd "<left>") 'persp-prev)
 (define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
-
 
 (defun persp--current-persp ()
   "Get the current perspective in the active frame."
@@ -720,17 +731,17 @@ See also `persp-add-buffer'."
   "Preserve the current perspective when entering a recursive edit."
   (persp-protect
     (persp-save)
-    (set-frame-parameter nil 'persp-recursive (persp--current-persp))
-    (let ((old-hash (copy-hash-table (persp--perspectives-hash))))
-      ad-do-it
-      ;; We want the buffer lists that were created in the recursive edit,
-      ;; but not the window configurations
-      (maphash (lambda (key new-persp)
-                 (let ((persp (gethash key old-hash)))
-                   (when persp
-                     (setf (persp-buffers persp) (persp-buffers new-persp)))))
-               (persp--perspectives-hash))
-      (set-frame-parameter nil 'perspectives-hash old-hash))))
+    (persp-let-frame-parameters ((persp-recursive (persp--current-persp)))
+      (let ((old-hash (copy-hash-table (persp--perspectives-hash))))
+        ad-do-it
+        ;; We want the buffer lists that were created in the recursive edit,
+        ;; but not the window configurations
+        (maphash (lambda (key new-persp)
+                   (let ((persp (gethash key old-hash)))
+                     (when persp
+                       (setf (persp-buffers persp) (persp-buffers new-persp)))))
+                 (persp--perspectives-hash))
+        (set-frame-parameter nil 'perspectives-hash old-hash)))))
 
 (defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
   "Restore the old perspective when exiting a recursive edit."
