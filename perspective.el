@@ -173,6 +173,36 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "<left>") 'persp-prev)
 (define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
 
+(defun perspectives-hash (&optional frame)
+  "Return a hash containing all perspectives in FRAME.
+FRAME defaults to the currently selected frame. The keys are the
+perspectives' names. The values are persp structs, with the
+fields NAME, WINDOW-CONFIGURATION, BUFFERS, BUFFER-HISTORY,
+KILLED, POINT-MARKER, and LOCAL-VARIABLES.
+
+NAME is the name of the perspective.
+
+WINDOW-CONFIGURATION is the configuration given by
+`current-window-configuration' last time the perspective was
+saved (if this isn't the current perspective, this is when the
+perspective was last active).
+
+BUFFERS is a list of buffer objects that are associated with this
+perspective.
+
+BUFFER-HISTORY is the list of buffer history values for this
+perspective.
+
+KILLED is non-nil if the perspective has been killed.
+
+POINT-MARKER is the point position in the active buffer.
+Otherwise, when multiple windows are visiting the same buffer,
+all but one of their points will be overwritten.
+
+LOCAL-VARIABLES is an alist from variable names to their
+perspective-local values."
+  (frame-parameter frame 'persp--hash))
+
 (defun persp-curr (&optional frame)
   "Get the current perspective in FRAME.
 FRAME defaults to the currently selected frame."
@@ -238,7 +268,7 @@ for the perspective."
     `(let ((persp (make-persp-internal ,@keywords)))
        (when (persp-curr)
          (setf (persp-local-variables persp) (persp-local-variables (persp-curr))))
-       (puthash (persp-name persp) persp (frame-parameter nil 'persp--hash))
+       (puthash (persp-name persp) persp (perspectives-hash))
        (with-perspective (persp-name persp)
          ,(when args
             ;; Body form given
@@ -264,7 +294,7 @@ perspective-local variables to `persp-curr'"
 (defun persp-names ()
   "Return a list of the names of all perspectives, sorted alphabetically."
   (sort
-   (cl-loop for name being the hash-keys of (frame-parameter nil 'persp--hash)
+   (cl-loop for name being the hash-keys of (perspectives-hash)
             collect name)
    'string<))
 
@@ -415,7 +445,7 @@ perspective's local variables are set."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
   (if (and (persp-curr) (equal name (persp-name (persp-curr)))) name
-    (let ((persp (gethash name (frame-parameter nil 'persp--hash))))
+    (let ((persp (gethash name (perspectives-hash))))
       (set-frame-parameter nil 'persp--last (persp-curr))
       (when (null persp)
         (setq persp (persp-new name)))
@@ -487,8 +517,8 @@ If none of these perspectives can be found, this function will
 create a new main perspective and return \"main\"."
   (cond
    ((persp-last) (persp-name (persp-last)))
-   ((gethash persp-initial-frame-name (frame-parameter nil 'persp--hash)) persp-initial-frame-name)
-   ((> (hash-table-count (frame-parameter nil 'persp--hash)) 0) (car (persp-names)))
+   ((gethash persp-initial-frame-name (perspectives-hash)) persp-initial-frame-name)
+   ((> (hash-table-count (perspectives-hash)) 0) (car (persp-names)))
    (t (persp-activate
        (make-persp :name persp-initial-frame-name :buffers (buffer-list)
          :window-configuration (current-window-configuration)
@@ -578,7 +608,7 @@ perspective and no others are killed."
     (run-hooks 'persp-killed-hook)
     (mapc 'persp-remove-buffer (persp-buffers (persp-curr)))
     (setf (persp-killed (persp-curr)) t))
-  (remhash name (frame-parameter nil 'persp--hash))
+  (remhash name (perspectives-hash))
   (persp-update-modestring)
   (when (and (persp-last) (equal name (persp-name (persp-last))))
     (set-frame-parameter nil 'persp--last nil))
@@ -590,10 +620,10 @@ perspective and no others are killed."
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
   (interactive "sNew name: ")
-  (if (gethash name (frame-parameter nil 'persp--hash))
+  (if (gethash name (perspectives-hash))
       (persp-error "Perspective `%s' already exists" name)
-    (remhash (persp-name (persp-curr)) (frame-parameter nil 'persp--hash))
-    (puthash name (persp-curr) (frame-parameter nil 'persp--hash))
+    (remhash (persp-name (persp-curr)) (perspectives-hash))
+    (puthash name (persp-curr) (perspectives-hash))
     (setf (persp-name (persp-curr)) name)
     (persp-update-modestring)))
 
@@ -606,7 +636,7 @@ copied across frames."
   (dolist (frame (frame-list))
     (unless (equal frame not-frame)
       (with-selected-frame frame
-        (let ((persp (gethash name (frame-parameter nil 'persp--hash))))
+        (let ((persp (gethash name (perspectives-hash))))
           (if persp (cl-return-from persp-all-get (persp-buffers persp))))))))
 
 (defun persp-read-buffer (prompt &optional def require-match)
@@ -654,7 +684,7 @@ is non-nil or with prefix arg, don't switch to the new perspective."
   (unless name
     (setq name (funcall persp-interactive-completion-function
                         "Import perspective: " (persp-all-names (selected-frame)) nil t)))
-  (if (and (gethash name (frame-parameter nil 'persp--hash))
+  (if (and (gethash name (perspectives-hash))
            (not (yes-or-no-p (concat "Perspective `" name "' already exits. Continue? "))))
       (cl-return-from persp-import))
   (let ((buffers (persp-all-get name (selected-frame)))
@@ -730,7 +760,7 @@ See also `persp-add-buffer'."
   (persp-protect
     (persp-save)
     (persp-let-frame-parameters ((persp--recursive (persp-curr)))
-      (let ((old-hash (copy-hash-table (frame-parameter nil 'persp--hash))))
+      (let ((old-hash (copy-hash-table (perspectives-hash))))
         ad-do-it
         ;; We want the buffer lists that were created in the recursive edit,
         ;; but not the window configurations
@@ -738,7 +768,7 @@ See also `persp-add-buffer'."
                    (let ((persp (gethash key old-hash)))
                      (when persp
                        (setf (persp-buffers persp) (persp-buffers new-persp)))))
-                 (frame-parameter nil 'persp--hash))
+                 (perspectives-hash))
         (set-frame-parameter nil 'persp--hash old-hash)))))
 
 (defadvice exit-recursive-edit (before persp-restore-after-recursive-edit)
@@ -829,7 +859,7 @@ it. In addition, if one exists already, runs BODY in it immediately."
                  (when (string= (persp-name (persp-curr)) ,name)
                    ,@body))
                'append)
-     (when (gethash ,name (frame-parameter nil 'persp--hash))
+     (when (gethash ,name (perspectives-hash))
        (with-perspective ,name ,@body))))
 
 (defun persp-set-ido-buffers ()
