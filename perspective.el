@@ -173,13 +173,15 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "<left>") 'persp-prev)
 (define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
 
-(defun persp-curr ()
-  "Get the current perspective in the active frame."
-  (frame-parameter nil 'persp--curr))
+(defun persp-curr (&optional frame)
+  "Get the current perspective in FRAME.
+FRAME defaults to the currently selected frame."
+  (frame-parameter frame 'persp--curr))
 
-(defun persp-last ()
-  "Get the last active perspective for the active frame."
-  (frame-parameter nil 'persp--last))
+(defun persp-last (&optional frame)
+  "Get the last active perspective in FRAME.
+FRAME defaults to the currently selected frame."
+  (frame-parameter frame 'persp--last))
 
 (defun persp-mode-set-prefix-key (newkey)
   "Set the prefix key to activate persp-mode"
@@ -528,7 +530,7 @@ Prefers perspectives in the selected frame."
   (cl-loop for frame in (sort (frame-list) (lambda (frame1 frame2) (eq frame2 (selected-frame))))
            do (cl-loop for persp being the hash-values of (frame-parameter frame 'persp--hash)
                        if (and (not (and (equal frame (selected-frame))
-                                         (equal (persp-name persp) (persp-name (frame-parameter frame 'persp--curr)))))
+                                         (equal (persp-name persp) (persp-name (persp-curr frame)))))
                                (memq buffer (persp-buffers persp)))
                        do (cl-return-from persp-buffer-in-other-p
                             (cons frame (persp-name persp)))))
