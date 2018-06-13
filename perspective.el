@@ -451,8 +451,8 @@ perspective's local variables are set."
         (setq persp (persp-new name)))
       (run-hooks 'persp-before-switch-hook)
       (persp-activate persp)
-      name))
-  (run-hooks 'persp-switch-hook))
+      (run-hooks 'persp-switch-hook)
+      name)))
 
 (defun persp-activate (persp)
   "Activate the perspective given by the persp struct PERSP."
