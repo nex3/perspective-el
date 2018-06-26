@@ -593,9 +593,12 @@ See also `persp-switch' and `persp-add-buffer'."
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
         ((get-buffer-window buffer)
-         (while (get-buffer-window buffer)
-           (with-selected-window (get-buffer-window buffer)
-             (bury-buffer))))
+         (let ((w (get-buffer-window buffer)))
+           (while w
+             (with-selected-window (get-buffer-window buffer)
+               (bury-buffer))
+             (let ((nw (get-buffer-window buffer)))
+               (setq w (unless (eq w nw) nw))))))
         (t (bury-buffer buffer)))
   (setf (persp-buffers (persp-curr)) (remq buffer (persp-buffers (persp-curr)))))
 
