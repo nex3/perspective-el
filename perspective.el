@@ -7,7 +7,7 @@
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
 ;; Package-Requires: ((cl-lib "0.5"))
-;; Version: 2.1
+;; Version: 2.2
 ;; Created: 2008-03-05
 ;; By: Natalie Weizenbaum <nex342@gmail.com>
 ;; Keywords: workspace, convenience, frames
@@ -593,9 +593,13 @@ See also `persp-switch' and `persp-add-buffer'."
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
         ((get-buffer-window buffer)
-         (while (get-buffer-window buffer)
-           (with-selected-window (get-buffer-window buffer)
-             (bury-buffer))))
+         (let ((window (get-buffer-window buffer)))
+           (while window
+             (with-selected-window window (bury-buffer))
+             (let ((new-window (get-buffer-window buffer)))
+               ;; If `window' is still selected even after being buried, exit
+               ;; the loop because otherwise it will go on infinitely.
+               (setq window (unless (eq window new-window) new-window))))))
         (t (bury-buffer buffer)))
   (setf (persp-buffers (persp-curr)) (remq buffer (persp-buffers (persp-curr)))))
 
