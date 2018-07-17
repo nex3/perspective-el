@@ -593,12 +593,13 @@ See also `persp-switch' and `persp-add-buffer'."
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
         ((get-buffer-window buffer)
-         (let ((w (get-buffer-window buffer)))
-           (while w
-             (with-selected-window (get-buffer-window buffer)
-               (bury-buffer))
-             (let ((nw (get-buffer-window buffer)))
-               (setq w (unless (eq w nw) nw))))))
+         (let ((window (get-buffer-window buffer)))
+           (while window
+             (with-selected-window window (bury-buffer))
+             (let ((new-window (get-buffer-window buffer)))
+               ;; If `window' is still selected even after being buried, exit
+               ;; the loop because otherwise it will go on infinitely.
+               (setq window (unless (eq window new-window) new-window))))))
         (t (bury-buffer buffer)))
   (setf (persp-buffers (persp-curr)) (remq buffer (persp-buffers (persp-curr)))))
 
