@@ -499,7 +499,7 @@ If NORECORD is non-nil, do not update the
   (set-frame-parameter nil 'persp--curr persp)
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
-  (persp-reactivate-buffers (persp-buffers persp))
+  (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
   (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
   (when (marker-position (persp-point-marker persp))
