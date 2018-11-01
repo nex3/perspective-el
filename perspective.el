@@ -340,7 +340,13 @@ This prevents the propagation of reserved window parameters like
 window-side creating perspectives."
   (let ((ignore-window-parameters t))
     (delete-other-windows)
-    (when (ignore-errors (split-window))
+    (when (ignore-errors
+            ;; Create a fresh window without any window parameters, the
+            ;; selected window is still in a window that may have window
+            ;; parameters we don't want.
+            (split-window))
+      ;; Delete the selected window so that the only window left has no window
+      ;; parameters.
       (delete-window))))
 
 (defun persp-new (name)
