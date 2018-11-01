@@ -334,6 +334,21 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
            (when ,old (persp-switch ,old)))
          (set-frame-parameter nil 'persp--last last-persp-cache)))))
 
+(defun persp-reset-windows ()
+  "Remove all windows, ensure the remaining one has no window parameters.
+This prevents the propagation of reserved window parameters like
+window-side creating perspectives."
+  (let ((ignore-window-parameters t))
+    (delete-other-windows)
+    (when (ignore-errors
+            ;; Create a fresh window without any window parameters, the
+            ;; selected window is still in a window that may have window
+            ;; parameters we don't want.
+            (split-window))
+      ;; Delete the selected window so that the only window left has no window
+      ;; parameters.
+      (delete-window))))
+
 (defun persp-new (name)
   "Return a new perspective with name NAME.
 The new perspective will start with only an `initial-major-mode'
@@ -341,7 +356,7 @@ buffer called \"*scratch* (NAME)\"."
   (make-persp :name name
     (switch-to-buffer (concat "*scratch* (" name ")"))
     (funcall initial-major-mode)
-    (delete-other-windows)))
+    (persp-reset-windows)))
 
 (defun persp-reactivate-buffers (buffers)
   "Raise BUFFERS to the top of the most-recently-selected list.
@@ -459,6 +474,7 @@ perspective's local variables are set."
   (check-persp persp)
   (persp-save)
   (set-frame-parameter nil 'persp--curr persp)
+  (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
   (persp-reactivate-buffers (persp-buffers persp))
   (setq buffer-name-history (persp-buffer-history persp))
@@ -698,10 +714,10 @@ is non-nil or with prefix arg, don't switch to the new perspective."
     (if (null buffers)
         (persp-error "Perspective `%s' doesn't exist in another frame" name))
     (setq persp (make-persp :name name :buffers buffers
-                            (switch-to-buffer (cl-loop for buffer in buffers
-                                                       if (buffer-live-p buffer)
-                                                       return buffer))
-                            (delete-other-windows)))
+                  (switch-to-buffer (cl-loop for buffer in buffers
+                                             if (buffer-live-p buffer)
+                                             return buffer))
+                  (persp-reset-windows)))
     (if dont-switch
         (persp-update-modestring)
       (persp-activate persp))))
