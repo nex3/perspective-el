@@ -347,9 +347,9 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
              (last-persp-cache (persp-last)))
          (unwind-protect
              (progn
-               (persp-switch ,name)
+               (persp-switch ,name 'norecord)
                ,@body)
-           (when ,old (persp-switch ,old)))
+           (when ,old (persp-switch ,old 'norecord)))
          (set-frame-parameter nil 'persp--last last-persp-cache)))))
 
 (defun persp-reset-windows ()
@@ -467,14 +467,17 @@ This is used for cycling between perspectives."
     (error "There is no last perspective"))
   (persp-switch (persp-name (persp-last))))
 
-(defun persp-switch (name)
+(defun persp-switch (name &optional norecord)
   "Switch to the perspective given by NAME.
 If it doesn't exist, create a new perspective and switch to that.
 
 Switching to a perspective means that all buffers associated with
 that perspective are reactivated (see `persp-reactivate-buffers'),
 the perspective's window configuration is restored, and the
-perspective's local variables are set."
+perspective's local variables are set.
+
+If NORECORD is non-nil, do not update the
+`persp-last-switch-time' for the switched perspective."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
   (if (and (persp-curr) (equal name (persp-name (persp-curr)))) name
@@ -484,13 +487,7 @@ perspective's local variables are set."
         (setq persp (persp-new name)))
       (run-hooks 'persp-before-switch-hook)
       (persp-activate persp)
-      ;; Only update the last switch time if one of the switching commands was
-      ;; explicitly called by the user.
-      (when (memq this-command '(persp-switch
-                                 persp-switch-last
-                                 persp-next
-                                 persp-prev
-                                 persp-switch-quick))
+      (unless norecord
         (setf (persp-last-switch-time persp) (current-time)))
       (run-hooks 'persp-switch-hook)
       name)))
