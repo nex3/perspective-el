@@ -83,11 +83,12 @@ perspectives."
   :group 'perspective-mode
   :type 'boolean)
 
-(defcustom persp-prompt-chronologically nil
-  "Whether to display perspective names in chronological order when prompting.
-If non-nil, show perspective names ordered by their last access
-time with most recently accessed first. Otherwise show names in
-alphabetical order."
+(defcustom persp-sort-chronologically nil
+  "Whether to switch to other perspectives based on their last switch time.
+If non-nil, `persp-names' always returns a list of perspective
+names ordered by their last access time with the most recently
+accessed perspective first. Otherwise the list of perspectives
+returned is in alphabetical order."
   :group 'perspective-mode
   :type 'boolean)
 
@@ -300,14 +301,14 @@ perspective-local variables to `persp-curr'"
     (setf (persp-window-configuration (persp-curr)) (current-window-configuration))
     (setf (persp-point-marker (persp-curr)) (point-marker))))
 
-(defun persp-names (&optional chronologically)
+(defun persp-names ()
   "Return a list of the names of all perspectives on the `selected-frame'.
 
-If CHRONOLOGICALLY is non-nil return them sorted by the last time
-the perspective was switched to, the current perspective being
-the first. Otherwise sort alphabetically."
+If `persp-sort-chronologically' is non-nil return them sorted by
+the last time the perspective was switched to, the current
+perspective being the first. Otherwise sort alphabetically."
   (let ((persps (hash-table-values (perspectives-hash))))
-    (if chronologically
+    (if persp-sort-chronologically
         (mapcar 'persp-name
                 (sort persps (lambda (a b)
                                (time-less-p (persp-last-switch-time b)
@@ -334,7 +335,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
            (concat "Perspective name"
                    (if default (concat " (default " default ")") "")
                    ": ")
-           (persp-names persp-prompt-chronologically)
+           (persp-names)
            nil require-match nil nil default))
 
 (defmacro with-perspective (name &rest body)
@@ -660,7 +661,8 @@ perspective and no others are killed."
   (when (and (persp-last) (equal name (persp-name (persp-last))))
     (set-frame-parameter
      nil 'persp--last
-     (let* ((names (persp-names 'ordered-by-time))
+     (let* ((persp-sort-chronologically t)
+            (names (persp-names))
             (last (nth 1 names)))
        (when last
          (gethash last (perspectives-hash))))))
