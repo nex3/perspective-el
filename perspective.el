@@ -971,6 +971,158 @@ perspective beginning with the given letter."
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
+;; Symbols namespaced by persp--state (internal) and persp-state (user
+;; functions) provide functionality which allows saving perspective state on
+;; disk, and loading it into another Emacs session.
+;;
+;; The relevant commands are persp-state-save and persp-state-load (aliased to
+;; persp-state-restore).
+;;
+;; The (on-disk) data structure looks like this:
+;;
+;; {
+;;   :files [...]
+;;   :frames [
+;;     {
+;;       "persp1" {
+;;         :buffers [...]
+;;         :windows [...]
+;;       }
+;;     }
+;;   ]
+;; }
+
+(defstruct persp--state-complete
+  files
+  frames)
+
+(defstruct persp--state-single
+  buffers
+  windows)
+
+(defun persp--state-interesting-buffer-p (buffer)
+  (and (buffer-name buffer)
+       (buffer-file-name buffer)
+       (not (string-match "^[[:space:]]*\\*" (buffer-name buffer)))))
+
+(defun persp--state-file-data ()
+  (cl-loop for buffer in (buffer-list)
+        if (persp--state-interesting-buffer-p buffer)
+        collect (buffer-file-name buffer)))
+
+(defun persp--state-window-state-massage (entry persp valid-buffers)
+  "This is a primitive code walker. It removes references to
+potentially problematic buffers from the data structure created
+by window-state-get and replaces them with references to the
+perspective-specific *scratch* buffer. Buffers are considered
+'problematic' when they have no underlying file, or are otherwise
+transient."
+  (cond
+    ;; base case 1
+    ((not (consp entry))
+     entry)
+    ;; base case 2
+    ((atom (cdr entry))
+     entry)
+    ;; leaf: modify this
+    ((eq 'leaf (car entry))
+     (lexical-let ((leaf-props (cdr entry)))
+       (cons 'leaf
+             (cl-loop for prop in leaf-props
+                   collect (if (not (eq 'buffer (car prop)))
+                               prop
+                             (lexical-let ((bn (cadr prop)))
+                               (if (member bn valid-buffers)
+                                   prop
+                                 (cons 'buffer
+                                       (cons (lexical-let ((scratch-persp (format "*scratch* (%s)" persp)))
+                                               (if (get-buffer scratch-persp)
+                                                   scratch-persp
+                                                 "*scratch*"))
+                                             (cddr prop))))))))))
+    ;; recurse
+    (t (cons (car entry) (cl-loop for e in (cdr entry)
+                               collect (persp--state-window-state-massage e persp valid-buffers))))))
+
+(defun persp--state-frame-data ()
+  (cl-loop for frame in (frame-list)
+        collect (with-selected-frame frame
+                  (lexical-let ((persps-in-frame (make-hash-table)))
+                    (cl-loop for persp in (persp-names) do
+                          (with-perspective persp
+                            (lexical-let* ((buffers
+                                            (cl-loop for buffer in (persp-buffers (persp-curr))
+                                                  if (persp--state-interesting-buffer-p buffer)
+                                                  collect (buffer-name buffer)))
+                                           (windows
+                                            (cl-loop for entry in (window-state-get (frame-root-window) t)
+                                                  collect (persp--state-window-state-massage entry persp buffers))))
+                              (puthash persp
+                                       (make-persp--state-single
+                                        :buffers buffers
+                                        :windows windows)
+                                       persps-in-frame))))
+                    persps-in-frame))))
+
+(defun persp-state-save (file)
+  "Save the current perspective state to FILE.
+
+Each perspective's buffer list and window layout will be saved.
+Frames and their associated perspectives will also be saved
+(but not the original frame sizes).
+
+Buffers with * characters in their names, as well as buffers without
+associated files will be ignored. If such buffers are currently
+visible in a perspective as windows, they will be saved as
+'*scratch* (persp)' buffers."
+  (interactive "FSave perspective state to file: ")
+  (if (not persp-mode)
+      (message "persp-mode not enabled, nothing to save")
+    (persp-save)
+    (lexical-let ((state-complete (make-persp--state-complete
+                                   :files (persp--state-file-data)
+                                   :frames (persp--state-frame-data))))
+      (append-to-file (prin1-to-string state-complete) nil file))))
+
+(defun persp-state-load (file)
+  "Restore the perspective state saved in FILE.
+
+Frames are restored, along with each frame's perspective list.
+Each perspective's buffer list and window layout are also
+restored."
+  (interactive "fRestore perspective state from file: ")
+  (persp-mode 1)
+  (lexical-let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
+                (frame-count 0)
+                (state-complete (read-from-whole-string
+                                 (with-temp-buffer
+                                   (insert-file-contents file)
+                                   (buffer-string)))))
+    ;; open all files in a temporary perspective to avoid polluting "main"
+    (persp-switch tmp-persp-name)
+    (cl-loop for file in (persp--state-complete-files state-complete) do
+          (when (file-exists-p file)
+            (find-file file)))
+    ;; iterate over the frames
+    (cl-loop for frame in (persp--state-complete-frames state-complete) do
+          (incf frame-count)
+          (when (> frame-count 1)
+            (make-frame-command))
+          ;; iterate over the perspectives in the frame
+          (cl-loop for persp being the hash-keys of frame using (hash-values state-single) do
+                (persp-switch persp)
+                (cl-loop for buffer in (persp--state-single-buffers state-single) do
+                      (persp-add-buffer buffer))
+                ;; XXX: split-window-horizontally is necessary for
+                ;; window-state-put to succeed? Something goes haywire with root
+                ;; windows without it.
+                (split-window-horizontally)
+                (window-state-put (persp--state-single-windows state-single) (frame-root-window (selected-frame)))))
+    ;; cleanup
+    (persp-kill tmp-persp-name)))
+
+(defalias 'persp-state-restore 'persp-state-load)
+
 (provide 'perspective)
 
 ;; Local Variables:
