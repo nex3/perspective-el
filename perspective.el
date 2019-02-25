@@ -682,6 +682,14 @@ perspective and no others are killed."
   (interactive "sNew name: ")
   (if (gethash name (perspectives-hash))
       (persp-error "Perspective `%s' already exists" name)
+    ;; rename the perspective-specific *scratch* buffer
+    (let* ((old-scratch-name (format "*scratch* (%s)" (persp-name (persp-curr))))
+           (new-scratch-name (format "*scratch* (%s)" name))
+           (scratch-buffer (get-buffer old-scratch-name)))
+      (when scratch-buffer
+        (with-current-buffer scratch-buffer
+          (rename-buffer new-scratch-name))))
+    ;; rewire the rest of the perspective inside its data structures
     (remhash (persp-name (persp-curr)) (perspectives-hash))
     (puthash name (persp-curr) (perspectives-hash))
     (setf (persp-name (persp-curr)) name)
