@@ -18,6 +18,7 @@ Alternately, you may put it in your load path and run
 `(require 'perspective)`.  Users of Debian 9 or later or Ubuntu 16.04
 or later may simply `apt-get install elpa-perspective`.
 
+
 ## Usage
 
 To activate perspective use `(persp-mode)`.
@@ -34,3 +35,20 @@ Commands are all prefixed by `C-x x`. Here are the main commands:
 - `i`  --  `persp-import`: Import a given perspective from another frame.
 - `n`, `<right>`  --  `persp-next` : Switch to next perspective
 - `p`, `<left>`   --  `persp-prev`: Switch to previous perspective
+
+
+## Saving sessions to disk
+
+A pair of functions, `persp-state-save` and `persp-state-load`, implement
+perspective durability on disk. When called interactively with `M-x`, they
+prompt for files to save sessions to and restore from.
+
+A custom variable, `persp-state-default-file`, sets a default file to use for
+saving and restoring perspectives. When it is set, `persp-state-save` may be
+called non-interactively without an argument and it will save to the file
+referenced by that variable. This makes it easy to automatically save
+perspective sessions when Emacs exists:
+
+```
+(add-hook 'kill-emacs-hook #'persp-state-save)
+```
