@@ -92,6 +92,16 @@ perspectives."
                  (const :tag "By Time Accessed" access)
                  (const :tag "By Time Created"  created)))
 
+(defcustom persp-state-default-file nil
+  "When non-nil, it provides a default argument for
+`persp-state-save` and `persp-state-load` to work with.
+
+`persp-state-save` overwrites this file without prompting, which
+makes it easy to use in, e.g., `kill-emacs-hook` to automatically
+save state when exiting Emacs."
+  :group 'perspective-mode
+  :type 'file)
+
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
 (unless (fboundp 'with-selected-frame)
@@ -1064,8 +1074,12 @@ transient."
                                        persps-in-frame))))
                     persps-in-frame))))
 
-(defun persp-state-save (file)
+;;;###autoload
+(defun persp-state-save (&optional file interactive?)
   "Save the current perspective state to FILE.
+
+FILE defaults to the value of persp-state-default-file if it is
+set.
 
 Each perspective's buffer list and window layout will be saved.
 Frames and their associated perspectives will also be saved
@@ -1075,22 +1089,69 @@ Buffers with * characters in their names, as well as buffers without
 associated files will be ignored. If such buffers are currently
 visible in a perspective as windows, they will be saved as
 '*scratch* (persp)' buffers."
-  (interactive "FSave perspective state to file: ")
-  (if (not persp-mode)
-      (message "persp-mode not enabled, nothing to save")
+  (interactive (list
+                (read-file-name "Save perspective state to file: "
+                                persp-state-default-file
+                                persp-state-default-file)
+                t))
+  (unless persp-mode
+    (error "persp-mode not enabled, nothing to save"))
+  (lexical-let ((target-file (if (and file (not (string-equal "" file)))
+                                 ;; file provided as argument, just use it
+                                 (expand-file-name file)
+                               ;; no file provided as argument
+                               (if interactive?
+                                   ;; return nil in interactive call mode, since
+                                   ;; read-file-name should have provided a reasonable
+                                   ;; default
+                                   nil
+                                 ;; in non-interactive call mode, we want to fall back to
+                                 ;; the default, but only if it is set
+                                 (if (and persp-state-default-file
+                                          (not (string-equal "" persp-state-default-file)))
+                                     (expand-file-name persp-state-default-file)
+                                   nil)))))
+    (unless target-file
+      (error "No target file specified"))
+    ;; overwrite the target file if:
+    ;; - the file does not exist, or
+    ;; - the file is not the one set in persp-state-default-file, or
+    ;; - the user called this function with a prefix argument, or
+    ;; - the user approves overwriting the file when prompted
+    (when (and (file-exists-p target-file)
+               (not (string-equal (if (and persp-state-default-file
+                                           (not (string-equal "" persp-state-default-file)))
+                                      (expand-file-name persp-state-default-file)
+                                    "")
+                                  target-file))
+               (not (or current-prefix-arg
+                        (yes-or-no-p "Target file exists. Overwrite? "))))
+      (error "persp-state-save cancelled"))
+    ;; actually save
     (persp-save)
     (lexical-let ((state-complete (make-persp--state-complete
                                    :files (persp--state-file-data)
                                    :frames (persp--state-frame-data))))
-      (append-to-file (prin1-to-string state-complete) nil file))))
+      (when (file-exists-p target-file)
+        (delete-file target-file))
+      (append-to-file (prin1-to-string state-complete) nil target-file))))
 
+;;;###autoload
 (defun persp-state-load (file)
   "Restore the perspective state saved in FILE.
+
+FILE defaults to the value of persp-state-default-file if it is
+set.
 
 Frames are restored, along with each frame's perspective list.
 Each perspective's buffer list and window layout are also
 restored."
-  (interactive "fRestore perspective state from file: ")
+  (interactive (list
+                (read-file-name "Restore perspective state from file: "
+                                persp-state-default-file
+                                persp-state-default-file)))
+  (unless (file-exists-p file)
+    (error "File not found"))
   (persp-mode 1)
   (lexical-let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
                 (frame-count 0)
