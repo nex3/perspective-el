@@ -1178,7 +1178,9 @@ restored."
                 ;; window-state-put to succeed? Something goes haywire with root
                 ;; windows without it.
                 (split-window-horizontally)
-                (window-state-put (persp--state-single-windows state-single) (frame-root-window (selected-frame)))))
+                (window-state-put (persp--state-single-windows state-single)
+                                  (frame-root-window (selected-frame))
+                                  'safe)))
     ;; cleanup
     (persp-kill tmp-persp-name)))
 
