@@ -783,16 +783,43 @@ See also `persp-add-buffer'."
         (with-selected-frame frame
           (persp-add-buffer buf))))))
 
+(defun persp--window-buffer-list-filter ()
+  (persp-protect
+    (when ad-return-value
+      (cl-loop with all = (persp-buffers (persp-curr))
+               for ble in ad-return-value
+               if (and ble
+                       (listp ble)
+                       (car ble)
+                       (not (null (buffer-name (car ble))))
+                       (memq (car ble) all))
+               collect ble into res
+               finally (setq ad-return-value res)))))
+
+(defadvice window-prev-buffers (after persp-window-prev-buffers)
+  "Ensure that any potential buffers to switch to belong to the
+  current perspective."
+  (persp--window-buffer-list-filter))
+
+(defadvice window-next-buffers (after persp-window-next-buffers)
+  "Ensure that any potential buffers to switch to belong to the
+  current perspective."
+  (persp--window-buffer-list-filter))
+
 (defadvice switch-to-prev-buffer (around persp-ensure-buffer-in-persp)
   "Ensure that the selected buffer is in WINDOW's perspective."
   (let* ((window (window-normalize-window window t))
          (frame (window-frame window))
-         (old-buffer (window-buffer window)))
+         (old-buffer (window-buffer window))
+         ;; XXX: The list of buffers in the current perspective must be saved
+         ;; for use after the underlying function runs. Otherwise,
+         ;; switch-to-prev-buffer can switch to a buffer from a different
+         ;; perspective, and thereby import it into the current perspective.
+         (saved-buffer-list (persp-buffers (persp-curr))))
     ad-do-it
-
     (let ((buffer (window-buffer window)))
       (with-selected-frame frame
-        (unless (memq buffer (persp-buffers (persp-curr)))
+        (unless (memq buffer saved-buffer-list)
           ;; If a buffer from outside this perspective was selected, it's because
           ;; this perspective is out of buffers. For lack of any better option, we
           ;; recreate the scratch buffer.
@@ -804,7 +831,10 @@ See also `persp-add-buffer'."
               (setq name (concat "*scratch*  (" (persp-name (persp-curr)) ")")))
             (with-selected-window window
               (switch-to-buffer name)
-              (funcall initial-major-mode))))))))
+              (funcall initial-major-mode)))
+          ;; Remove the erroneously-inserted buffer from the current
+          ;; perspective, since it never belonged here in the first place.
+          (persp-remove-buffer buffer))))))
 
 (defadvice recursive-edit (around persp-preserve-for-recursive-edit)
   "Preserve the current perspective when entering a recursive edit."
@@ -839,6 +869,8 @@ named collections of buffers and window configurations."
         (ad-activate 'switch-to-buffer)
         (ad-activate 'display-buffer)
         (ad-activate 'set-window-buffer)
+        (ad-activate 'window-prev-buffers)
+        (ad-activate 'window-next-buffers)
         (ad-activate 'switch-to-prev-buffer)
         (ad-activate 'recursive-edit)
         (ad-activate 'exit-recursive-edit)
