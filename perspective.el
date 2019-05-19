@@ -1075,7 +1075,7 @@ transient."
                     persps-in-frame))))
 
 ;;;###autoload
-(defun persp-state-save (&optional file interactive?)
+(cl-defun persp-state-save (&optional file interactive?)
   "Save the current perspective state to FILE.
 
 FILE defaults to the value of persp-state-default-file if it is
@@ -1095,7 +1095,8 @@ visible in a perspective as windows, they will be saved as
                                 persp-state-default-file)
                 t))
   (unless persp-mode
-    (error "persp-mode not enabled, nothing to save"))
+    (message "persp-mode not enabled, nothing to save")
+    (return-from persp-state-save))
   (lexical-let ((target-file (if (and file (not (string-equal "" file)))
                                  ;; file provided as argument, just use it
                                  (expand-file-name file)
