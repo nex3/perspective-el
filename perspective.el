@@ -823,12 +823,7 @@ See also `persp-add-buffer'."
           ;; If a buffer from outside this perspective was selected, it's because
           ;; this perspective is out of buffers. For lack of any better option, we
           ;; recreate the scratch buffer.
-          ;;
-          ;; If we were just in a scratch buffer, change the name slightly.
-          ;; Otherwise our new buffer will get deleted too.
           (let ((name (concat "*scratch* (" (persp-name (persp-curr)) ")")))
-            (when (and bury-or-kill (equal name (buffer-name old-buffer)))
-              (setq name (concat "*scratch*  (" (persp-name (persp-curr)) ")")))
             (with-selected-window window
               (switch-to-buffer name)
               (funcall initial-major-mode)))
