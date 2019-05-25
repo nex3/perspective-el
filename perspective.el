@@ -343,6 +343,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   (declare (indent 1))
   (let ((old (cl-gensym)))
     `(progn
+       (when (persp-last)
        (let ((,old (when (persp-curr) (persp-name (persp-curr))))
              (last-persp-cache (persp-last)))
          (unwind-protect
@@ -350,7 +351,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
                (persp-switch ,name 'norecord)
                ,@body)
            (when ,old (persp-switch ,old 'norecord)))
-         (set-frame-parameter nil 'persp--last last-persp-cache)))))
+         (set-frame-parameter nil 'persp--last last-persp-cache))))))
 
 (defun persp-reset-windows ()
   "Remove all windows, ensure the remaining one has no window parameters.
@@ -670,7 +671,8 @@ perspective and no others are killed."
             (last (nth 1 names)))
        (when last
          (gethash last (perspectives-hash))))))
-  (when (or (not (persp-curr)) (equal name (persp-name (persp-curr))))
+  (when (and (or (not (persp-curr)) (equal name (persp-name (persp-curr))))
+             (persp-last))
     ;; Don't let persp-last get set to the deleted persp.
     (persp-let-frame-parameters ((persp--last (persp-last)))
       (persp-switch (persp-find-some))))))
