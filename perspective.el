@@ -212,17 +212,20 @@ all but one of their points will be overwritten.
 
 LOCAL-VARIABLES is an alist from variable names to their
 perspective-local values."
-  (frame-parameter frame 'persp--hash))
+  (or (frame-parameter frame 'persp--hash)
+      (make-hash-table)))
 
 (defun persp-curr (&optional frame)
   "Get the current perspective in FRAME.
 FRAME defaults to the currently selected frame."
-  (frame-parameter frame 'persp--curr))
+  (or (frame-parameter frame 'persp--curr)
+      (make-persp-internal)))
 
 (defun persp-last (&optional frame)
   "Get the last active perspective in FRAME.
 FRAME defaults to the currently selected frame."
-  (frame-parameter frame 'persp--last))
+  (or (frame-parameter frame 'persp--last)
+      (make-persp-internal)))
 
 (defun persp-mode-set-prefix-key (newkey)
   "Set the prefix key to activate persp-mode"
