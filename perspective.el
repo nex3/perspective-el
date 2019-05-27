@@ -83,14 +83,12 @@ perspectives."
   :group 'perspective-mode
   :type 'boolean)
 
-(defcustom persp-sort-chronologically nil
-  "Whether to switch to other perspectives based on their last switch time.
-If non-nil, `persp-names' always returns a list of perspective
-names ordered by their last access time with the most recently
-accessed perspective first. Otherwise the list of perspectives
-returned is in alphabetical order."
+(defcustom persp-sort 'name
+  "What order to sort perspectives. If 'name, then sort alphabetically. If 'access, then sort by last time accessed (latest first). If 'created, then sort by time created (latest first)."
   :group 'perspective-mode
-  :type 'boolean)
+  :type '(choice (const :tag "By Name"          name)
+                 (const :tag "By Time Accessed" access)
+                 (const :tag "By Time Created"  created)))
 
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
@@ -129,6 +127,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
                (:constructor make-persp-internal))
   name buffers killed local-variables
   (last-switch-time (current-time))
+  (created-time (current-time))
   (buffer-history buffer-name-history)
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
@@ -304,16 +303,25 @@ perspective-local variables to `persp-curr'"
 (defun persp-names ()
   "Return a list of the names of all perspectives on the `selected-frame'.
 
-If `persp-sort-chronologically' is non-nil return them sorted by
-the last time the perspective was switched to, the current
-perspective being the first. Otherwise sort alphabetically."
+If `persp-sort' is 'name (the default), then return them sorted
+alphabetically. If `persp-sort' is 'access, then return them
+sorted by the last time the perspective was switched to, the
+current perspective being the first. If `persp-sort' is 'created,
+then return them in the order they were created, with the newest
+first."
   (let ((persps (hash-table-values (perspectives-hash))))
-    (if persp-sort-chronologically
-        (mapcar 'persp-name
-                (sort persps (lambda (a b)
-                               (time-less-p (persp-last-switch-time b)
-                                            (persp-last-switch-time a)))))
-      (sort (mapcar 'persp-name persps) 'string<))))
+    (cond ((eq persp-sort 'name)
+           (sort (mapcar 'persp-name persps) 'string<))
+          ((eq persp-sort 'access)
+           (mapcar 'persp-name
+                   (sort persps (lambda (a b)
+                                  (time-less-p (persp-last-switch-time b)
+                                               (persp-last-switch-time a))))))
+          ((eq persp-sort 'created)
+           (mapcar 'persp-name
+                   (sort persps (lambda (a b)
+                                  (time-less-p (persp-created-time b)
+                                               (persp-created-time a)))))))))
 
 (defun persp-all-names (&optional not-frame)
   "Return a list of the perspective names for all frames.
@@ -658,7 +666,7 @@ perspective and no others are killed."
   (when (and (persp-last) (equal name (persp-name (persp-last))))
     (set-frame-parameter
      nil 'persp--last
-     (let* ((persp-sort-chronologically t)
+     (let* ((persp-sort 'access)
             (names (persp-names))
             (last (nth 1 names)))
        (when last
