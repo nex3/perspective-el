@@ -1012,13 +1012,16 @@ perspective beginning with the given letter."
 
 (defun persp--state-interesting-buffer-p (buffer)
   (and (buffer-name buffer)
-       (buffer-file-name buffer)
-       (not (string-match "^[[:space:]]*\\*" (buffer-name buffer)))))
+       (not (string-match "^[[:space:]]*\\*" (buffer-name buffer)))
+       (or (buffer-file-name buffer)
+           (with-current-buffer buffer (equal major-mode 'dired-mode)))))
 
 (defun persp--state-file-data ()
   (cl-loop for buffer in (buffer-list)
         if (persp--state-interesting-buffer-p buffer)
-        collect (buffer-file-name buffer)))
+        collect (or (buffer-file-name buffer)
+                    (with-current-buffer buffer ; dired special case
+                      default-directory))))
 
 (defun persp--state-window-state-massage (entry persp valid-buffers)
   "This is a primitive code walker. It removes references to
