@@ -994,10 +994,13 @@ perspective beginning with the given letter."
 ;;   :files [...]
 ;;   :frames [
 ;;     {
-;;       "persp1" {
-;;         :buffers [...]
-;;         :windows [...]
+;;       :persps {
+;;         "persp1" {
+;;           :buffers [...]
+;;           :windows [...]
+;;         }
 ;;       }
+;;       :order [...]
 ;;     }
 ;;   ]
 ;; }
@@ -1005,6 +1008,10 @@ perspective beginning with the given letter."
 (defstruct persp--state-complete
   files
   frames)
+
+(defstruct persp--state-frame
+  persps
+  order)
 
 (defstruct persp--state-single
   buffers
@@ -1059,23 +1066,27 @@ transient."
 
 (defun persp--state-frame-data ()
   (cl-loop for frame in (frame-list)
-        collect (with-selected-frame frame
-                  (lexical-let ((persps-in-frame (make-hash-table)))
-                    (cl-loop for persp in (persp-names) do
-                          (with-perspective persp
-                            (lexical-let* ((buffers
-                                            (cl-loop for buffer in (persp-buffers (persp-curr))
-                                                  if (persp--state-interesting-buffer-p buffer)
-                                                  collect (buffer-name buffer)))
-                                           (windows
-                                            (cl-loop for entry in (window-state-get (frame-root-window) t)
-                                                  collect (persp--state-window-state-massage entry persp buffers))))
-                              (puthash persp
-                                       (make-persp--state-single
-                                        :buffers buffers
-                                        :windows windows)
-                                       persps-in-frame))))
-                    persps-in-frame))))
+           collect (with-selected-frame frame
+                     (lexical-let ((persps-in-frame (make-hash-table :test 'equal))
+                                   (persp-names-in-order (persp-names)))
+                       (cl-loop for persp in persp-names-in-order do
+                                (unless (persp-killed-p (gethash persp (perspectives-hash)))
+                                  (with-perspective persp
+                                    (lexical-let* ((buffers
+                                                    (cl-loop for buffer in (persp-buffers (persp-curr))
+                                                             if (persp--state-interesting-buffer-p buffer)
+                                                             collect (buffer-name buffer)))
+                                                   (windows
+                                                    (cl-loop for entry in (window-state-get (frame-root-window) t)
+                                                             collect (persp--state-window-state-massage entry persp buffers))))
+                                      (puthash persp
+                                               (make-persp--state-single
+                                                :buffers buffers
+                                                :windows windows)
+                                               persps-in-frame)))))
+                       (make-persp--state-frame
+                        :persps persps-in-frame
+                        :order persp-names-in-order)))))
 
 ;;;###autoload
 (cl-defun persp-state-save (&optional file interactive?)
@@ -1169,25 +1180,39 @@ restored."
     ;; open all files in a temporary perspective to avoid polluting "main"
     (persp-switch tmp-persp-name)
     (cl-loop for file in (persp--state-complete-files state-complete) do
-          (when (file-exists-p file)
-            (find-file file)))
+             (when (file-exists-p file)
+               (find-file file)))
     ;; iterate over the frames
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
-          (incf frame-count)
-          (when (> frame-count 1)
-            (make-frame-command))
-          ;; iterate over the perspectives in the frame
-          (cl-loop for persp being the hash-keys of frame using (hash-values state-single) do
-                (persp-switch persp)
-                (cl-loop for buffer in (persp--state-single-buffers state-single) do
-                      (persp-add-buffer buffer))
-                ;; XXX: split-window-horizontally is necessary for
-                ;; window-state-put to succeed? Something goes haywire with root
-                ;; windows without it.
-                (split-window-horizontally)
-                (window-state-put (persp--state-single-windows state-single)
-                                  (frame-root-window (selected-frame))
-                                  'safe)))
+             (incf frame-count)
+             (when (> frame-count 1)
+               (make-frame-command))
+             ;; XXX: The condition in binding frame-persp-table and
+             ;; frame-persp-order ensures backwards compatibility with the early
+             ;; pre-release format of persp-state files: the frame may be just a
+             ;; hash table (old version), or it may be an instance of
+             ;; persp--state-frame (released version). The special case can be
+             ;; removed in the future, as there should be very few or no files
+             ;; left in the old format.
+             (lexical-let* ((frame-persp-table (if (hash-table-p frame)
+                                                   frame
+                                                 (persp--state-frame-persps frame)))
+                            (frame-persp-order (if (hash-table-p frame)
+                                                   (hash-table-keys frame)
+                                                 (reverse (persp--state-frame-order frame)))))
+               ;; iterate over the perspectives in the frame in the appropriate order
+               (cl-loop for persp in frame-persp-order do
+                        (lexical-let ((state-single (gethash persp frame-persp-table)))
+                          (persp-switch persp)
+                          (cl-loop for buffer in (persp--state-single-buffers state-single) do
+                                   (persp-add-buffer buffer))
+                          ;; XXX: split-window-horizontally is necessary for
+                          ;; window-state-put to succeed? Something goes haywire with root
+                          ;; windows without it.
+                          (split-window-horizontally)
+                          (window-state-put (persp--state-single-windows state-single)
+                                            (frame-root-window (selected-frame))
+                                            'safe)))))
     ;; cleanup
     (persp-kill tmp-persp-name)))
 
