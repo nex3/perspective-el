@@ -28,6 +28,7 @@
 ;; available by default.
 
 (require 'cl-lib)
+(require 'subr-x)                       ; hash-table-values
 
 ;; 'cl' is still required because the use of 'lexical-let'.  'lexical-let' has
 ;; been deprecated since emacs 24.1, and it should be replaced with true

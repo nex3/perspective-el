@@ -1,0 +1,16 @@
+sudo: required
+# for evm binaries
+dist: trusty
+env:
+  - EMACS_VERSION=26.2
+  - EMACS_VERSION=26.1
+  - EMACS_VERSION=25.1
+  - EMACS_VERSION=24.3
+script:
+  - cd $TRAVIS_BUILD_DIR
+  - git clone https://github.com/rejeep/evm ${TRAVIS_BUILD_DIR}/.evm
+  - export PATH=${TRAVIS_BUILD_DIR}/.evm/bin:${PATH}
+  - evm config path /tmp
+  - evm install emacs-${EMACS_VERSION}-travis --use --skip
+  - emacs --version
+  - make 
