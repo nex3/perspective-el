@@ -382,10 +382,10 @@ Returns BUFFERS with all non-living buffers removed.
 
 See also `other-buffer'."
   (cl-loop for buf in (reverse buffers)
-           if (not (null (buffer-name buf)))
+           when (buffer-live-p buf)
            collect buf into living-buffers
            and do (switch-to-buffer buf)
-           finally return (reverse living-buffers)))
+           finally return (nreverse living-buffers)))
 
 (defun persp-set-local-variables (vars)
   "Set the local variables given in VARS.
