@@ -15,6 +15,13 @@
 (require 'ert)
 
 (persp-mode 1)
+;; Set frame size so that splitting windows doesn't result in pesky
+;;
+;;    "Window ... too small for splitting"
+;;
+;; errors.
+(set-frame-height (selected-frame) 80)
+(set-frame-width (selected-frame) 160)
 
 (defmacro persp-test-with-temp-buffers (vars &rest body)
   "Bind temporary buffers to VARS and evaluate BODY."
@@ -32,30 +39,20 @@
          ,@cleanup))))
 
 (ert-deftest issue-85 ()
-  (persp-test-with-temp-buffers (b1 b2 b3 b4)
+  (persp-test-with-temp-buffers (A1 A2 B1)
     (persp-switch "A")
-    ;; Show b1 and b2 in two windows of A
-    (switch-to-buffer b1)
-    (select-window (split-window))
-    (switch-to-buffer b2)
-    (should (eq (window-buffer (previous-window)) b1))
-    (should (eq (window-buffer (selected-window)) b2))
+    (select-window (split-window-right))
+    (balance-windows)
+    (switch-to-buffer A1)
+    (switch-to-buffer A2)
     (persp-switch "B")
-    ;; Show b3 and b4 in two windows of B
-    (switch-to-buffer b3)
-    (select-window (split-window))
-    (switch-to-buffer b4)
-    (should (eq (window-buffer (previous-window)) b3))
-    (should (eq (window-buffer (selected-window)) b4))
-    ;; Switch back to A and do the main test
+    (select-window (split-window-right))
+    (switch-to-buffer B1)
     (persp-switch "A")
-    (should (eq (window-buffer (previous-window)) b1))
-    (should (eq (window-buffer (selected-window)) b2))
+    (persp-switch "B")
     (kill-buffer)
-    (should (= (count-windows) 2))
-    (should (eq (window-buffer (previous-window)) b1))
-    (should (eq (window-buffer (selected-window)) b1))))
-
-
+    (walk-windows
+     (lambda (w) (should-not
+             (memq (window-buffer w) (list A1 A2)))))))
 
 ;;; test-perspective.el ends here
