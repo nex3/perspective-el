@@ -14,7 +14,6 @@
 (require 'cl-lib)
 (require 'ert)
 
-(persp-mode 1)
 ;; Set frame size so that splitting windows doesn't result in pesky
 ;;
 ;;    "Window ... too small for splitting"
@@ -22,6 +21,20 @@
 ;; errors.
 (set-frame-height (selected-frame) 80)
 (set-frame-width (selected-frame) 160)
+
+(defmacro persp-test-with-persp (&rest body)
+  "Allow multiple tests to run with reasonable assumption of
+   isolation. This macro assumes persp-mode is turned off, then
+   turns on persp-mode, evaluates the body, and finally remove
+   all perspectives and open buffers."
+  (declare (indent 0))
+  `(progn
+     (persp-mode 1)
+     ,@body
+     (persp-mode -1)
+     (cl-flet ((new-fns-filter (b) (or (string-equal "*Messages*" (buffer-name b))
+                                       (string-equal "*scratch*" (buffer-name b)))))
+       (mapc #'kill-buffer (remove-if #'new-fns-filter (buffer-list))))))
 
 (defmacro persp-test-with-temp-buffers (vars &rest body)
   "Bind temporary buffers to VARS and evaluate BODY."
@@ -38,7 +51,8 @@
            (progn ,@body)
          ,@cleanup))))
 
-(ert-deftest issue-85 ()
+(ert-deftest issue-85-pulling-buffers-into-other-persps ()
+  (persp-test-with-persp
   (persp-test-with-temp-buffers (A1 A2 B1)
     (persp-switch "A")
     (select-window (split-window-right))
@@ -53,6 +67,6 @@
     (kill-buffer)
     (walk-windows
      (lambda (w) (should-not
-             (memq (window-buffer w) (list A1 A2)))))))
+                    (memq (window-buffer w) (list A1 A2))))))))
 
 ;;; test-perspective.el ends here
