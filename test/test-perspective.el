@@ -53,20 +53,20 @@
 
 (ert-deftest issue-85-pulling-buffers-into-other-persps ()
   (persp-test-with-persp
-  (persp-test-with-temp-buffers (A1 A2 B1)
-    (persp-switch "A")
-    (select-window (split-window-right))
-    (balance-windows)
-    (switch-to-buffer A1)
-    (switch-to-buffer A2)
-    (persp-switch "B")
-    (select-window (split-window-right))
-    (switch-to-buffer B1)
-    (persp-switch "A")
-    (persp-switch "B")
-    (kill-buffer)
-    (walk-windows
-     (lambda (w) (should-not
+    (persp-test-with-temp-buffers (A1 A2 B1)
+      (persp-switch "A")
+      (select-window (split-window-right))
+      (balance-windows)
+      (switch-to-buffer A1)
+      (switch-to-buffer A2)
+      (persp-switch "B")
+      (select-window (split-window-right))
+      (switch-to-buffer B1)
+      (persp-switch "A")
+      (persp-switch "B")
+      (kill-buffer)
+      (walk-windows
+       (lambda (w) (should-not
                     (memq (window-buffer w) (list A1 A2))))))))
 
 ;;; test-perspective.el ends here
