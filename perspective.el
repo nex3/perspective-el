@@ -174,6 +174,18 @@ Run with the perspective to be destroyed as `persp-curr'.")
   "A hook that's run after a perspective has been activated.
 Run with the activated perspective active.")
 
+(defvar persp-state-before-save-hook nil
+  "A hook run immediately before saving persp state to disk.")
+
+(defvar persp-state-saved-hook nil
+  "A hook run immediately after saving persp state to disk.")
+
+(defvar persp-state-before-load-hook nil
+  "A hook run immediately before loading persp state from disk.")
+
+(defvar persp-state-loaded-hook nil
+  "A hook run immediately after loading persp state from disk.")
+
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
 
@@ -1143,6 +1155,8 @@ visible in a perspective as windows, they will be saved as
                (not (or current-prefix-arg
                         (yes-or-no-p "Target file exists. Overwrite? "))))
       (error "persp-state-save cancelled"))
+    ;; before hook
+    (run-hooks 'persp-state-before-save-hook)
     ;; actually save
     (persp-save)
     (lexical-let ((state-complete (make-persp--state-complete
@@ -1150,7 +1164,9 @@ visible in a perspective as windows, they will be saved as
                                    :frames (persp--state-frame-data))))
       (when (file-exists-p target-file)
         (delete-file target-file))
-      (append-to-file (prin1-to-string state-complete) nil target-file))))
+      (append-to-file (prin1-to-string state-complete) nil target-file))
+    ;; after hook
+    (run-hooks 'persp-state-saved-hook)))
 
 ;;;###autoload
 (defun persp-state-load (file)
@@ -1169,6 +1185,9 @@ restored."
   (unless (file-exists-p file)
     (error "File not found"))
   (persp-mode 1)
+  ;; before hook
+  (run-hooks 'persp-state-before-load-hook)
+  ;; actually load
   (lexical-let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
                 (frame-count 0)
                 (state-complete (read-from-whole-string
@@ -1212,7 +1231,9 @@ restored."
                                             (frame-root-window (selected-frame))
                                             'safe)))))
     ;; cleanup
-    (persp-kill tmp-persp-name)))
+    (persp-kill tmp-persp-name))
+  ;; after hook
+  (run-hooks 'persp-state-loaded-hook))
 
 (defalias 'persp-state-restore 'persp-state-load)
 
