@@ -1066,6 +1066,7 @@ transient."
 
 (defun persp--state-frame-data ()
   (cl-loop for frame in (frame-list)
+           if (frame-parameter frame 'persp--hash) ; XXX: filter non-perspective-enabled frames
            collect (with-selected-frame frame
                      (lexical-let ((persps-in-frame (make-hash-table :test 'equal))
                                    (persp-names-in-order (persp-names)))
@@ -1142,9 +1143,6 @@ visible in a perspective as windows, they will be saved as
                (not (or current-prefix-arg
                         (yes-or-no-p "Target file exists. Overwrite? "))))
       (error "persp-state-save cancelled"))
-    ;; if ivy-posframe is in use, get rid of its frame first
-    (when (and (fboundp 'posframe-delete) (boundp 'ivy-posframe-buffer))
-      (posframe-delete ivy-posframe-buffer))
     ;; actually save
     (persp-save)
     (lexical-let ((state-complete (make-persp--state-complete
