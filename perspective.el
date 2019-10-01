@@ -1162,9 +1162,8 @@ visible in a perspective as windows, they will be saved as
     (lexical-let ((state-complete (make-persp--state-complete
                                    :files (persp--state-file-data)
                                    :frames (persp--state-frame-data))))
-      (when (file-exists-p target-file)
-        (delete-file target-file))
-      (append-to-file (prin1-to-string state-complete) nil target-file))
+      ;; create or overwrite target-file:
+      (with-temp-file target-file (prin1 state-complete (current-buffer))))
     ;; after hook
     (run-hooks 'persp-state-saved-hook)))
 
