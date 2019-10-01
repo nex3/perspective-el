@@ -51,6 +51,43 @@
            (progn ,@body)
          ,@cleanup))))
 
+(ert-deftest basic-persp-creation-deletion ()
+  (persp-test-with-persp
+    (should (equal (list "main") (persp-names)))
+    (persp-switch "alpha")
+    (should (equal (list "alpha" "main") (sort (persp-names) #'string-lessp)))
+    (persp-switch "bravo")
+    (should (equal (list "alpha" "bravo" "main") (sort (persp-names) #'string-lessp)))
+    (persp-kill "alpha")
+    (should (equal (list "bravo" "main") (sort (persp-names) #'string-lessp)))
+    (persp-kill "bravo")
+    (should (equal (list "main") (persp-names)))))
+
+(ert-deftest basic-persp-switching ()
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (A1 A2 B1 B2 B3)
+      ;; currently in "main" perspective
+      (cl-loop for buf in (list A1 A2 B1 B2 B3) do
+            (should-not (memq buf (persp-buffers (persp-curr)))))
+      (persp-switch "A")
+      (switch-to-buffer A1)
+      (switch-to-buffer A2)
+      (cl-loop for buf in (list A1 A2) do
+            (should (memq buf (persp-buffers (persp-curr)))))
+      (cl-loop for buf in (list B1 B2 B3) do
+            (should-not (memq buf (persp-buffers (persp-curr)))))
+      (persp-switch "B")
+      (switch-to-buffer B1)
+      (switch-to-buffer B2)
+      (switch-to-buffer B3)
+      (cl-loop for buf in (list A1 A2) do
+            (should-not (memq buf (persp-buffers (persp-curr)))))
+      (cl-loop for buf in (list B1 B2 B3) do
+            (should (memq buf (persp-buffers (persp-curr)))))
+      (persp-switch "main")
+      (cl-loop for buf in (list A1 A2 B1 B2 B3) do
+            (should-not (memq buf (persp-buffers (persp-curr))))))))
+
 (ert-deftest issue-85-pulling-buffers-into-other-persps ()
   (persp-test-with-persp
     (persp-test-with-temp-buffers (A1 A2 B1)
