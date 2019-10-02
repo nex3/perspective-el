@@ -28,6 +28,7 @@
 ;; available by default.
 
 (require 'cl-lib)
+(require 'thingatpt)
 (require 'subr-x)                       ; hash-table-values
 
 ;; 'cl' is still required because the use of 'lexical-let'.  'lexical-let' has
