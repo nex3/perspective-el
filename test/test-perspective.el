@@ -294,4 +294,23 @@ persp-test-make-sample-environment."
        (should-persp-equal     '("A" "main")         "A"    nil    "A")) ; pop A
      (should-persp-equal       '("main")             "main" nil    "main"))))
 
+(ert-deftest state-save-and-load ()
+  (unwind-protect
+      (persp-test-with-persp
+        (persp-test-with-files nil (A1 A2 A3 B1 B2 B3 B4)
+          (persp-test-make-sample-environment)
+          (should (= 7 (length (persp-test-buffer-list-all)))) ; sanity check
+          (persp-state-save "state-1.el"))
+        ;; reset perspectives
+        (persp-mode -1)
+        (delete-other-windows)
+        (should (= 0 (length (persp-test-buffer-list-all)))) ; no open files
+        (persp-mode 1)
+        (should (equal (list "main") (sort (persp-names) #'string-lessp)))
+        ;; load it back up
+        (persp-state-load "state-1.el")
+        (should (= 7 (length (persp-test-buffer-list-all)))) ; sanity check again
+        (persp-test-check-sample-environment))
+    (persp-test-clean-files "A1" "A2" "A3" "B1" "B2" "B3" "B4" "state-1.el")))
+
 ;;; test-perspective.el ends here
