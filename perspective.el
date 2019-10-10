@@ -635,7 +635,7 @@ Prefers perspectives in the selected frame."
 
 See also `persp-switch' and `persp-add-buffer'."
   (interactive "bRemove buffer from perspective: \n")
-  (setq buffer (get-buffer buffer))
+  (setq buffer (when buffer (get-buffer buffer)))
   (cond ((not (buffer-live-p buffer)))
         ;; Only kill the buffer if no other perspectives are using it
         ((not (persp-buffer-in-other-p buffer))
