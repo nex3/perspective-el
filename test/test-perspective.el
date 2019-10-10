@@ -245,4 +245,12 @@ persp-test-make-sample-environment."
        (lambda (w) (should-not
                     (memq (window-buffer w) (list A1 A2))))))))
 
+(ert-deftest issue-81-renaming-scratch-buffers ()
+  (persp-test-with-persp
+    (persp-switch "A")
+    (should (get-buffer "*scratch* (A)"))
+    (persp-rename "B")
+    (should (not (get-buffer "*scratch* (A)")))
+    (should (get-buffer "*scratch* (B)"))))
+
 ;;; test-perspective.el ends here
