@@ -259,4 +259,41 @@ persp-test-make-sample-environment."
     (should (not (get-buffer "*scratch* (A)")))
     (should (get-buffer "*scratch* (B)"))))
 
+(defmacro with-named-persp (name &rest body)
+  "Create a perspective, run the body, and then kill the perspectiev"
+  (declare (indent 1))
+  `(progn
+     (persp-switch ,name)
+     ,@body
+     (persp-kill ,name)))
+
+;; REFACTOR: push this up?
+(defun persp-last-name ()
+  (and (persp-last) (persp-name (persp-last))))
+
+;; REFACTOR: push this up?
+(defun persp-curr-name ()
+  (and (persp-curr) (persp-name (persp-curr))))
+
+(defmacro should-persp-equal (a b c d)
+  `(progn
+     (should (equal ,a (persp-names)))
+     (should (equal ,b (persp-curr-name)))
+     (should (equal ,c (persp-last-name)))
+     (should (equal ,d (persp-find-some)))))
+
+(ert-deftest issue-90-persp-last--vs--persp-find-some ()
+  (persp-test-with-persp
+   (let ((persp-sort 'created))         ; this should be respected when killing
+     (should-persp-equal       '("main")             "main" nil    "main")
+     (with-named-persp "A"
+       (should-persp-equal     '("A" "main")         "A"    "main" "main")
+       (with-named-persp "B"
+         (should-persp-equal   '("B" "A" "main")     "B"    "A"    "A")
+         (with-named-persp "C"
+           (should-persp-equal '("C" "B" "A" "main") "C"    "B"    "B")) ; pop C
+         (should-persp-equal   '("B" "A" "main")     "B"    nil    "B")) ; pop B
+       (should-persp-equal     '("A" "main")         "A"    nil    "A")) ; pop A
+     (should-persp-equal       '("main")             "main" nil    "main"))))
+
 ;;; test-perspective.el ends here

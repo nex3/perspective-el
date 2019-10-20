@@ -560,6 +560,7 @@ This function tries to return the \"most appropriate\"
 perspective to switch to.  It tries:
 
   * The perspective given by `persp-last'.
+  * The \"first\" perspective, based on the ordering of persp-names.
   * The main perspective.
   * The first existing perspective, alphabetically.
 
@@ -567,7 +568,9 @@ If none of these perspectives can be found, this function will
 create a new main perspective and return \"main\"."
   (cond
    ((persp-last) (persp-name (persp-last)))
+   ((> (length (persp-names)) 1) (car (persp-names)))
    ((gethash persp-initial-frame-name (perspectives-hash)) persp-initial-frame-name)
+   ;; TODO: redundant?
    ((> (hash-table-count (perspectives-hash)) 0) (car (persp-names)))
    (t (persp-activate
        (make-persp :name persp-initial-frame-name :buffers (buffer-list)
