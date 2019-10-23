@@ -177,13 +177,13 @@ Run with the activated perspective active.")
 (defvar persp-state-before-save-hook nil
   "A hook run immediately before saving persp state to disk.")
 
-(defvar persp-state-saved-hook nil
+(defvar persp-state-after-save-hook nil
   "A hook run immediately after saving persp state to disk.")
 
 (defvar persp-state-before-load-hook nil
   "A hook run immediately before loading persp state from disk.")
 
-(defvar persp-state-loaded-hook nil
+(defvar persp-state-after-load-hook nil
   "A hook run immediately after loading persp state from disk.")
 
 (defvar persp-mode-map (make-sparse-keymap)
@@ -1165,7 +1165,7 @@ visible in a perspective as windows, they will be saved as
       ;; create or overwrite target-file:
       (with-temp-file target-file (prin1 state-complete (current-buffer))))
     ;; after hook
-    (run-hooks 'persp-state-saved-hook)))
+    (run-hooks 'persp-state-after-save-hook)))
 
 ;;;###autoload
 (defun persp-state-load (file)
@@ -1232,7 +1232,7 @@ restored."
     ;; cleanup
     (persp-kill tmp-persp-name))
   ;; after hook
-  (run-hooks 'persp-state-loaded-hook))
+  (run-hooks 'persp-state-after-load-hook))
 
 (defalias 'persp-state-restore 'persp-state-load)
 
