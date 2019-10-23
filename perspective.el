@@ -1048,7 +1048,29 @@ potentially problematic buffers from the data structure created
 by window-state-get and replaces them with references to the
 perspective-specific *scratch* buffer. Buffers are considered
 'problematic' when they have no underlying file, or are otherwise
-transient."
+transient.
+
+The need for a recursive walk, and the consequent complexity of
+this function, arises from the nature of the data structure
+returned by window-state-get. That data structure is essentially
+a tree represented as a Lisp list. It can contain several kinds
+of nodes, including properties, nested trees representing window
+splits, and windows (referred to internally as leaf nodes).
+
+For the purposes of preserving window state, we only care about
+nodes in this data structure which refer to buffers, i.e., lists
+with the symbol 'buffer in the first element. These 'buffer lists
+can be deeply buried inside the data structure, because it
+recursively describes the layout of all windows in the given
+frame. They are always nested in lists with the symbol 'leaf in
+the first element.
+
+And so, the walker descends the data structure and preserves
+everything it finds. When it notices a 'leaf, it iterates over
+its properties until it finds a 'buffer. If the 'buffer points to
+a buffer which can be reasonably saved, it leaves it alone.
+Otherwise, it replaces that buffer's node with one which points
+to the perspective's *scratch* buffer."
   (cond
     ;; base case 1
     ((not (consp entry))
