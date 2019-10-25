@@ -48,11 +48,9 @@ perspectives and open buffers."
      (persp-mode 1)
      ,@body
      ;; get rid of perspective-specific *scratch* buffers first
-     (mapc #'kill-buffer (mapcar (lambda (persp)
-                                   (format "*scratch* (%s)" persp))
-                                 (remove-if (lambda (persp)
-                                              (string-equal "main" persp))
-                                            (persp-names))))
+     (mapc (lambda (persp)
+             (kill-buffer (format "*scratch* (%s)" persp)))
+           (delq persp-initial-frame-name (persp-names)))
      (persp-mode -1)
      (mapc #'kill-buffer (persp-test-buffer-list-all))))
 
