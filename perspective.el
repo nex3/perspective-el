@@ -92,6 +92,16 @@ perspectives."
                  (const :tag "By Time Accessed" access)
                  (const :tag "By Time Created"  created)))
 
+(defcustom persp-state-default-file nil
+  "When non-nil, it provides a default argument for
+`persp-state-save` and `persp-state-load` to work with.
+
+`persp-state-save` overwrites this file without prompting, which
+makes it easy to use in, e.g., `kill-emacs-hook` to automatically
+save state when exiting Emacs."
+  :group 'perspective-mode
+  :type 'file)
+
 ;; This is only available in Emacs >23,
 ;; so we redefine it here for compatibility.
 (unless (fboundp 'with-selected-frame)
@@ -163,6 +173,18 @@ Run with the perspective to be destroyed as `persp-curr'.")
 (defvar persp-activated-hook nil
   "A hook that's run after a perspective has been activated.
 Run with the activated perspective active.")
+
+(defvar persp-state-before-save-hook nil
+  "A hook run immediately before saving persp state to disk.")
+
+(defvar persp-state-after-save-hook nil
+  "A hook run immediately after saving persp state to disk.")
+
+(defvar persp-state-before-load-hook nil
+  "A hook run immediately before loading persp state from disk.")
+
+(defvar persp-state-after-load-hook nil
+  "A hook run immediately after loading persp state from disk.")
 
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
@@ -970,6 +992,271 @@ perspective beginning with the given letter."
   (interactive)
   (setq persp-show-modestring t)
   (persp-update-modestring))
+
+;; Symbols namespaced by persp--state (internal) and persp-state (user
+;; functions) provide functionality which allows saving perspective state on
+;; disk, and loading it into another Emacs session.
+;;
+;; The relevant commands are persp-state-save and persp-state-load (aliased to
+;; persp-state-restore).
+;;
+;; The (on-disk) data structure looks like this:
+;;
+;; {
+;;   :files [...]
+;;   :frames [
+;;     {
+;;       :persps {
+;;         "persp1" {
+;;           :buffers [...]
+;;           :windows [...]
+;;         }
+;;       }
+;;       :order [...]
+;;     }
+;;   ]
+;; }
+
+(defstruct persp--state-complete
+  files
+  frames)
+
+(defstruct persp--state-frame
+  persps
+  order)
+
+(defstruct persp--state-single
+  buffers
+  windows)
+
+(defun persp--state-interesting-buffer-p (buffer)
+  (and (buffer-name buffer)
+       (not (string-match "^[[:space:]]*\\*" (buffer-name buffer)))
+       (or (buffer-file-name buffer)
+           (with-current-buffer buffer (equal major-mode 'dired-mode)))))
+
+(defun persp--state-file-data ()
+  (cl-loop for buffer in (buffer-list)
+        if (persp--state-interesting-buffer-p buffer)
+        collect (or (buffer-file-name buffer)
+                    (with-current-buffer buffer ; dired special case
+                      default-directory))))
+
+(defun persp--state-window-state-massage (entry persp valid-buffers)
+  "This is a primitive code walker. It removes references to
+potentially problematic buffers from the data structure created
+by window-state-get and replaces them with references to the
+perspective-specific *scratch* buffer. Buffers are considered
+'problematic' when they have no underlying file, or are otherwise
+transient.
+
+The need for a recursive walk, and the consequent complexity of
+this function, arises from the nature of the data structure
+returned by window-state-get. That data structure is essentially
+a tree represented as a Lisp list. It can contain several kinds
+of nodes, including properties, nested trees representing window
+splits, and windows (referred to internally as leaf nodes).
+
+For the purposes of preserving window state, we only care about
+nodes in this data structure which refer to buffers, i.e., lists
+with the symbol 'buffer in the first element. These 'buffer lists
+can be deeply buried inside the data structure, because it
+recursively describes the layout of all windows in the given
+frame. They are always nested in lists with the symbol 'leaf in
+the first element.
+
+And so, the walker descends the data structure and preserves
+everything it finds. When it notices a 'leaf, it iterates over
+its properties until it finds a 'buffer. If the 'buffer points to
+a buffer which can be reasonably saved, it leaves it alone.
+Otherwise, it replaces that buffer's node with one which points
+to the perspective's *scratch* buffer."
+  (cond
+    ;; base case 1
+    ((not (consp entry))
+     entry)
+    ;; base case 2
+    ((atom (cdr entry))
+     entry)
+    ;; leaf: modify this
+    ((eq 'leaf (car entry))
+     (lexical-let ((leaf-props (cdr entry)))
+       (cons 'leaf
+             (cl-loop for prop in leaf-props
+                   collect (if (not (eq 'buffer (car prop)))
+                               prop
+                             (lexical-let ((bn (cadr prop)))
+                               (if (member bn valid-buffers)
+                                   prop
+                                 (cons 'buffer
+                                       (cons (lexical-let ((scratch-persp (format "*scratch* (%s)" persp)))
+                                               (if (get-buffer scratch-persp)
+                                                   scratch-persp
+                                                 "*scratch*"))
+                                             (cddr prop))))))))))
+    ;; recurse
+    (t (cons (car entry) (cl-loop for e in (cdr entry)
+                               collect (persp--state-window-state-massage e persp valid-buffers))))))
+
+(defun persp--state-frame-data ()
+  (cl-loop for frame in (frame-list)
+           if (frame-parameter frame 'persp--hash) ; XXX: filter non-perspective-enabled frames
+           collect (with-selected-frame frame
+                     (lexical-let ((persps-in-frame (make-hash-table :test 'equal))
+                                   (persp-names-in-order (persp-names)))
+                       (cl-loop for persp in persp-names-in-order do
+                                (unless (persp-killed-p (gethash persp (perspectives-hash)))
+                                  (with-perspective persp
+                                    (lexical-let* ((buffers
+                                                    (cl-loop for buffer in (persp-buffers (persp-curr))
+                                                             if (persp--state-interesting-buffer-p buffer)
+                                                             collect (buffer-name buffer)))
+                                                   (windows
+                                                    (cl-loop for entry in (window-state-get (frame-root-window) t)
+                                                             collect (persp--state-window-state-massage entry persp buffers))))
+                                      (puthash persp
+                                               (make-persp--state-single
+                                                :buffers buffers
+                                                :windows windows)
+                                               persps-in-frame)))))
+                       (make-persp--state-frame
+                        :persps persps-in-frame
+                        :order persp-names-in-order)))))
+
+;;;###autoload
+(cl-defun persp-state-save (&optional file interactive?)
+  "Save the current perspective state to FILE.
+
+FILE defaults to the value of persp-state-default-file if it is
+set.
+
+Each perspective's buffer list and window layout will be saved.
+Frames and their associated perspectives will also be saved
+(but not the original frame sizes).
+
+Buffers with * characters in their names, as well as buffers without
+associated files will be ignored. If such buffers are currently
+visible in a perspective as windows, they will be saved as
+'*scratch* (persp)' buffers."
+  (interactive (list
+                (read-file-name "Save perspective state to file: "
+                                persp-state-default-file
+                                persp-state-default-file)
+                t))
+  (unless persp-mode
+    (message "persp-mode not enabled, nothing to save")
+    (return-from persp-state-save))
+  (lexical-let ((target-file (if (and file (not (string-equal "" file)))
+                                 ;; file provided as argument, just use it
+                                 (expand-file-name file)
+                               ;; no file provided as argument
+                               (if interactive?
+                                   ;; return nil in interactive call mode, since
+                                   ;; read-file-name should have provided a reasonable
+                                   ;; default
+                                   nil
+                                 ;; in non-interactive call mode, we want to fall back to
+                                 ;; the default, but only if it is set
+                                 (if (and persp-state-default-file
+                                          (not (string-equal "" persp-state-default-file)))
+                                     (expand-file-name persp-state-default-file)
+                                   nil)))))
+    (unless target-file
+      (error "No target file specified"))
+    ;; overwrite the target file if:
+    ;; - the file does not exist, or
+    ;; - the file is not the one set in persp-state-default-file, or
+    ;; - the user called this function with a prefix argument, or
+    ;; - the user approves overwriting the file when prompted
+    (when (and (file-exists-p target-file)
+               (not (string-equal (if (and persp-state-default-file
+                                           (not (string-equal "" persp-state-default-file)))
+                                      (expand-file-name persp-state-default-file)
+                                    "")
+                                  target-file))
+               (not (or current-prefix-arg
+                        (yes-or-no-p "Target file exists. Overwrite? "))))
+      (error "persp-state-save cancelled"))
+    ;; before hook
+    (run-hooks 'persp-state-before-save-hook)
+    ;; actually save
+    (persp-save)
+    (lexical-let ((state-complete (make-persp--state-complete
+                                   :files (persp--state-file-data)
+                                   :frames (persp--state-frame-data))))
+      ;; create or overwrite target-file:
+      (with-temp-file target-file (prin1 state-complete (current-buffer))))
+    ;; after hook
+    (run-hooks 'persp-state-after-save-hook)))
+
+;;;###autoload
+(defun persp-state-load (file)
+  "Restore the perspective state saved in FILE.
+
+FILE defaults to the value of persp-state-default-file if it is
+set.
+
+Frames are restored, along with each frame's perspective list.
+Each perspective's buffer list and window layout are also
+restored."
+  (interactive (list
+                (read-file-name "Restore perspective state from file: "
+                                persp-state-default-file
+                                persp-state-default-file)))
+  (unless (file-exists-p file)
+    (error "File not found"))
+  (persp-mode 1)
+  ;; before hook
+  (run-hooks 'persp-state-before-load-hook)
+  ;; actually load
+  (lexical-let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
+                (frame-count 0)
+                (state-complete (read-from-whole-string
+                                 (with-temp-buffer
+                                   (insert-file-contents file)
+                                   (buffer-string)))))
+    ;; open all files in a temporary perspective to avoid polluting "main"
+    (persp-switch tmp-persp-name)
+    (cl-loop for file in (persp--state-complete-files state-complete) do
+             (when (file-exists-p file)
+               (find-file file)))
+    ;; iterate over the frames
+    (cl-loop for frame in (persp--state-complete-frames state-complete) do
+             (incf frame-count)
+             (when (> frame-count 1)
+               (make-frame-command))
+             ;; XXX: The condition in binding frame-persp-table and
+             ;; frame-persp-order ensures backwards compatibility with the early
+             ;; pre-release format of persp-state files: the frame may be just a
+             ;; hash table (old version), or it may be an instance of
+             ;; persp--state-frame (released version). The special case can be
+             ;; removed in the future, as there should be very few or no files
+             ;; left in the old format.
+             (lexical-let* ((frame-persp-table (if (hash-table-p frame)
+                                                   frame
+                                                 (persp--state-frame-persps frame)))
+                            (frame-persp-order (if (hash-table-p frame)
+                                                   (hash-table-keys frame)
+                                                 (reverse (persp--state-frame-order frame)))))
+               ;; iterate over the perspectives in the frame in the appropriate order
+               (cl-loop for persp in frame-persp-order do
+                        (lexical-let ((state-single (gethash persp frame-persp-table)))
+                          (persp-switch persp)
+                          (cl-loop for buffer in (persp--state-single-buffers state-single) do
+                                   (persp-add-buffer buffer))
+                          ;; XXX: split-window-horizontally is necessary for
+                          ;; window-state-put to succeed? Something goes haywire with root
+                          ;; windows without it.
+                          (split-window-horizontally)
+                          (window-state-put (persp--state-single-windows state-single)
+                                            (frame-root-window (selected-frame))
+                                            'safe)))))
+    ;; cleanup
+    (persp-kill tmp-persp-name))
+  ;; after hook
+  (run-hooks 'persp-state-after-load-hook))
+
+(defalias 'persp-state-restore 'persp-state-load)
 
 (provide 'perspective)
 
