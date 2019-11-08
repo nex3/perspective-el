@@ -71,7 +71,7 @@ perspectives."
                (string :tag "Divider")))
 
 (defcustom persp-mode-prefix-key (kbd "C-x x")
-  "Prefix key to activate perspective-map"
+  "Prefix key to activate perspective-map."
   :group 'perspective-mode
   :set (lambda (sym value)
          (when (and (bound-and-true-p persp-mode-map)
@@ -86,15 +86,17 @@ perspectives."
   :type 'boolean)
 
 (defcustom persp-sort 'name
-  "What order to sort perspectives. If 'name, then sort alphabetically. If 'access, then sort by last time accessed (latest first). If 'created, then sort by time created (latest first)."
+  "What order to sort perspectives.
+If 'name, then sort alphabetically.
+If 'access, then sort by last time accessed (latest first).
+If 'created, then sort by time created (latest first)."
   :group 'perspective-mode
   :type '(choice (const :tag "By Name"          name)
                  (const :tag "By Time Accessed" access)
                  (const :tag "By Time Created"  created)))
 
 (defcustom persp-state-default-file nil
-  "When non-nil, it provides a default argument for
-`persp-state-save` and `persp-state-load` to work with.
+  "When non-nil, it provides a default argument for `persp-state-save` and `persp-state-load` to work with.
 
 `persp-state-save` overwrites this file without prompting, which
 makes it easy to use in, e.g., `kill-emacs-hook` to automatically
@@ -149,7 +151,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
 
 (defvar persp-interactive-completion-function
   (if ido-mode 'ido-completing-read 'completing-read)
-  "The function which is used by perspective.el to interactivly complete user input")
+  "The function which is used by perspective.el to interactivly complete user input.")
 
 (defvar persp-before-switch-hook nil
   "A hook that's run before `persp-switch'.
@@ -208,8 +210,8 @@ Run with the activated perspective active.")
 
 (defun perspectives-hash (&optional frame)
   "Return a hash containing all perspectives in FRAME.
-FRAME defaults to the currently selected frame. The keys are the
-perspectives' names. The values are persp structs, with the
+FRAME defaults to the currently selected frame.  The keys are the
+perspectives' names.  The values are persp structs, with the
 fields NAME, WINDOW-CONFIGURATION, BUFFERS, BUFFER-HISTORY,
 KILLED, POINT-MARKER, and LOCAL-VARIABLES.
 
@@ -256,7 +258,7 @@ FRAME defaults to the currently selected frame."
   (frame-parameter frame 'persp--last))
 
 (defun persp-mode-set-prefix-key (newkey)
-  "Set the prefix key to activate persp-mode"
+  "Set NEWKEY as the prefix key to activate persp-mode."
   (substitute-key-definition 'perspective-map nil persp-mode-map)
   (define-key persp-mode-map newkey 'perspective-map))
 
@@ -280,9 +282,11 @@ This prevents the persp-mode from completely breaking Emacs."
         (persp-mode -1)))))
 
 (defun persp-error (&rest args)
-  "Like `error', but marks it as a persp-specific error.
+  "Like `error', but mark it as a persp-specific error.
 Used along with `persp-protect' to ensure that persp-mode doesn't
-bring down Emacs."
+bring down Emacs.
+
+ARGS will interpreted by `format-message'."
   (if persp-protected
       (signal 'persp-error (list (apply 'format args)))
     (apply 'error args)))
@@ -492,6 +496,7 @@ This is used for cycling between perspectives."
   (persp-get-quick-helper char prev (persp-names)))
 
 (defun persp-get-quick-helper (char prev names)
+  "Helper for `persp-get-quick' using CHAR, PREV and NAMES."
   (if (null names) nil
     (let ((name (car names)))
       (cond
@@ -652,7 +657,8 @@ Prefers perspectives in the selected frame."
   nil)
 
 (defun persp-switch-to-buffer (buffer-or-name)
-  "Like `switch-to-buffer', but switches to another perspective if necessary."
+  "Like `switch-to-buffer', but switch to another perspective if necessary.
+BUFFER-OR-NAME accept buffer object or buffer name."
   (interactive
    (list
     (let ((read-buffer-function nil))
@@ -745,9 +751,11 @@ copied across frames."
 
 (defun persp-read-buffer (prompt &optional def require-match)
   "A replacement for the built-in `read-buffer'.
-Meant to be used with `read-buffer-function'. Return the name of
-the buffer selected, only selecting from buffers within the
-current perspective.
+Meant to be used with `read-buffer-function'.
+
+PROMPT, DEF and REQUIRE-MATCH documented in `read-buffer'.
+Return the name of the buffer selected, only selecting from buffers
+within the current perspective.
 
 With a prefix arg, uses the old `read-buffer' instead."
   (persp-protect
@@ -954,8 +962,8 @@ from the current perspective at time of creation."
 
 (defmacro persp-setup-for (name &rest body)
   "Add code that should be run to set up the perspective named NAME.
-Whenever a new perspective named NAME is created, runs BODY in
-it. In addition, if one exists already, runs BODY in it immediately."
+Whenever a new perspective named NAME is created, runs BODY in it.
+In addition, if one exists already, runs BODY in it immediately."
   (declare (indent 1))
   `(progn
      (add-hook 'persp-created-hook
@@ -1053,34 +1061,33 @@ perspective beginning with the given letter."
                       default-directory))))
 
 (defun persp--state-window-state-massage (entry persp valid-buffers)
-  "This is a primitive code walker. It removes references to
-potentially problematic buffers from the data structure created
-by window-state-get and replaces them with references to the
-perspective-specific *scratch* buffer. Buffers are considered
-'problematic' when they have no underlying file, or are otherwise
-transient.
+  "This is a primitive code walker.
+It remove references to potentially problematic buffers from the data
+structure created by `window-state-get and replace them with
+references to the perspective-specific *scratch* buffer.  Buffers are
+considered 'problematic' when they have no underlying file, or are
+otherwise transient.
 
-The need for a recursive walk, and the consequent complexity of
-this function, arises from the nature of the data structure
-returned by window-state-get. That data structure is essentially
-a tree represented as a Lisp list. It can contain several kinds
-of nodes, including properties, nested trees representing window
-splits, and windows (referred to internally as leaf nodes).
+The need for a recursive walk, and the consequent complexity of this
+function, arises from the nature of the data structure returned by
+`window-state-get'.  That data structure is essentially a tree
+represented as a Lisp list.  It can contain several kinds of nodes,
+including properties, nested trees representing window splits, and
+windows (referred to internally as leaf nodes).
 
-For the purposes of preserving window state, we only care about
-nodes in this data structure which refer to buffers, i.e., lists
-with the symbol 'buffer in the first element. These 'buffer lists
-can be deeply buried inside the data structure, because it
-recursively describes the layout of all windows in the given
-frame. They are always nested in lists with the symbol 'leaf in
-the first element.
+For the purposes of preserving window state, we only care about nodes
+in this data structure which refer to buffers, i.e., lists with the
+symbol 'buffer in the first element.  These 'buffer lists can be
+deeply buried inside the data structure, because it recursively
+describes the layout of all windows in the given frame.  They are
+always nested in lists with the symbol 'leaf in the first element.
 
 And so, the walker descends the data structure and preserves
-everything it finds. When it notices a 'leaf, it iterates over
-its properties until it finds a 'buffer. If the 'buffer points to
-a buffer which can be reasonably saved, it leaves it alone.
-Otherwise, it replaces that buffer's node with one which points
-to the perspective's *scratch* buffer."
+everything it finds.  When it notices a 'leaf, it iterates over its
+properties until it finds a 'buffer.  If the 'buffer points to a buffer
+which can be reasonably saved, it leaves it alone.  Otherwise, it
+replaces that buffer's node with one which points to the perspective's
+*scratch* buffer."
   (cond
     ;; base case 1
     ((not (consp entry))
@@ -1186,7 +1193,7 @@ visible in a perspective as windows, they will be saved as
                                   target-file))
                (not (or current-prefix-arg
                         (yes-or-no-p "Target file exists. Overwrite? "))))
-      (error "persp-state-save cancelled"))
+      (error "Cancelled persp-state-save"))
     ;; before hook
     (run-hooks 'persp-state-before-save-hook)
     ;; actually save
