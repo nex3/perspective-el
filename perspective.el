@@ -794,6 +794,11 @@ is non-nil or with prefix arg, don't switch to the new perspective."
         (persp-update-modestring)
       (persp-activate persp))))
 
+(defun persp-child-frame-p (frame)
+  "Check whether FRAME is a child frame or not."
+  (and (version<= "26" emacs-version)
+       (frame-parent frame)))
+
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
 
@@ -811,11 +816,11 @@ See also `persp-add-buffer'."
     (when ad-return-value
       (let ((buf (ad-get-arg 0))
             (frame (window-frame ad-return-value)))
-        (unless (and (version<= "26" emacs-version)
-                     (frame-parent frame))
-          (when (and buf frame)
-            (with-selected-frame frame
-              (persp-add-buffer buf))))))))
+        (when (and buf
+                   frame
+                   (not (persp-child-frame-p frame)))
+          (with-selected-frame frame
+            (persp-add-buffer buf)))))))
 
 (defadvice set-window-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the perspective for window's frame.
@@ -824,11 +829,11 @@ See also `persp-add-buffer'."
   (persp-protect
     (let ((buf (ad-get-arg 1))
           (frame (window-frame (ad-get-arg 0))))
-      (unless (and (version<= "26" emacs-version)
-                   (frame-parent frame))
-        (when (and buf frame)
-          (with-selected-frame frame
-            (persp-add-buffer buf)))))))
+      (when (and buf
+                 frame
+                 (not (persp-child-frame-p frame)))
+        (with-selected-frame frame
+          (persp-add-buffer buf))))))
 
 (defadvice switch-to-prev-buffer (around persp-ensure-buffer-in-persp)
   "Ensure that the selected buffer is in WINDOW's perspective."
