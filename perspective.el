@@ -234,16 +234,25 @@ all but one of their points will be overwritten.
 
 LOCAL-VARIABLES is an alist from variable names to their
 perspective-local values."
-  (frame-parameter frame 'persp--hash))
+  ;; XXX: This must return a non-nil value to avoid breaking frames initialized
+  ;; with after-make-frame-functions bound to nil.
+  (or (frame-parameter frame 'persp--hash)
+      (make-hash-table)))
 
 (defun persp-curr (&optional frame)
   "Get the current perspective in FRAME.
 FRAME defaults to the currently selected frame."
-  (frame-parameter frame 'persp--curr))
+  ;; XXX: This must return a non-nil value to avoid breaking frames initialized
+  ;; with after-make-frame-functions bound to nil.
+  (or (frame-parameter frame 'persp--curr)
+      (make-persp-internal)))
 
 (defun persp-last (&optional frame)
   "Get the last active perspective in FRAME.
 FRAME defaults to the currently selected frame."
+  ;; XXX: Unlike persp-curr, it is unsafe to return a default value of
+  ;; (make-persp-internal) here, since some code assumes (persp-last) can return
+  ;; nil.
   (frame-parameter frame 'persp--last))
 
 (defun persp-mode-set-prefix-key (newkey)
@@ -633,7 +642,7 @@ perspective that has the buffer.
 
 Prefers perspectives in the selected frame."
   (cl-loop for frame in (sort (frame-list) (lambda (frame1 frame2) (eq frame2 (selected-frame))))
-           do (cl-loop for persp being the hash-values of (frame-parameter frame 'persp--hash)
+           do (cl-loop for persp being the hash-values of (perspectives-hash frame)
                        if (and (not (and (equal frame (selected-frame))
                                          (equal (persp-name persp) (persp-name (persp-curr frame)))))
                                (memq buffer (persp-buffers persp)))
@@ -939,7 +948,7 @@ from the current perspective at time of creation."
   (unless (assq variable (persp-local-variables (persp-curr)))
     (let ((entry (list variable (symbol-value variable))))
       (dolist (frame (frame-list))
-        (cl-loop for persp being the hash-values of (frame-parameter frame 'persp--hash)
+        (cl-loop for persp being the hash-values of (perspectives-hash frame)
                  do (push entry (persp-local-variables persp)))))))
 
 (defmacro persp-setup-for (name &rest body)
