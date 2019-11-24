@@ -191,6 +191,9 @@ Run with the activated perspective active.")
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
 
+(defvar perspective-map nil
+  "Sub-keymap for perspective-mode")
+
 (define-prefix-command 'perspective-map)
 (define-key persp-mode-map persp-mode-prefix-key 'perspective-map)
 
