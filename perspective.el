@@ -1116,17 +1116,17 @@ to the perspective's *scratch* buffer."
            if (frame-parameter frame 'persp--hash) ; XXX: filter non-perspective-enabled frames
            collect (with-selected-frame frame
                      (let ((persps-in-frame (make-hash-table :test 'equal))
-                                   (persp-names-in-order (persp-names)))
+                           (persp-names-in-order (persp-names)))
                        (cl-loop for persp in persp-names-in-order do
                                 (unless (persp-killed-p (gethash persp (perspectives-hash)))
                                   (with-perspective persp
                                     (let* ((buffers
-                                                    (cl-loop for buffer in (persp-buffers (persp-curr))
-                                                             if (persp--state-interesting-buffer-p buffer)
-                                                             collect (buffer-name buffer)))
-                                                   (windows
-                                                    (cl-loop for entry in (window-state-get (frame-root-window) t)
-                                                             collect (persp--state-window-state-massage entry persp buffers))))
+                                            (cl-loop for buffer in (persp-buffers (persp-curr))
+                                                     if (persp--state-interesting-buffer-p buffer)
+                                                     collect (buffer-name buffer)))
+                                           (windows
+                                            (cl-loop for entry in (window-state-get (frame-root-window) t)
+                                                     collect (persp--state-window-state-massage entry persp buffers))))
                                       (puthash persp
                                                (make-persp--state-single
                                                 :buffers buffers
@@ -1160,20 +1160,20 @@ visible in a perspective as windows, they will be saved as
     (message "persp-mode not enabled, nothing to save")
     (cl-return-from persp-state-save))
   (let ((target-file (if (and file (not (string-equal "" file)))
-                                 ;; file provided as argument, just use it
-                                 (expand-file-name file)
-                               ;; no file provided as argument
-                               (if interactive?
-                                   ;; return nil in interactive call mode, since
-                                   ;; read-file-name should have provided a reasonable
-                                   ;; default
-                                   nil
-                                 ;; in non-interactive call mode, we want to fall back to
-                                 ;; the default, but only if it is set
-                                 (if (and persp-state-default-file
-                                          (not (string-equal "" persp-state-default-file)))
-                                     (expand-file-name persp-state-default-file)
-                                   nil)))))
+                         ;; file provided as argument, just use it
+                         (expand-file-name file)
+                       ;; no file provided as argument
+                       (if interactive?
+                           ;; return nil in interactive call mode, since
+                           ;; read-file-name should have provided a reasonable
+                           ;; default
+                           nil
+                         ;; in non-interactive call mode, we want to fall back to
+                         ;; the default, but only if it is set
+                         (if (and persp-state-default-file
+                                  (not (string-equal "" persp-state-default-file)))
+                             (expand-file-name persp-state-default-file)
+                           nil)))))
     (unless target-file
       (error "No target file specified"))
     ;; overwrite the target file if:
@@ -1195,8 +1195,8 @@ visible in a perspective as windows, they will be saved as
     ;; actually save
     (persp-save)
     (let ((state-complete (make-persp--state-complete
-                                   :files (persp--state-file-data)
-                                   :frames (persp--state-frame-data))))
+                           :files (persp--state-file-data)
+                           :frames (persp--state-frame-data))))
       ;; create or overwrite target-file:
       (with-temp-file target-file (prin1 state-complete (current-buffer))))
     ;; after hook
@@ -1226,12 +1226,12 @@ restored."
   (run-hooks 'persp-state-before-load-hook)
   ;; actually load
   (let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
-                (frame-count 0)
-                ;; TODO: probably should not use thing-at-point internals
-                (state-complete (thing-at-point--read-from-whole-string
-                                 (with-temp-buffer
-                                   (insert-file-contents-literally file)
-                                   (buffer-string)))))
+        (frame-count 0)
+        ;; TODO: probably should not use thing-at-point internals
+        (state-complete (thing-at-point--read-from-whole-string
+                         (with-temp-buffer
+                           (insert-file-contents-literally file)
+                           (buffer-string)))))
     ;; open all files in a temporary perspective to avoid polluting "main"
     (persp-switch tmp-persp-name)
     (cl-loop for file in (persp--state-complete-files state-complete) do
@@ -1250,11 +1250,11 @@ restored."
              ;; removed in the future, as there should be very few or no files
              ;; left in the old format.
              (let* ((frame-persp-table (if (hash-table-p frame)
-                                                   frame
-                                                 (persp--state-frame-persps frame)))
-                            (frame-persp-order (if (hash-table-p frame)
-                                                   (hash-table-keys frame)
-                                                 (reverse (persp--state-frame-order frame)))))
+                                           frame
+                                         (persp--state-frame-persps frame)))
+                    (frame-persp-order (if (hash-table-p frame)
+                                           (hash-table-keys frame)
+                                         (reverse (persp--state-frame-order frame)))))
                ;; iterate over the perspectives in the frame in the appropriate order
                (cl-loop for persp in frame-persp-order do
                         (let ((state-single (gethash persp frame-persp-table)))
