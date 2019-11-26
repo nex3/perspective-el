@@ -1,4 +1,4 @@
-;;; perspective.el --- switch between named "perspectives" of the editor
+;;; perspective.el --- switch between named "perspectives" of the editor  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2008-2018 Natalie Weizenbaum <nex342@gmail.com>
 ;;
@@ -31,12 +31,9 @@
 (require 'thingatpt)
 (require 'subr-x)                       ; hash-table-values
 
-;; 'cl' is still required because the use of 'lexical-let'.  'lexical-let' has
-;; been deprecated since emacs 24.1, and it should be replaced with true
-;; lexical bindings.  For more information, please see
-;; https://www.gnu.org/software/emacs/manual/html_node/cl/
-;; Obsolete-Lexical-Binding.html
-(require 'cl)
+;; https://www.gnu.org/software/emacs/manual/html_node/cl/Obsolete-Lexical-Binding.html
+(defmacro lexical-let (&rest stuff)  `(let  ,@stuff))
+(defmacro lexical-let* (&rest stuff) `(let* ,@stuff))
 
 (defvar ido-temp-list)
 
@@ -651,7 +648,7 @@ Otherwise, returns (FRAME . NAME), the frame and name of another
 perspective that has the buffer.
 
 Prefers perspectives in the selected frame."
-  (cl-loop for frame in (sort (frame-list) (lambda (frame1 frame2) (eq frame2 (selected-frame))))
+  (cl-loop for frame in (sort (frame-list) (lambda (_frame1 frame2) (eq frame2 (selected-frame))))
            do (cl-loop for persp being the hash-values of (perspectives-hash frame)
                        if (and (not (and (equal frame (selected-frame))
                                          (equal (persp-name persp) (persp-name (persp-curr frame)))))
@@ -985,7 +982,7 @@ it. In addition, if one exists already, runs BODY in it immediately."
              for i upfrom 0
              do (puthash elt i indices))
     (setq ido-temp-list
-          (sort (intersection persp-names ido-temp-list)
+          (sort (cl-intersection persp-names ido-temp-list)
                 (lambda (a b)
                   (< (gethash a indices)
                      (gethash b indices)))))))
@@ -1037,15 +1034,15 @@ perspective beginning with the given letter."
 ;;   ]
 ;; }
 
-(defstruct persp--state-complete
+(cl-defstruct persp--state-complete
   files
   frames)
 
-(defstruct persp--state-frame
+(cl-defstruct persp--state-frame
   persps
   order)
 
-(defstruct persp--state-single
+(cl-defstruct persp--state-single
   buffers
   windows)
 
@@ -1165,7 +1162,7 @@ visible in a perspective as windows, they will be saved as
                 t))
   (unless persp-mode
     (message "persp-mode not enabled, nothing to save")
-    (return-from persp-state-save))
+    (cl-return-from persp-state-save))
   (lexical-let ((target-file (if (and file (not (string-equal "" file)))
                                  ;; file provided as argument, just use it
                                  (expand-file-name file)
@@ -1209,6 +1206,9 @@ visible in a perspective as windows, they will be saved as
     ;; after hook
     (run-hooks 'persp-state-after-save-hook)))
 
+(unless (fboundp 'thing-at-point--read-from-whole-string)
+  (fset 'thing-at-point--read-from-whole-string 'read-from-whole-string))
+
 ;;;###autoload
 (defun persp-state-load (file)
   "Restore the perspective state saved in FILE.
@@ -1231,9 +1231,10 @@ restored."
   ;; actually load
   (lexical-let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
                 (frame-count 0)
-                (state-complete (read-from-whole-string
+                ;; TODO: probably should not use thing-at-point internals
+                (state-complete (thing-at-point--read-from-whole-string
                                  (with-temp-buffer
-                                   (insert-file-contents file)
+                                   (insert-file-contents-literally file)
                                    (buffer-string)))))
     ;; open all files in a temporary perspective to avoid polluting "main"
     (persp-switch tmp-persp-name)
@@ -1242,7 +1243,7 @@ restored."
                (find-file file)))
     ;; iterate over the frames
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
-             (incf frame-count)
+             (cl-incf frame-count)
              (when (> frame-count 1)
                (make-frame-command))
              ;; XXX: The condition in binding frame-persp-table and
