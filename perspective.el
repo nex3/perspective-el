@@ -31,10 +31,6 @@
 (require 'thingatpt)
 (require 'subr-x)                       ; hash-table-values
 
-;; https://www.gnu.org/software/emacs/manual/html_node/cl/Obsolete-Lexical-Binding.html
-(defmacro lexical-let (&rest stuff)  `(let  ,@stuff))
-(defmacro lexical-let* (&rest stuff) `(let* ,@stuff))
-
 (defvar ido-temp-list)
 
 ;;; Code:
@@ -780,7 +776,7 @@ With a prefix arg, uses the old `read-buffer' instead."
 
 (defun persp-complete-buffer ()
   "Perform completion on all buffers within the current perspective."
-  (lexical-let ((persp-names (mapcar 'buffer-name (persp-buffers (persp-curr)))))
+  (let ((persp-names (mapcar 'buffer-name (persp-buffers (persp-curr)))))
     (apply-partially 'completion-table-with-predicate
                      (or minibuffer-completion-table 'internal-complete-buffer)
                      (lambda (name)
@@ -1097,16 +1093,16 @@ to the perspective's *scratch* buffer."
      entry)
     ;; leaf: modify this
     ((eq 'leaf (car entry))
-     (lexical-let ((leaf-props (cdr entry)))
+     (let ((leaf-props (cdr entry)))
        (cons 'leaf
              (cl-loop for prop in leaf-props
                    collect (if (not (eq 'buffer (car prop)))
                                prop
-                             (lexical-let ((bn (cadr prop)))
+                             (let ((bn (cadr prop)))
                                (if (member bn valid-buffers)
                                    prop
                                  (cons 'buffer
-                                       (cons (lexical-let ((scratch-persp (format "*scratch* (%s)" persp)))
+                                       (cons (let ((scratch-persp (format "*scratch* (%s)" persp)))
                                                (if (get-buffer scratch-persp)
                                                    scratch-persp
                                                  "*scratch*"))
@@ -1119,12 +1115,12 @@ to the perspective's *scratch* buffer."
   (cl-loop for frame in (frame-list)
            if (frame-parameter frame 'persp--hash) ; XXX: filter non-perspective-enabled frames
            collect (with-selected-frame frame
-                     (lexical-let ((persps-in-frame (make-hash-table :test 'equal))
+                     (let ((persps-in-frame (make-hash-table :test 'equal))
                                    (persp-names-in-order (persp-names)))
                        (cl-loop for persp in persp-names-in-order do
                                 (unless (persp-killed-p (gethash persp (perspectives-hash)))
                                   (with-perspective persp
-                                    (lexical-let* ((buffers
+                                    (let* ((buffers
                                                     (cl-loop for buffer in (persp-buffers (persp-curr))
                                                              if (persp--state-interesting-buffer-p buffer)
                                                              collect (buffer-name buffer)))
@@ -1163,7 +1159,7 @@ visible in a perspective as windows, they will be saved as
   (unless persp-mode
     (message "persp-mode not enabled, nothing to save")
     (cl-return-from persp-state-save))
-  (lexical-let ((target-file (if (and file (not (string-equal "" file)))
+  (let ((target-file (if (and file (not (string-equal "" file)))
                                  ;; file provided as argument, just use it
                                  (expand-file-name file)
                                ;; no file provided as argument
@@ -1198,7 +1194,7 @@ visible in a perspective as windows, they will be saved as
     (run-hooks 'persp-state-before-save-hook)
     ;; actually save
     (persp-save)
-    (lexical-let ((state-complete (make-persp--state-complete
+    (let ((state-complete (make-persp--state-complete
                                    :files (persp--state-file-data)
                                    :frames (persp--state-frame-data))))
       ;; create or overwrite target-file:
@@ -1229,7 +1225,7 @@ restored."
   ;; before hook
   (run-hooks 'persp-state-before-load-hook)
   ;; actually load
-  (lexical-let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
+  (let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
                 (frame-count 0)
                 ;; TODO: probably should not use thing-at-point internals
                 (state-complete (thing-at-point--read-from-whole-string
@@ -1253,7 +1249,7 @@ restored."
              ;; persp--state-frame (released version). The special case can be
              ;; removed in the future, as there should be very few or no files
              ;; left in the old format.
-             (lexical-let* ((frame-persp-table (if (hash-table-p frame)
+             (let* ((frame-persp-table (if (hash-table-p frame)
                                                    frame
                                                  (persp--state-frame-persps frame)))
                             (frame-persp-order (if (hash-table-p frame)
@@ -1261,7 +1257,7 @@ restored."
                                                  (reverse (persp--state-frame-order frame)))))
                ;; iterate over the perspectives in the frame in the appropriate order
                (cl-loop for persp in frame-persp-order do
-                        (lexical-let ((state-single (gethash persp frame-persp-table)))
+                        (let ((state-single (gethash persp frame-persp-table)))
                           (persp-switch persp)
                           (cl-loop for buffer in (persp--state-single-buffers state-single) do
                                    (persp-add-buffer buffer))
