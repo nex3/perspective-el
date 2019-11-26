@@ -419,7 +419,8 @@ buffer called \"*scratch* (NAME)\"."
   (make-persp :name name
     (switch-to-buffer (concat "*scratch* (" name ")"))
     (funcall initial-major-mode)
-    (insert initial-scratch-message)
+    (when initial-scratch-message
+      (insert initial-scratch-message))
     (persp-reset-windows)))
 
 (defun persp-reactivate-buffers (buffers)
