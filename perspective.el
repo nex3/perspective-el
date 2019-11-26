@@ -6,7 +6,7 @@
 
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
-;; Package-Requires: ((cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.4") (cl-lib "0.5"))
 ;; Version: 2.3
 ;; Created: 2008-03-05
 ;; By: Natalie Weizenbaum <nex342@gmail.com>
@@ -71,7 +71,7 @@ perspectives."
                (string :tag "Divider")))
 
 (defcustom persp-mode-prefix-key (kbd "C-x x")
-  "Prefix key to activate perspective-map"
+  "Prefix key to activate perspective-map."
   :group 'perspective-mode
   :set (lambda (sym value)
          (when (and (bound-and-true-p persp-mode-map)
@@ -86,15 +86,17 @@ perspectives."
   :type 'boolean)
 
 (defcustom persp-sort 'name
-  "What order to sort perspectives. If 'name, then sort alphabetically. If 'access, then sort by last time accessed (latest first). If 'created, then sort by time created (latest first)."
+  "What order to sort perspectives.
+If 'name, then sort alphabetically.
+If 'access, then sort by last time accessed (latest first).
+If 'created, then sort by time created (latest first)."
   :group 'perspective-mode
   :type '(choice (const :tag "By Name"          name)
                  (const :tag "By Time Accessed" access)
                  (const :tag "By Time Created"  created)))
 
 (defcustom persp-state-default-file nil
-  "When non-nil, it provides a default argument for
-`persp-state-save` and `persp-state-load` to work with.
+  "When non-nil, it provides a default argument for `persp-state-save` and `persp-state-load` to work with.
 
 `persp-state-save` overwrites this file without prompting, which
 makes it easy to use in, e.g., `kill-emacs-hook` to automatically
@@ -149,7 +151,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
 
 (defvar persp-interactive-completion-function
   (if ido-mode 'ido-completing-read 'completing-read)
-  "The function which is used by perspective.el to interactivly complete user input")
+  "The function which is used by perspective.el to interactively complete user input.")
 
 (defvar persp-before-switch-hook nil
   "A hook that's run before `persp-switch'.
@@ -256,7 +258,7 @@ FRAME defaults to the currently selected frame."
   (frame-parameter frame 'persp--last))
 
 (defun persp-mode-set-prefix-key (newkey)
-  "Set the prefix key to activate persp-mode"
+  "Set NEWKEY as the prefix key to activate persp-mode."
   (substitute-key-definition 'perspective-map nil persp-mode-map)
   (define-key persp-mode-map newkey 'perspective-map))
 
@@ -280,9 +282,11 @@ This prevents the persp-mode from completely breaking Emacs."
         (persp-mode -1)))))
 
 (defun persp-error (&rest args)
-  "Like `error', but marks it as a persp-specific error.
+  "Like `error', but mark it as a persp-specific error.
 Used along with `persp-protect' to ensure that persp-mode doesn't
-bring down Emacs."
+bring down Emacs.
+
+ARGS will be interpreted by `format-message'."
   (if persp-protected
       (signal 'persp-error (list (apply 'format args)))
     (apply 'error args)))
@@ -492,6 +496,7 @@ This is used for cycling between perspectives."
   (persp-get-quick-helper char prev (persp-names)))
 
 (defun persp-get-quick-helper (char prev names)
+  "Helper for `persp-get-quick' using CHAR, PREV, and NAMES."
   (if (null names) nil
     (let ((name (car names)))
       (cond
@@ -744,10 +749,11 @@ copied across frames."
           (if persp (cl-return-from persp-all-get (persp-buffers persp))))))))
 
 (defun persp-read-buffer (prompt &optional def require-match)
-  "A replacement for the built-in `read-buffer'.
-Meant to be used with `read-buffer-function'. Return the name of
-the buffer selected, only selecting from buffers within the
-current perspective.
+  "A replacement for the built-in `read-buffer', meant to be used with `read-buffer-function'.
+Return the name of the buffer selected, only selecting from buffers
+within the current perspective.
+
+PROMPT, DEF, and REQUIRE-MATCH documented in `read-buffer'.
 
 With a prefix arg, uses the old `read-buffer' instead."
   (persp-protect
@@ -1186,7 +1192,7 @@ visible in a perspective as windows, they will be saved as
                                   target-file))
                (not (or current-prefix-arg
                         (yes-or-no-p "Target file exists. Overwrite? "))))
-      (error "persp-state-save cancelled"))
+      (error "Cancelled persp-state-save"))
     ;; before hook
     (run-hooks 'persp-state-before-save-hook)
     ;; actually save
