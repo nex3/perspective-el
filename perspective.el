@@ -1148,8 +1148,8 @@ FILE defaults to the value of persp-state-default-file if it is
 set.
 
 Each perspective's buffer list and window layout will be saved.
-Frames and their associated perspectives will also be saved
-(but not the original frame sizes).
+Frames and their associated perspectives will also be saved,
+but not the original frame sizes.
 
 Buffers with * characters in their names, as well as buffers without
 associated files will be ignored. If such buffers are currently
