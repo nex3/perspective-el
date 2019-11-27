@@ -429,10 +429,10 @@ Returns BUFFERS with all non-living buffers removed.
 
 See also `other-buffer'."
   (cl-loop for buf in (reverse buffers)
-           if (not (null (buffer-name buf)))
+           when (buffer-live-p buf)
            collect buf into living-buffers
            and do (switch-to-buffer buf)
-           finally return (reverse living-buffers)))
+           finally return (nreverse living-buffers)))
 
 (defun persp-set-local-variables (vars)
   "Set the local variables given in VARS.
@@ -547,7 +547,7 @@ If NORECORD is non-nil, do not update the
   (set-frame-parameter nil 'persp--curr persp)
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
-  (persp-reactivate-buffers (persp-buffers persp))
+  (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
   (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
   (when (marker-position (persp-point-marker persp))
