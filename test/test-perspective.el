@@ -1,4 +1,4 @@
-;;; test-perspective.el --- Tests for perspective
+;;; test-perspective.el --- Tests for perspective  -*- lexical-binding: t; -*-
 
 ;; Licensed under the same terms as Emacs and under the MIT license.
 
