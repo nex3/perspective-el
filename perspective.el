@@ -132,6 +132,12 @@ After BODY is evaluated, frame parameters are reset to their original values."
 filtering in buffer display modes like ibuffer."
   (not (persp-is-current-buffer buf)))
 
+(defmacro with-current-perspective (&rest body)
+  "Operate on BODY when we are in a perspective."
+  (declare (indent 0))
+  `(when (persp-curr)
+     ,@body))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
@@ -306,7 +312,7 @@ for the perspective."
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
     `(let ((persp (make-persp-internal ,@keywords)))
-       (when (persp-curr)
+       (with-current-perspective
          (setf (persp-local-variables persp) (persp-local-variables (persp-curr))))
        (puthash (persp-name persp) persp (perspectives-hash))
        (with-perspective (persp-name persp)
@@ -320,7 +326,7 @@ for the perspective."
   "Save the current perspective state.
 Specifically, save the current window configuration and
 perspective-local variables to `persp-curr'"
-  (when (persp-curr)
+  (with-current-perspective
     (setf (persp-local-variables (persp-curr))
           (mapcar
            (lambda (c)
@@ -382,7 +388,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   (declare (indent 1))
   (let ((old (cl-gensym)))
     `(progn
-       (let ((,old (when (persp-curr) (persp-name (persp-curr))))
+       (let ((,old (with-current-perspective (persp-name (persp-curr))))
              (last-persp-cache (persp-last)))
          (unwind-protect
              (progn
