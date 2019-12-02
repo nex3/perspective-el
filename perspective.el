@@ -138,6 +138,10 @@ filtering in buffer display modes like ibuffer."
   `(when (persp-curr)
      ,@body))
 
+(defun persp-current-name ()
+  "Get the name of the current perspective."
+  (persp-name (persp-curr)))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
@@ -388,7 +392,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   (declare (indent 1))
   (let ((old (cl-gensym)))
     `(progn
-       (let ((,old (with-current-perspective (persp-name (persp-curr))))
+       (let ((,old (with-current-perspective (persp-current-name)))
              (last-persp-cache (persp-last)))
          (unwind-protect
              (progn
@@ -481,7 +485,7 @@ Has no effect when `persp-show-modestring' is nil."
 (defun persp-format-name (name)
   "Format the perspective name given by NAME for display in the modeline."
   (let ((string-name (format "%s" name)))
-    (if (equal name (persp-name (persp-curr)))
+    (if (equal name (persp-current-name))
         (propertize string-name 'face 'persp-selected-face)
       (propertize string-name
                   'local-map persp-mode-line-map
@@ -528,7 +532,7 @@ If NORECORD is non-nil, do not update the
 `persp-last-switch-time' for the switched perspective."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
-  (if (and (persp-curr) (equal name (persp-name (persp-curr)))) name
+  (if (and (persp-curr) (equal name (persp-current-name))) name
     (let ((persp (gethash name (perspectives-hash))))
       (set-frame-parameter nil 'persp--last (persp-curr))
       (when (null persp)
@@ -573,7 +577,7 @@ See `persp-switch', `persp-get-quick'."
   "Switch to next perspective (to the right)."
   (interactive)
   (let* ((names (persp-names))
-         (pos (cl-position (persp-name (persp-curr)) names)))
+         (pos (cl-position (persp-current-name) names)))
     (cond
      ((null pos) (persp-find-some))
      ((= pos (1- (length names)))
@@ -584,7 +588,7 @@ See `persp-switch', `persp-get-quick'."
   "Switch to previous perspective (to the left)."
   (interactive)
   (let* ((names (persp-names))
-         (pos (cl-position (persp-name (persp-curr)) names)))
+         (pos (cl-position (persp-current-name) names)))
     (cond
      ((null pos) (persp-find-some))
      ((= pos 0)
@@ -699,7 +703,7 @@ See also `persp-switch' and `persp-add-buffer'."
 Killing a perspective means that all buffers associated with that
 perspective and no others are killed."
   (interactive "i")
-  (if (null name) (setq name (persp-prompt (persp-name (persp-curr)) t)))
+  (if (null name) (setq name (persp-prompt (persp-current-name) t)))
   (with-perspective name
     (run-hooks 'persp-killed-hook)
     (mapc 'persp-remove-buffer (persp-current-buffers))
@@ -714,7 +718,7 @@ perspective and no others are killed."
             (last (nth 1 names)))
        (when last
          (gethash last (perspectives-hash))))))
-  (when (or (not (persp-curr)) (equal name (persp-name (persp-curr))))
+  (when (or (not (persp-curr)) (equal name (persp-current-name)))
     ;; Don't let persp-last get set to the deleted persp.
     (persp-let-frame-parameters ((persp--last (persp-last)))
       (persp-switch (persp-find-some)))))
@@ -725,14 +729,14 @@ perspective and no others are killed."
   (if (gethash name (perspectives-hash))
       (persp-error "Perspective `%s' already exists" name)
     ;; rename the perspective-specific *scratch* buffer
-    (let* ((old-scratch-name (format "*scratch* (%s)" (persp-name (persp-curr))))
+    (let* ((old-scratch-name (format "*scratch* (%s)" (persp-current-name)))
            (new-scratch-name (format "*scratch* (%s)" name))
            (scratch-buffer (get-buffer old-scratch-name)))
       (when scratch-buffer
         (with-current-buffer scratch-buffer
           (rename-buffer new-scratch-name))))
     ;; rewire the rest of the perspective inside its data structures
-    (remhash (persp-name (persp-curr)) (perspectives-hash))
+    (remhash (persp-current-name) (perspectives-hash))
     (puthash name (persp-curr) (perspectives-hash))
     (setf (persp-name (persp-curr)) name)
     (persp-update-modestring)))
@@ -967,7 +971,7 @@ it. In addition, if one exists already, runs BODY in it immediately."
   `(progn
      (add-hook 'persp-created-hook
                (lambda ()
-                 (when (string= (persp-name (persp-curr)) ,name)
+                 (when (string= (persp-current-name) ,name)
                    ,@body))
                'append)
      (when (gethash ,name (perspectives-hash))
