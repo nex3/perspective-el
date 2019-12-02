@@ -221,11 +221,16 @@ perspective-local values."
   (or (frame-parameter frame 'persp--hash)
       (make-hash-table)))
 
+(defun persp-mode-guard ()
+  (unless (bound-and-true-p persp-mode)
+    (persp-error "persp-mode is not active")))
+
 (defun persp-curr (&optional frame)
   "Get the current perspective in FRAME.
 FRAME defaults to the currently selected frame."
   ;; XXX: This must return a non-nil value to avoid breaking frames initialized
   ;; with after-make-frame-functions bound to nil.
+  (persp-mode-guard)
   (or (frame-parameter frame 'persp--curr)
       (make-persp-internal)))
 
