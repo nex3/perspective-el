@@ -127,6 +127,11 @@ After BODY is evaluated, frame parameters are reset to their original values."
   "Return T if BUF is in the current perspective."
   (memq buf (persp-current-buffers)))
 
+(defun persp-buffer-filter (buf)
+  "Return F if BUF is in the current perspective. Used for
+filtering in buffer display modes like ibuffer."
+  (not (persp-is-current-buffer buf)))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
