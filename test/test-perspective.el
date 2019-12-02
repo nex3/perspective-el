@@ -1,4 +1,4 @@
-;;; test-perspective.el --- Tests for perspective
+;;; test-perspective.el --- Tests for perspective  -*- lexical-binding: t; -*-
 
 ;; Licensed under the same terms as Emacs and under the MIT license.
 
@@ -31,12 +31,12 @@ tell-tale leading '*' characters)."
 (defun persp-test-buffer-list-all ()
   "Return the list of buffers in Emacs (in all
 perspectives), filtering out temporaries."
-  (remove-if-not #'persp-test-interesting-buffer? (buffer-list)))
+  (cl-remove-if-not #'persp-test-interesting-buffer? (buffer-list)))
 
 (defun persp-test-buffer-list (persp)
   "Return the list of buffers in the current perspective,
 filtering out temporaries."
-  (remove-if-not #'persp-test-interesting-buffer? (persp-buffers persp)))
+  (cl-remove-if-not #'persp-test-interesting-buffer? (persp-buffers persp)))
 
 (defmacro persp-test-with-persp (&rest body)
   "Allow multiple tests to run with reasonable assumption of
