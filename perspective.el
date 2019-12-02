@@ -119,6 +119,10 @@ After BODY is evaluated, frame parameters are reset to their original values."
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
 
+(defmacro persp-current-buffers ()
+  "Return a list of all buffers in the current perspective."
+  `(persp-buffers (persp-curr)))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
@@ -601,8 +605,8 @@ See also `persp-switch' and `persp-remove-buffer'."
     (let ((read-buffer-function nil))
       (read-buffer "Add buffer to perspective: "))))
   (let ((buffer (get-buffer buffer)))
-    (unless (memq buffer (persp-buffers (persp-curr)))
-      (push buffer (persp-buffers (persp-curr))))))
+    (unless (memq buffer (persp-current-buffers))
+      (push buffer (persp-current-buffers)))))
 
 (defun persp-set-buffer (buffer-name)
   "Associate BUFFER-NAME with the current perspective and remove it from any other."
@@ -667,7 +671,7 @@ See also `persp-switch' and `persp-add-buffer'."
                ;; the loop because otherwise it will go on infinitely.
                (setq window (unless (eq window new-window) new-window))))))
         (t (bury-buffer buffer)))
-  (setf (persp-buffers (persp-curr)) (remq buffer (persp-buffers (persp-curr)))))
+  (setf (persp-current-buffers) (remq buffer (persp-current-buffers))))
 
 (defun persp-kill (name)
   "Kill the perspective given by NAME.
@@ -678,7 +682,7 @@ perspective and no others are killed."
   (if (null name) (setq name (persp-prompt (persp-name (persp-curr)) t)))
   (with-perspective name
     (run-hooks 'persp-killed-hook)
-    (mapc 'persp-remove-buffer (persp-buffers (persp-curr)))
+    (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
   (remhash name (perspectives-hash))
   (persp-update-modestring)
@@ -756,7 +760,7 @@ With a prefix arg, uses the old `read-buffer' instead."
 
 (defun persp-complete-buffer ()
   "Perform completion on all buffers within the current perspective."
-  (let ((persp-names (mapcar 'buffer-name (persp-buffers (persp-curr)))))
+  (let ((persp-names (mapcar 'buffer-name (persp-current-buffers))))
     (apply-partially 'completion-table-with-predicate
                      (or minibuffer-completion-table 'internal-complete-buffer)
                      (lambda (name)
@@ -882,7 +886,7 @@ named collections of buffers and window configurations."
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
-        (setf (persp-buffers (persp-curr)) (buffer-list))
+        (setf (persp-current-buffers) (buffer-list))
 
         (run-hooks 'persp-mode-hook))
     (ad-deactivate-regexp "^persp-.*")
@@ -952,7 +956,7 @@ it. In addition, if one exists already, runs BODY in it immediately."
 (defun persp-set-ido-buffers ()
   "Restrict the ido buffer to the current perspective."
   (let ((persp-names
-         (remq nil (mapcar 'buffer-name (persp-buffers (persp-curr)))))
+         (remq nil (mapcar 'buffer-name (persp-current-buffers))))
         (indices (make-hash-table :test 'equal)))
     (cl-loop for elt in ido-temp-list
              for i upfrom 0
@@ -1101,7 +1105,7 @@ to the perspective's *scratch* buffer."
                                 (unless (persp-killed-p (gethash persp (perspectives-hash)))
                                   (with-perspective persp
                                     (let* ((buffers
-                                            (cl-loop for buffer in (persp-buffers (persp-curr))
+                                            (cl-loop for buffer in (persp-current-buffers)
                                                      if (persp--state-interesting-buffer-p buffer)
                                                      collect (buffer-name buffer)))
                                            (windows
