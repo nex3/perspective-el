@@ -123,6 +123,10 @@ After BODY is evaluated, frame parameters are reset to their original values."
   "Return a list of all buffers in the current perspective."
   `(persp-buffers (persp-curr)))
 
+(defun persp-is-current-buffer (buf)
+  "Return T if BUF is in the current perspective."
+  (memq buf (persp-current-buffers)))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
@@ -610,7 +614,7 @@ See also `persp-switch' and `persp-remove-buffer'."
     (let ((read-buffer-function nil))
       (read-buffer "Add buffer to perspective: "))))
   (let ((buffer (get-buffer buffer)))
-    (unless (memq buffer (persp-current-buffers))
+    (unless (persp-is-current-buffer buffer)
       (push buffer (persp-current-buffers)))))
 
 (defun persp-set-buffer (buffer-name)
@@ -649,7 +653,7 @@ Prefers perspectives in the selected frame."
     (let ((read-buffer-function nil))
       (read-buffer-to-switch "Switch to buffer: "))))
   (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
-    (if (memq buffer (persp-buffers (persp-curr)))
+    (if (persp-is-current-buffer buffer)
         (switch-to-buffer buffer)
       (let ((other-persp (persp-buffer-in-other-p buffer)))
         (when (eq (car-safe other-persp) (selected-frame))
@@ -837,7 +841,7 @@ See also `persp-add-buffer'."
 
     (let ((buffer (window-buffer window)))
       (with-selected-frame frame
-        (unless (memq buffer (persp-buffers (persp-curr)))
+        (unless (persp-is-current-buffer buffer)
           ;; If a buffer from outside this perspective was selected, it's because
           ;; this perspective is out of buffers. For lack of any better option, we
           ;; recreate the scratch buffer.
