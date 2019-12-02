@@ -142,6 +142,14 @@ filtering in buffer display modes like ibuffer."
   "Get the name of the current perspective."
   (persp-name (persp-curr)))
 
+(defun persp-scratch-buffer (&optional name)
+  (let* ((current-name  (persp-current-name))
+         (name          (or name current-name))
+         (initial-persp (equal name persp-initial-frame-name)))
+    (concat "*scratch*"
+            (unless initial-persp
+              (format " (%s)" name)))))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
@@ -421,7 +429,7 @@ window-side creating perspectives."
 The new perspective will start with only an `initial-major-mode'
 buffer called \"*scratch* (NAME)\"."
   (make-persp :name name
-    (switch-to-buffer (concat "*scratch* (" name ")"))
+    (switch-to-buffer (persp-scratch-buffer name))
     (funcall initial-major-mode)
     (when initial-scratch-message
       (insert initial-scratch-message))
@@ -729,8 +737,8 @@ perspective and no others are killed."
   (if (gethash name (perspectives-hash))
       (persp-error "Perspective `%s' already exists" name)
     ;; rename the perspective-specific *scratch* buffer
-    (let* ((old-scratch-name (format "*scratch* (%s)" (persp-current-name)))
-           (new-scratch-name (format "*scratch* (%s)" name))
+    (let* ((old-scratch-name (persp-scratch-buffer))
+           (new-scratch-name (persp-scratch-buffer name))
            (scratch-buffer (get-buffer old-scratch-name)))
       (when scratch-buffer
         (with-current-buffer scratch-buffer
@@ -863,9 +871,9 @@ See also `persp-add-buffer'."
           ;;
           ;; If we were just in a scratch buffer, change the name slightly.
           ;; Otherwise our new buffer will get deleted too.
-          (let ((name (concat "*scratch* (" (persp-name (persp-curr)) ")")))
+          (let ((name (persp-scratch-buffer)))
             (when (and bury-or-kill (equal name (buffer-name old-buffer)))
-              (setq name (concat "*scratch*  (" (persp-name (persp-curr)) ")")))
+              (setq name (persp-scratch-buffer)))
             (with-selected-window window
               (switch-to-buffer name)
               (funcall initial-major-mode))))))))
@@ -1110,10 +1118,7 @@ to the perspective's *scratch* buffer."
                                (if (member bn valid-buffers)
                                    prop
                                  (cons 'buffer
-                                       (cons (let ((scratch-persp (format "*scratch* (%s)" persp)))
-                                               (if (get-buffer scratch-persp)
-                                                   scratch-persp
-                                                 "*scratch*"))
+                                       (cons (persp-scratch-buffer persp)
                                              (cddr prop))))))))))
     ;; recurse
     (t (cons (car entry) (cl-loop for e in (cdr entry)
