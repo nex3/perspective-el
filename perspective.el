@@ -1202,9 +1202,6 @@ visible in a perspective as windows, they will be saved as
     ;; after hook
     (run-hooks 'persp-state-after-save-hook)))
 
-(unless (fboundp 'thing-at-point--read-from-whole-string)
-  (fset 'thing-at-point--read-from-whole-string 'read-from-whole-string))
-
 ;;;###autoload
 (defun persp-state-load (file)
   "Restore the perspective state saved in FILE.
@@ -1227,8 +1224,7 @@ restored."
   ;; actually load
   (let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
         (frame-count 0)
-        ;; TODO: probably should not use thing-at-point internals
-        (state-complete (thing-at-point--read-from-whole-string
+        (state-complete (read
                          (with-temp-buffer
                            (insert-file-contents-literally file)
                            (buffer-string)))))
