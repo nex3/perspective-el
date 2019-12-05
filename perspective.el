@@ -242,8 +242,14 @@ perspective-local values."
 FRAME defaults to the currently selected frame."
   ;; XXX: This must return a non-nil value to avoid breaking frames initialized
   ;; with after-make-frame-functions bound to nil.
-  (or (frame-parameter frame 'persp--curr)
-      (make-persp-internal)))
+  (let ((frame-persp (frame-parameter frame 'persp--curr)))
+    ;; when using certain emacs packages (desktop-mode?) frame-parameter
+    ;; returns a string "Unprintable value" which violates the assumptions of
+    ;; other code that the result from is a perspective struct.
+    (if (or (not frame-persp) (stringp frame-persp)) 
+        (make-persp-internal)
+        frame-persp
+      )))
 
 (defun persp-last (&optional frame)
   "Get the last active perspective in FRAME.
