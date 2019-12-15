@@ -18,9 +18,9 @@
 ;; workspaces in windows managers such as Awesome and XMonad (and
 ;; somewhat similar to multiple desktops in Gnome or Spaces in OS X).
 
-;; perspective.el provides multiple workspaces (or "perspectives") for
-;; each Emacs frame.  This makes it easy to work on many separate projects
-;; without getting lost in all the buffers.
+;; Perspective provides multiple workspaces (or "perspectives") for each Emacs
+;; frame. This makes it easy to work on many separate projects without getting
+;; lost in all the buffers.
 
 ;; Each perspective is composed of a window configuration and a set of
 ;; buffers.  Switching to a perspective activates its window
