@@ -76,6 +76,12 @@ perspectives."
          (set-default sym value))
   :type 'key-sequence)
 
+(defcustom persp-interactive-completion-function
+  (if ido-mode 'ido-completing-read 'completing-read)
+  "Function used by Perspective to interactively complete user input."
+  :group 'perspective-mode
+  :type 'function)
+
 (defcustom persp-switch-wrap t
   "Whether `persp-next' and `persp-prev' should wrap."
   :group 'perspective-mode
@@ -155,10 +161,6 @@ filtering in buffer display modes like ibuffer."
 
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
-
-(defvar persp-interactive-completion-function
-  (if ido-mode 'ido-completing-read 'completing-read)
-  "The function which is used by perspective.el to interactively complete user input.")
 
 (defvar persp-before-switch-hook nil
   "A hook that's run before `persp-switch'.
