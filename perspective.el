@@ -115,7 +115,6 @@ After BODY is evaluated, frame parameters are reset to their original values."
   name buffers killed local-variables
   (last-switch-time (current-time))
   (created-time (current-time))
-  (buffer-history buffer-name-history)
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
 
@@ -219,8 +218,8 @@ Run with the activated perspective active.")
   "Return a hash containing all perspectives in FRAME.
 FRAME defaults to the currently selected frame. The keys are the
 perspectives' names. The values are persp structs, with the
-fields NAME, WINDOW-CONFIGURATION, BUFFERS, BUFFER-HISTORY,
-KILLED, POINT-MARKER, and LOCAL-VARIABLES.
+fields NAME, WINDOW-CONFIGURATION, BUFFERS, KILLED, POINT-MARKER,
+and LOCAL-VARIABLES.
 
 NAME is the name of the perspective.
 
@@ -230,9 +229,6 @@ saved (if this isn't the current perspective, this is when the
 perspective was last active).
 
 BUFFERS is a list of buffer objects that are associated with this
-perspective.
-
-BUFFER-HISTORY is the list of buffer history values for this
 perspective.
 
 KILLED is non-nil if the perspective has been killed.
@@ -345,7 +341,6 @@ perspective-local variables to `persp-curr'"
              (let ((name (car c)))
                (list name (symbol-value name))))
            (persp-local-variables (persp-curr))))
-    (setf (persp-buffer-history (persp-curr)) buffer-name-history)
     (setf (persp-window-configuration (persp-curr)) (current-window-configuration))
     (setf (persp-point-marker (persp-curr)) (point-marker))))
 
@@ -560,7 +555,6 @@ If NORECORD is non-nil, do not update the
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
   (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
-  (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
   (when (marker-position (persp-point-marker persp))
     (goto-char (persp-point-marker persp)))
