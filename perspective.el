@@ -219,6 +219,8 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "p") 'persp-prev)
 (define-key perspective-map (kbd "<left>") 'persp-prev)
 (define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
+(define-key perspective-map (kbd "C-s") 'persp-state-save)
+(define-key perspective-map (kbd "C-l") 'persp-state-load)
 
 (defun perspectives-hash (&optional frame)
   "Return a hash containing all perspectives in FRAME.
