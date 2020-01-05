@@ -1166,13 +1166,20 @@ visible in a perspective as windows, they will be saved as
 '*scratch* (persp)' buffers."
   (interactive (list
                 (read-file-name "Save perspective state to file: "
-                                persp-state-default-file
-                                persp-state-default-file)
-                t))
+                                (if (and
+                                     (bound-and-true-p persp-state-default-file)
+                                     (file-directory-p (file-name-directory persp-state-default-file)))
+                                    (file-name-directory persp-state-default-file)
+                                  "")
+                                (if (and
+                                     (bound-and-true-p persp-state-default-file)
+                                     (file-readable-p persp-state-default-file))
+                                    (file-name-nondirectory persp-state-default-file)
+                                  ""))))
   (unless persp-mode
     (message "persp-mode not enabled, nothing to save")
     (cl-return-from persp-state-save))
-  (let ((target-file (if (and file (not (string-equal "" file)))
+  (let ((target-file (if (and (bound-and-true-p file) (not (string-equal "" file)))
                          ;; file provided as argument, just use it
                          (expand-file-name file)
                        ;; no file provided as argument
@@ -1183,7 +1190,7 @@ visible in a perspective as windows, they will be saved as
                            nil
                          ;; in non-interactive call mode, we want to fall back to
                          ;; the default, but only if it is set
-                         (if (and persp-state-default-file
+                         (if (and (bound-and-true-p persp-state-default-file)
                                   (not (string-equal "" persp-state-default-file)))
                              (expand-file-name persp-state-default-file)
                            nil)))))
@@ -1216,7 +1223,7 @@ visible in a perspective as windows, they will be saved as
     (run-hooks 'persp-state-after-save-hook)))
 
 ;;;###autoload
-(defun persp-state-load (file)
+(defun persp-state-load (&optional file)
   "Restore the perspective state saved in FILE.
 
 FILE defaults to the value of persp-state-default-file if it is
@@ -1227,10 +1234,23 @@ Each perspective's buffer list and window layout are also
 restored."
   (interactive (list
                 (read-file-name "Restore perspective state from file: "
-                                persp-state-default-file
-                                persp-state-default-file)))
-  (unless (file-exists-p file)
-    (error "File not found"))
+                                (if (and
+                                     (bound-and-true-p persp-state-default-file)
+                                     (file-directory-p (file-name-directory persp-state-default-file)))
+                                    (file-name-directory persp-state-default-file)
+                                  user-emacs-directory)
+                                (if (and
+                                     (bound-and-true-p persp-state-default-file)
+                                     (file-readable-p persp-state-default-file))
+                                    (file-name-nondirectory persp-state-default-file)
+                                  "perspective.persist.el"))))
+  ;;
+  (or (and
+       (not (bound-and-true-p file))
+       (bound-and-true-p persp-state-default-file)
+       (file-readable-p persp-state-default-file)
+       (setq file (expand-file-name (file-name-nondirectory persp-state-default-file) (file-name-directory persp-state-default-file))))
+      (error "unable to use variable persp-state-default-file"))
   (persp-mode 1)
   ;; before hook
   (run-hooks 'persp-state-before-load-hook)
