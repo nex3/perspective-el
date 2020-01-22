@@ -18,9 +18,9 @@
 ;; workspaces in windows managers such as Awesome and XMonad (and
 ;; somewhat similar to multiple desktops in Gnome or Spaces in OS X).
 
-;; perspective.el provides multiple workspaces (or "perspectives") for
-;; each Emacs frame.  This makes it easy to work on many separate projects
-;; without getting lost in all the buffers.
+;; Perspective provides multiple workspaces (or "perspectives") for each Emacs
+;; frame. This makes it easy to work on many separate projects without getting
+;; lost in all the buffers.
 
 ;; Each perspective is composed of a window configuration and a set of
 ;; buffers.  Switching to a perspective activates its window
@@ -29,9 +29,12 @@
 
 (require 'cl-lib)
 (require 'thingatpt)
+(require 'rx)
 (require 'subr-x)                       ; hash-table-values
+(require 'bs)                           ; buffer switcher
 
 (defvar ido-temp-list)
+(defvar ido-ignore-buffers)
 
 ;;; Code:
 
@@ -72,6 +75,12 @@ perspectives."
            (persp-mode-set-prefix-key value))
          (set-default sym value))
   :type 'key-sequence)
+
+(defcustom persp-interactive-completion-function
+  (if ido-mode 'ido-completing-read 'completing-read)
+  "Function used by Perspective to interactively complete user input."
+  :group 'perspective-mode
+  :type 'function)
 
 (defcustom persp-switch-wrap t
   "Whether `persp-next' and `persp-prev' should wrap."
@@ -153,10 +162,6 @@ filtering in buffer display modes like ibuffer."
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
-(defvar persp-interactive-completion-function
-  (if ido-mode 'ido-completing-read 'completing-read)
-  "The function which is used by perspective.el to interactively complete user input.")
-
 (defvar persp-before-switch-hook nil
   "A hook that's run before `persp-switch'.
 Run with the previous perspective as `persp-curr'.")
@@ -214,6 +219,8 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "p") 'persp-prev)
 (define-key perspective-map (kbd "<left>") 'persp-prev)
 (define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
+(define-key perspective-map (kbd "C-s") 'persp-state-save)
+(define-key perspective-map (kbd "C-l") 'persp-state-load)
 
 (defun perspectives-hash (&optional frame)
   "Return a hash containing all perspectives in FRAME.
@@ -1021,6 +1028,63 @@ perspective beginning with the given letter."
   (interactive)
   (setq persp-show-modestring t)
   (persp-update-modestring))
+
+;; Buffer switching integration: bs.el.
+;;;###autoload
+(defun persp-bs-show (arg)
+  "Invoke BS-SHOW with a configuration enabled for Perspective.
+With a prefix arg, show buffers in all perspectives.
+This respects ido-ignore-buffers, since we automatically add
+buffer filtering to ido-mode already (see use of
+PERSP-SET-IDO-BUFFERS)."
+  (interactive "P")
+  (let* ((ignore-rx (when ido-ignore-buffers
+                      ;; use rx macro to convert a list of regexps to one
+                      (rx (eval (append (list 'or)
+                                        (mapcar (lambda (rx) `(regexp ,rx))
+                                                ido-ignore-buffers))))))
+         (bs-configurations (append bs-configurations
+                                    (list `("perspective" nil nil
+                                            ,ignore-rx persp-buffer-filter nil))
+                                    (list `("all-perspectives" nil nil
+                                            ,ignore-rx nil nil)))))
+    (if (and persp-mode (null arg))
+        (bs--show-with-configuration "perspective")
+      (bs--show-with-configuration "all-perspectives"))))
+
+;; Buffer switching integration: IBuffer.
+;;;###autoload
+(defun persp-ibuffer (arg)
+  "Invoke IBUFFER with a configuration enabled for Perspective.
+With a prefix arg, show buffers in all perspectives.
+This respects ido-ignore-buffers, since we automatically add
+buffer filtering to ido-mode already (see use of
+PERSP-SET-IDO-BUFFERS)."
+  (interactive "P")
+  (if (and persp-mode (null arg))
+      (let ((ibuffer-maybe-show-predicates (append ibuffer-maybe-show-predicates
+                                                   (list #'persp-buffer-filter)
+                                                   ido-ignore-buffers)))
+        (ibuffer))
+    (ibuffer)))
+
+;; Buffer switching integration: Ivy / Counsel.
+;;;###autoload
+(defun persp-counsel-switch-buffer (arg)
+  "Like COUNSEL-SWITCH-BUFFER, but Perspective-aware.
+With a prefix arg, show buffers in all perspectives."
+  (interactive "P")
+  (if (and persp-mode (null arg))
+      (ivy-read (format "Switch to buffer (%s): " (persp-current-name))
+                (cl-remove-if #'null (mapcar #'buffer-name (persp-current-buffers)))
+                :preselect (buffer-name (current-buffer))
+                :keymap ivy-switch-buffer-map
+                :action #'ivy--switch-buffer-action
+                :matcher #'ivy--switch-buffer-matcher
+                :caller 'counsel-switch-buffer
+                :unwind #'counsel--switch-buffer-unwind
+                :update-fn 'counsel--switch-buffer-update-fn)
+    (counsel-switch-buffer)))
 
 ;; Symbols namespaced by persp--state (internal) and persp-state (user
 ;; functions) provide functionality which allows saving perspective state on
