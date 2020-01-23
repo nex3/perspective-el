@@ -1309,19 +1309,8 @@ restored."
              (cl-incf frame-count)
              (when (> frame-count 1)
                (make-frame-command))
-             ;; XXX: The condition in binding frame-persp-table and
-             ;; frame-persp-order ensures backwards compatibility with the early
-             ;; pre-release format of persp-state files: the frame may be just a
-             ;; hash table (old version), or it may be an instance of
-             ;; persp--state-frame (released version). The special case can be
-             ;; removed in the future, as there should be very few or no files
-             ;; left in the old format.
-             (let* ((frame-persp-table (if (hash-table-p frame)
-                                           frame
-                                         (persp--state-frame-persps frame)))
-                    (frame-persp-order (if (hash-table-p frame)
-                                           (hash-table-keys frame)
-                                         (reverse (persp--state-frame-order frame)))))
+             (let* ((frame-persp-table (persp--state-frame-persps frame))
+                    (frame-persp-order (reverse (persp--state-frame-order frame))))
                ;; iterate over the perspectives in the frame in the appropriate order
                (cl-loop for persp in frame-persp-order do
                         (let ((state-single (gethash persp frame-persp-table)))
