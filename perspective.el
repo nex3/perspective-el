@@ -28,13 +28,10 @@
 ;; available by default.
 
 (require 'cl-lib)
-(require 'thingatpt)
+(require 'ido)
 (require 'rx)
-(require 'subr-x)                       ; hash-table-values
-(require 'bs)                           ; buffer switcher
-
-(defvar ido-temp-list)
-(defvar ido-ignore-buffers nil)
+(require 'subr-x)
+(require 'thingatpt)
 
 ;;; Code:
 
@@ -988,6 +985,7 @@ it. In addition, if one exists already, runs BODY in it immediately."
 
 (defun persp-set-ido-buffers ()
   "Restrict the ido buffer to the current perspective."
+  (defvar ido-temp-list)
   (let ((persp-names
          (remq nil (mapcar 'buffer-name (persp-current-buffers))))
         (indices (make-hash-table :test 'equal)))
@@ -1032,6 +1030,11 @@ This respects ido-ignore-buffers, since we automatically add
 buffer filtering to ido-mode already (see use of
 PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
+  (unless (featurep 'bs)
+    (error "bs not loaded"))
+  (defvar ido-ignore-buffers)
+  (defvar bs-configurations)
+  (declare-function bs--show-with-configuration "bs.el")
   (let* ((ignore-rx (when ido-ignore-buffers
                       ;; convert a list of regexps to one
                       (rx-to-string (append (list 'or)
@@ -1055,6 +1058,10 @@ This respects ido-ignore-buffers, since we automatically add
 buffer filtering to ido-mode already (see use of
 PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
+  (unless (featurep 'ibuffer)
+    (error "IBuffer not loaded"))
+  (defvar ido-ignore-buffers)
+  (defvar ibuffer-maybe-show-predicates)
   (if (and persp-mode (null arg))
       (let ((ibuffer-maybe-show-predicates (append ibuffer-maybe-show-predicates
                                                    (list #'persp-buffer-filter)
@@ -1068,6 +1075,15 @@ PERSP-SET-IDO-BUFFERS)."
   "Like COUNSEL-SWITCH-BUFFER, but Perspective-aware.
 With a prefix arg, show buffers in all perspectives."
   (interactive "P")
+  (unless (and (featurep 'ivy) (featurep 'counsel))
+    (error "Ivy or Counsel not loaded"))
+  (defvar ivy-switch-buffer-map)
+  (declare-function ivy-read "ivy.el")
+  (declare-function ivy--switch-buffer-matcher "ivy.el")
+  (declare-function ivy--switch-buffer-action "ivy.el")
+  (declare-function counsel-switch-buffer "counsel.el")
+  (declare-function counsel--switch-buffer-unwind "counsel.el")
+  (declare-function counsel--switch-buffer-update-fn "counsel.el")
   (if (and persp-mode (null arg))
       (ivy-read (format "Switch to buffer (%s): " (persp-current-name))
                 (cl-remove-if #'null (mapcar #'buffer-name (persp-current-buffers)))
@@ -1075,9 +1091,9 @@ With a prefix arg, show buffers in all perspectives."
                 :keymap ivy-switch-buffer-map
                 :action #'ivy--switch-buffer-action
                 :matcher #'ivy--switch-buffer-matcher
-                :caller 'counsel-switch-buffer
+                :caller #'counsel-switch-buffer
                 :unwind #'counsel--switch-buffer-unwind
-                :update-fn 'counsel--switch-buffer-update-fn)
+                :update-fn #'counsel--switch-buffer-update-fn)
     (counsel-switch-buffer)))
 
 ;; Symbols namespaced by persp--state (internal) and persp-state (user
