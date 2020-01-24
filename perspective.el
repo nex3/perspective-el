@@ -34,7 +34,7 @@
 (require 'bs)                           ; buffer switcher
 
 (defvar ido-temp-list)
-(defvar ido-ignore-buffers)
+(defvar ido-ignore-buffers nil)
 
 ;;; Code:
 
