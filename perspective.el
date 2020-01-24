@@ -1033,10 +1033,10 @@ buffer filtering to ido-mode already (see use of
 PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (let* ((ignore-rx (when ido-ignore-buffers
-                      ;; use rx macro to convert a list of regexps to one
-                      (rx (eval (append (list 'or)
-                                        (mapcar (lambda (rx) `(regexp ,rx))
-                                                ido-ignore-buffers))))))
+                      ;; convert a list of regexps to one
+                      (rx-to-string (append (list 'or)
+                                            (mapcar (lambda (rx) `(regexp ,rx))
+                                                    ido-ignore-buffers)))))
          (bs-configurations (append bs-configurations
                                     (list `("perspective" nil nil
                                             ,ignore-rx persp-buffer-filter nil))
