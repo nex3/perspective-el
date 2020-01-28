@@ -181,6 +181,12 @@ Run with the perspective to be destroyed as `persp-curr'.")
   "A hook that's run after a perspective has been activated.
 Run with the activated perspective active.")
 
+(defvar persp-before-rename-hook nil
+  "A hook run immediately before renaming a perspective.")
+
+(defvar persp-after-rename-hook nil
+  "A hook run immediately after renaming a perspective.")
+
 (defvar persp-state-before-save-hook nil
   "A hook run immediately before saving persp state to disk.")
 
@@ -734,6 +740,8 @@ perspective and no others are killed."
   (interactive "sNew name: ")
   (if (gethash name (perspectives-hash))
       (persp-error "Perspective `%s' already exists" name)
+    ;; before hook
+    (run-hooks 'persp-before-rename-hook)
     ;; rename the perspective-specific *scratch* buffer
     (let* ((old-scratch-name (persp-scratch-buffer))
            (new-scratch-name (persp-scratch-buffer name))
@@ -745,7 +753,9 @@ perspective and no others are killed."
     (remhash (persp-current-name) (perspectives-hash))
     (puthash name (persp-curr) (perspectives-hash))
     (setf (persp-name (persp-curr)) name)
-    (persp-update-modestring)))
+    (persp-update-modestring)
+    ;; after hook
+    (run-hooks 'persp-after-rename-hook)))
 
 (cl-defun persp-all-get (name not-frame)
   "Returns the list of buffers for a perspective named NAME from any
