@@ -1021,6 +1021,17 @@ perspective beginning with the given letter."
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
+(defun persp-other-buffer (&optional buffer visible-ok frame)
+  "A version of `other-buffer' which respects perspectives."
+  (let ((other (other-buffer buffer visible-ok frame)))
+    (if (member other (persp-current-buffers))
+	other
+      ;; In cases where `other-buffer' produces a buffer that is not
+      ;; part of the current perspective, select the current
+      ;; perspective's *scratch* buffer, similar to the behaviour of
+      ;; `other-buffer'.
+      (get-buffer-create (persp-scratch-buffer)))))
+
 ;; Buffer switching integration: bs.el.
 ;;;###autoload
 (defun persp-bs-show (arg)
@@ -1087,7 +1098,7 @@ With a prefix arg, show buffers in all perspectives."
   (if (and persp-mode (null arg))
       (ivy-read (format "Switch to buffer (%s): " (persp-current-name))
                 (cl-remove-if #'null (mapcar #'buffer-name (persp-current-buffers)))
-                :preselect (buffer-name (current-buffer))
+                :preselect (buffer-name (persp-other-buffer (current-buffer)))
                 :keymap ivy-switch-buffer-map
                 :action #'ivy--switch-buffer-action
                 :matcher #'ivy--switch-buffer-matcher
