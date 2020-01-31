@@ -24,19 +24,19 @@ In addition, the Emacs byte-compiler introduces some unexpected behaviors, parti
 
 MELPA makes these things (relatively) easy to test. Refer to the [[https://github.com/melpa/melpa/blob/master/CONTRIBUTING.org#test-your-recipe][Test your recipe]] section of [[https://github.com/melpa/melpa/blob/master/CONTRIBUTING.org][MELPA’s CONTRIBUTING.org]] documentation for details, but here is a terse summary of the process:
 
-1. Clone the [[https://github.com/melpa/melpa/][melpa repository]], and then change ~melpa/recipes/perspective~ to point to your local Perspective repo:
+- Clone the [[https://github.com/melpa/melpa/][melpa repository]], and then change ~melpa/recipes/perspective~ to point to your local Perspective repo:
 
 #+BEGIN_SRC elisp
 (perspective :fetcher git :url "/home/you/code/perspective-el")
 #+END_SRC
 
-2. From the melpa repo, run:
+- From the melpa repo, run:
 
 #+BEGIN_SRC shell
 EMACS_COMMAND=/path/to/emacs make recipes/perspective
 #+END_SRC
 
-3. Install Ivy and Counsel in the melpa sandbox:
+- Install Ivy and Counsel in the melpa sandbox:
 
 #+BEGIN_SRC shell
 EMACS_COMMAND=/path/to/emacs make sandbox INSTALL=ivy
@@ -45,7 +45,7 @@ EMACS_COMMAND=/path/to/emacs make sandbox INSTALL=counsel
 # exit emacs after this step
 #+END_SRC
 
-3. Install Perspective:
+- Install Perspective:
 
 #+BEGIN_SRC shell
 EMACS_COMMAND=/path/to/emacs make sandbox INSTALL=perspective
