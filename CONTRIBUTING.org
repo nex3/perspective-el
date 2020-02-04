@@ -1,0 +1,56 @@
+* Contributing to Perspective
+
+Thank you for considering making a code contribution to Perspective!
+
+Please follow the following procedures before opening a pull request.
+
+
+** Run automated tests
+
+Perspective has a growing handful of tests. Please run them manually before [[https://travis-ci.org/nex3/perspective-el][Travis CI]] does.
+
+From your ~perspective-el~ repository, run the following:
+
+#+BEGIN_SRC shell
+EMACS=/path/to/emacs make test
+#+END_SRC
+
+
+** Test in the MELPA sandbox
+
+Emacs makes extending it so frictionless that unexpected dependencies can creep in. A package intended for use by other people must be run in a minimal environment to verify that all its dependencies are explicit.
+
+In addition, the Emacs byte-compiler introduces some unexpected behaviors, particularly with eager macroexpansion. They are well-flagged by warnings.
+
+MELPA makes these things (relatively) easy to test. Refer to the [[https://github.com/melpa/melpa/blob/master/CONTRIBUTING.org#test-your-recipe][Test your recipe]] section of [[https://github.com/melpa/melpa/blob/master/CONTRIBUTING.org][MELPA’s CONTRIBUTING.org]] documentation for details, but here is a terse summary of the process:
+
+- Clone the [[https://github.com/melpa/melpa/][melpa repository]], and then change ~melpa/recipes/perspective~ to point to your local Perspective repo:
+
+#+BEGIN_SRC elisp
+(perspective :fetcher git :url "/home/you/code/perspective-el")
+#+END_SRC
+
+- From the melpa repo, run:
+
+#+BEGIN_SRC shell
+EMACS_COMMAND=/path/to/emacs make recipes/perspective
+#+END_SRC
+
+- Install Ivy and Counsel in the melpa sandbox:
+
+#+BEGIN_SRC shell
+EMACS_COMMAND=/path/to/emacs make sandbox INSTALL=ivy
+# exit emacs after this step
+EMACS_COMMAND=/path/to/emacs make sandbox INSTALL=counsel
+# exit emacs after this step
+#+END_SRC
+
+- Install Perspective:
+
+#+BEGIN_SRC shell
+EMACS_COMMAND=/path/to/emacs make sandbox INSTALL=perspective
+#+END_SRC
+
+*Important:* This step should produce no byte-compiler errors or warnings.
+
+*Also important:* After making changes to your ~perspective-el~ repository, commit them locally, or the melpa recipe builder will not pick them up! Rerun ~make recipes/perspective~, delete the ~perspective~ directory in ~melpa/sandbox~, and rerun ~make sandbox INSTALL=perspective~ to look at the byte-compiler output.
