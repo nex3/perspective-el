@@ -155,10 +155,13 @@ list of buffers in all perspectives.
 **Helm**: Helm relies on the machinery of `ido-mode` for listing buffers, so it
 is automatically Perspective-aware when `persp-mode` is enabled.
 
-**Ivy / Counsel**: Perspective provides a command for listing buffers using Ivy:
-`persp-counsel-switch-buffer`. When this function is called normally, it shows a
-list of buffers filtered by the current perspective. With a prefix argument, it
-shows a list of buffers in all perspectives.
+**Ivy / Counsel**: Perspective provides two commands for listing buffers using
+Ivy and Counsel: `persp-ivy-switch-buffer` and `persp-counsel-switch-buffer`.
+When these functions are called normally, they show a list of buffers filtered
+by the current perspective. With a prefix argument, they shows a list of buffers
+in all perspectives. The distinction between the `ivy` and `counsel` versions is
+the same as between `ivy-switch-buffer` and `counsel-switch-buffer`: the latter
+shows a preview of the buffer to switch to, and the former does not.
 
 Globally binding one of these helper functions to a buffer-switching key is a
 good idea, e.g.:
