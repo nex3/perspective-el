@@ -1021,6 +1021,17 @@ perspective beginning with the given letter."
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
+(defun persp-other-buffer (&optional buffer visible-ok frame)
+  "A version of `other-buffer' which respects perspectives."
+  (let ((other (other-buffer buffer visible-ok frame)))
+    (if (member other (persp-current-buffers))
+	other
+      ;; In cases where `other-buffer' produces a buffer that is not
+      ;; part of the current perspective, select the current
+      ;; perspective's *scratch* buffer, similar to the behaviour of
+      ;; `other-buffer'.
+      (get-buffer-create (persp-scratch-buffer)))))
+
 ;; Buffer switching integration: bs.el.
 ;;;###autoload
 (defun persp-bs-show (arg)
@@ -1069,32 +1080,48 @@ PERSP-SET-IDO-BUFFERS)."
         (ibuffer))
     (ibuffer)))
 
-;; Buffer switching integration: Ivy / Counsel.
-;;;###autoload
-(defun persp-counsel-switch-buffer (arg)
-  "Like COUNSEL-SWITCH-BUFFER, but Perspective-aware.
-With a prefix arg, show buffers in all perspectives."
-  (interactive "P")
-  (unless (and (featurep 'ivy) (featurep 'counsel))
-    (error "Ivy or Counsel not loaded"))
+(defun persp--switch-buffer-ivy-counsel-helper (arg ivy-params fallback)
+  (unless (featurep 'ivy)
+    (error "Ivy not loaded"))
   (defvar ivy-switch-buffer-map)
   (declare-function ivy-read "ivy.el")
   (declare-function ivy--switch-buffer-matcher "ivy.el")
   (declare-function ivy--switch-buffer-action "ivy.el")
+  (if (and persp-mode (null arg))
+      (apply #'ivy-read
+             (append
+              (list
+               (format "Switch to buffer (%s): " (persp-current-name))
+               (cl-remove-if #'null (mapcar #'buffer-name (persp-current-buffers)))
+               :preselect (buffer-name (persp-other-buffer (current-buffer)))
+               :keymap ivy-switch-buffer-map
+               :action #'ivy--switch-buffer-action
+               :matcher #'ivy--switch-buffer-matcher)
+              ivy-params))
+    (funcall fallback)))
+
+;; Buffer switching integration: Ivy.
+;;;###autoload
+(defun persp-ivy-switch-buffer (arg)
+  "A version of `ivy-switch-buffer' which respects perspectives."
+  (interactive "P")
+  (persp--switch-buffer-ivy-counsel-helper arg nil #'ivy-switch-buffer))
+
+;; Buffer switching integration: Counsel.
+;;;###autoload
+(defun persp-counsel-switch-buffer (arg)
+  "A version of `counsel-switch-buffer' which respects perspectives."
+  (interactive "P")
+  (unless (featurep 'counsel)
+    (error "Counsel not loaded"))
   (declare-function counsel-switch-buffer "counsel.el")
   (declare-function counsel--switch-buffer-unwind "counsel.el")
   (declare-function counsel--switch-buffer-update-fn "counsel.el")
-  (if (and persp-mode (null arg))
-      (ivy-read (format "Switch to buffer (%s): " (persp-current-name))
-                (cl-remove-if #'null (mapcar #'buffer-name (persp-current-buffers)))
-                :preselect (buffer-name (current-buffer))
-                :keymap ivy-switch-buffer-map
-                :action #'ivy--switch-buffer-action
-                :matcher #'ivy--switch-buffer-matcher
-                :caller #'counsel-switch-buffer
-                :unwind #'counsel--switch-buffer-unwind
-                :update-fn #'counsel--switch-buffer-update-fn)
-    (counsel-switch-buffer)))
+  (persp--switch-buffer-ivy-counsel-helper arg
+                                           (list :caller #'counsel-switch-buffer
+                                                 :unwind #'counsel--switch-buffer-unwind
+                                                 :update-fn #'counsel--switch-buffer-update-fn)
+                                           #'counsel-switch-buffer))
 
 ;; Symbols namespaced by persp--state (internal) and persp-state (user
 ;; functions) provide functionality which allows saving perspective state on
