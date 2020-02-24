@@ -913,6 +913,7 @@ named collections of buffers and window configurations."
         (ad-activate 'recursive-edit)
         (ad-activate 'exit-recursive-edit)
         (add-hook 'after-make-frame-functions 'persp-init-frame)
+        (add-hook 'delete-frame-functions 'persp-delete-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
@@ -920,6 +921,7 @@ named collections of buffers and window configurations."
 
         (run-hooks 'persp-mode-hook))
     (ad-deactivate-regexp "^persp-.*")
+    (remove-hook 'delete-frame-functions 'persp-delete-frame)
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
     (remove-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
     (setq read-buffer-function nil)
@@ -956,6 +958,12 @@ By default, this uses the current frame."
      (make-persp :name persp-initial-frame-name :buffers (list (current-buffer))
        :window-configuration (current-window-configuration)
        :point-marker (point-marker)))))
+
+(defun persp-delete-frame (frame)
+  "Clean up perspectives in FRAME.
+By default this uses the current frame."
+  (with-selected-frame frame
+    (mapcar #'persp-kill (persp-names))))
 
 (defun persp-make-variable-persp-local (variable)
   "Make VARIABLE become perspective-local.
