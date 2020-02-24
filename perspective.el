@@ -137,6 +137,11 @@ After BODY is evaluated, frame parameters are reset to their original values."
 filtering in buffer display modes like ibuffer."
   (not (persp-is-current-buffer buf)))
 
+(defun persp-valid-name-p (name)
+  "Return T if NAME is a valid perspective name."
+  (and (not (null name))
+       (not (string= "" name))))
+
 (defmacro with-current-perspective (&rest body)
   "Operate on BODY when we are in a perspective."
   (declare (indent 0))
@@ -544,7 +549,8 @@ perspective's local variables are set.
 If NORECORD is non-nil, do not update the
 `persp-last-switch-time' for the switched perspective."
   (interactive "i")
-  (if (null name) (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
+  (unless (persp-valid-name-p name)
+    (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
   (if (and (persp-curr) (equal name (persp-current-name))) name
     (let ((persp (gethash name (perspectives-hash))))
       (set-frame-parameter nil 'persp--last (persp-curr))
@@ -738,6 +744,8 @@ perspective and no others are killed."
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
   (interactive "sNew name: ")
+  (unless (persp-valid-name-p name)
+    (persp-error "Invalid perspective name"))
   (if (gethash name (perspectives-hash))
       (persp-error "Perspective `%s' already exists" name)
     ;; before hook
