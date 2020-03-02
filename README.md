@@ -101,6 +101,14 @@ load](#saving-sessions-to-disk) feature, which cleanly saves perspectives.
 
 You should install Perspective from [MELPA](https://melpa.org/) or [MELPA Stable](https://stable.melpa.org/).
 
+Users of [`use-package`](https://github.com/jwiegley/use-package) can install Perspective as follows:
+
+```
+(use-package perspective
+  :config
+  (persp-mode))
+```
+
 Alternately, put `perspective.el` from this source repository in your load path
 and run `(require 'perspective)`.
 
