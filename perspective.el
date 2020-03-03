@@ -1,6 +1,6 @@
 ;;; perspective.el --- switch between named "perspectives" of the editor  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2008-2018 Natalie Weizenbaum <nex342@gmail.com>
+;; Copyright (C) 2008-2020 Natalie Weizenbaum <nex342@gmail.com>
 ;;
 ;; Licensed under the same terms as Emacs and under the MIT license.
 
@@ -877,7 +877,6 @@ See also `persp-add-buffer'."
          (frame (window-frame window))
          (old-buffer (window-buffer window)))
     ad-do-it
-
     (let ((buffer (window-buffer window)))
       (with-selected-frame frame
         (unless (persp-is-current-buffer buffer)
