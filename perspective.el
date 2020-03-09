@@ -477,6 +477,11 @@ For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
     (define-key map [mode-line down-mouse-1] 'persp-mode-line-click)
     map))
 
+(defconst persp-header-line-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [header-line down-mouse-1] 'persp-mode-line-click)
+    map))
+
 (defun persp-mode-line-click (event)
   "Select the clicked perspective.
 EVENT is the click event triggering this function call."
@@ -501,13 +506,18 @@ Has no effect when `persp-show-modestring' is nil."
                    close)))))
 
 (defun persp-format-name (name)
-  "Format the perspective name given by NAME for display in the modeline."
+  "Format the perspective name given by NAME for display in the mode line or header line."
   (let ((string-name (format "%s" name)))
     (if (equal name (persp-current-name))
         (propertize string-name 'face 'persp-selected-face)
-      (propertize string-name
-                  'local-map persp-mode-line-map
-                  'mouse-face 'mode-line-highlight))))
+      (cond ((eq persp-show-modestring 'header)
+             (propertize string-name
+                         'local-map persp-header-line-map
+                         'mouse-face 'header-line-highlight))
+            ((eq persp-show-modestring t)
+             (propertize string-name
+                         'local-map persp-mode-line-map
+                         'mouse-face 'mode-line-highlight))))))
 
 (defun persp-get-quick (char &optional prev)
   "Return the name of the first perspective that begins with CHAR.
