@@ -27,13 +27,16 @@
 ;; configuration, and when in a perspective only its buffers are
 ;; available by default.
 
+;;; Code:
+
 (require 'cl-lib)
 (require 'ido)
 (require 'rx)
 (require 'subr-x)
 (require 'thingatpt)
 
-;;; Code:
+
+;;; --- customization
 
 (defgroup perspective-mode 'nil
   "Customization for Perspective mode"
@@ -102,6 +105,28 @@ makes it easy to use in, e.g., `kill-emacs-hook` to automatically
 save state when exiting Emacs."
   :group 'perspective-mode
   :type 'file)
+
+
+;;; --- implementation
+
+;;; XXX: Nasty kludge to deal with the byte compiler, eager macroexpansion, and
+;;; frame parameters being already set when this file is being compiled during a
+;;; package upgrade. This enumerates all frame-parameters starting with
+;;; persp--*, saves them in persp--kludge-save-frame-params, and then blanks
+;;; them out of the frame parameters. They will be restored in the matching
+;;; eval-when-compile form at the bottom of this source file. See
+;;; https://github.com/nex3/perspective-el/issues/93.
+(eval-when-compile
+  (defvar persp--kludge-save-frame-params)
+  (setq persp--kludge-save-frame-params
+        (cl-loop for kv in (frame-parameters nil)
+                 if (string-prefix-p "persp--" (symbol-name (car kv)))
+                 collect kv))
+  (modify-frame-parameters
+   nil
+   ;; Set persp-- frame parameters to nil. The expression below creates an alist
+   ;; where the keys are the relevant frame parameters and the values are nil.
+   (mapcar (lambda (x) (list (car x))) persp--kludge-save-frame-params)))
 
 (defmacro persp-let-frame-parameters (bindings &rest body)
   "Like `let', but for frame parameters.
@@ -1408,6 +1433,19 @@ restored."
   (run-hooks 'persp-state-after-load-hook))
 
 (defalias 'persp-state-restore 'persp-state-load)
+
+
+;;; --- done
+
+;;; XXX: Undo nasty kludge necessary for cleanly compiling this source file by
+;;; restoring saved frame parameters, and removing the variable used to save
+;;; them.
+(eval-when-compile
+  (when (boundp 'persp--kludge-save-frame-params)
+    (modify-frame-parameters nil persp--kludge-save-frame-params)
+    (makunbound 'persp--kludge-save-frame-params)
+    (fmakunbound 'persp--kludge-save-frame-params)
+    (unintern 'persp--kludge-save-frame-params nil)))
 
 (provide 'perspective)
 
