@@ -1165,6 +1165,7 @@ PERSP-SET-IDO-BUFFERS)."
 (defun persp-ivy-switch-buffer (arg)
   "A version of `ivy-switch-buffer' which respects perspectives."
   (interactive "P")
+  (declare-function ivy-switch-buffer "ivy.el")
   (persp--switch-buffer-ivy-counsel-helper arg nil #'ivy-switch-buffer))
 
 ;; Buffer switching integration: Counsel.
