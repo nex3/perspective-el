@@ -569,7 +569,7 @@ This is used for cycling between perspectives."
   "Switch to the perspective accessed before the current one."
   (interactive)
   (unless (persp-last)
-    (error "There is no last perspective"))
+    (persp-error "There is no last perspective"))
   (persp-switch (persp-name (persp-last))))
 
 (defun persp-switch (name &optional norecord)
@@ -1102,7 +1102,7 @@ buffer filtering to ido-mode already (see use of
 PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (unless (featurep 'bs)
-    (error "bs not loaded"))
+    (user-error "bs not loaded"))
   (defvar ido-ignore-buffers)
   (defvar bs-configurations)
   (declare-function bs--show-with-configuration "bs.el")
@@ -1130,7 +1130,7 @@ buffer filtering to ido-mode already (see use of
 PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (unless (featurep 'ibuffer)
-    (error "IBuffer not loaded"))
+    (user-error "IBuffer not loaded"))
   (defvar ido-ignore-buffers)
   (defvar ibuffer-maybe-show-predicates)
   (if (and persp-mode (null arg))
@@ -1142,7 +1142,7 @@ PERSP-SET-IDO-BUFFERS)."
 
 (defun persp--switch-buffer-ivy-counsel-helper (arg ivy-params fallback)
   (unless (featurep 'ivy)
-    (error "Ivy not loaded"))
+    (user-error "Ivy not loaded"))
   (defvar ivy-switch-buffer-map)
   (declare-function ivy-read "ivy.el")
   (declare-function ivy--switch-buffer-matcher "ivy.el")
@@ -1174,7 +1174,7 @@ PERSP-SET-IDO-BUFFERS)."
   "A version of `counsel-switch-buffer' which respects perspectives."
   (interactive "P")
   (unless (featurep 'counsel)
-    (error "Counsel not loaded"))
+    (user-error "Counsel not loaded"))
   (declare-function counsel-switch-buffer "counsel.el")
   (declare-function counsel--switch-buffer-unwind "counsel.el")
   (declare-function counsel--switch-buffer-update-fn "counsel.el")
@@ -1350,7 +1350,7 @@ visible in a perspective as windows, they will be saved as
                              (expand-file-name persp-state-default-file)
                            nil)))))
     (unless target-file
-      (error "No target file specified"))
+      (user-error "No target file specified"))
     ;; overwrite the target file if:
     ;; - the file does not exist, or
     ;; - the file is not the one set in persp-state-default-file, or
@@ -1364,7 +1364,7 @@ visible in a perspective as windows, they will be saved as
                                   target-file))
                (not (or current-prefix-arg
                         (yes-or-no-p "Target file exists. Overwrite? "))))
-      (error "Cancelled persp-state-save"))
+      (user-error "Cancelled persp-state-save"))
     ;; before hook
     (run-hooks 'persp-state-before-save-hook)
     ;; actually save
@@ -1392,7 +1392,7 @@ restored."
                                 persp-state-default-file
                                 persp-state-default-file)))
   (unless (file-exists-p file)
-    (error "File not found"))
+    (user-error "File not found: %s" file))
   (persp-mode 1)
   ;; before hook
   (run-hooks 'persp-state-before-load-hook)
