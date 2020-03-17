@@ -249,23 +249,15 @@ things like `winner-mode`, and packages like
 [shackle](https://github.com/wasamasa/shackle).
 
 This may make the value of Perspective seem questionable: why bother with
-carefully preserving window layouts if Emacs will just throw them away on a `M-x
-compile`? The answer is to fix Emacs' broken defaults. This is actually fairly
-easy.
-
-tl;dr: try the following settings:
+carefully preserving window layouts if Emacs just throws them away on a `M-x
+compile`? The answer is to fix the broken defaults. This is fairly easy:
 
 ```emacs-lisp
 (setq display-buffer-alist
-      '(("\\*compilation\\*"
-         (display-buffer-reuse-window display-buffer-same-window))
-        ;; default
-        (".*"
-         (display-buffer-same-window))))
+      '((".*" (display-buffer-reuse-window display-buffer-same-window))))
 
 (setq display-buffer-reuse-frames t)         ; reuse windows in other frames
-(setq pop-up-windows nil)                    ; display-buffer: avoid splitting
-(setq even-window-heights nil)               ; display-buffer: avoid resizing
+(setq even-window-sizes nil)                 ; display-buffer: avoid resizing
 ```
 
 The Emacs framework responsible for "pop-up" windows is `display-buffer`. The
@@ -276,3 +268,23 @@ most important bits:
 
 - https://ess.r-project.org/Manual/ess.html#Controlling-buffer-display
 - https://old.reddit.com/r/emacs/comments/cpdr6m/any_additional_docstutorials_on_displaybuffer_and/ews94n1/
+
+The suggested settings above do the following:
+
+1. Tell `display-buffer` to reuse existing windows as much as possible,
+   including in other frames. For example, if there is already a `*compilation*`
+   buffer in a visible window, switch to that window. This means that Emacs will
+   usually switch windows in a "do what I mean" manner for a warmed-up workflow
+   (one with, say, a couple of source windows, a compilation output window, and
+   a Magit window).
+2. Prevent splits by telling `display-buffer` to switch to the target buffer in
+   the _current_ window. For example, if there is no `*compilation*` buffer
+   visible, then the buffer in whichever window was current when `compile` was
+   run will be replaced with `*compilation*`. This may seem intrusive, since it
+   changes out the current buffer, but keep in mind that most buffers popped up
+   in this manner are easy to dismiss, either with a dedicated keybinding (often
+   `q`) or the universally-applicable `M-x kill-buffer`. This is easier than
+   restoring window arrangements. It is also easier to handle for pre-arranged
+   window layouts, since the appropriate command can simply be run in a window
+   prepared for it in advance. (If this is a step too far, then replace
+   `display-buffer-same-window` with `display-buffer-pop-up-window`.)
