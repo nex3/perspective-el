@@ -40,7 +40,7 @@ multiple source repositories where having a shared window layout or buffer list
 makes sense.
 
 
-### [Yak shaving](http://catb.org/jargon/html/Y/yak-shaving.html)
+### [Yak Shaving](http://catb.org/jargon/html/Y/yak-shaving.html)
 
 Suppose you're developing feature X in perspective `feature-X`. This keeps you
 working with one set of files and windows. You then realize that this feature
