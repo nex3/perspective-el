@@ -1092,6 +1092,27 @@ perspective beginning with the given letter."
       ;; `other-buffer'.
       (get-buffer-create (persp-scratch-buffer)))))
 
+;; Buffer switching integration: useful for frameworks which enhance the
+;; built-in completing-read (e.g., Selectrum).
+;;;###autoload
+(defun persp-switch-to-buffer* (buffer-or-name)
+  "Like `switch-to-buffer', restricted to the current perspective."
+  (interactive
+   (list
+    (if current-prefix-arg
+        (let ((read-buffer-function nil))
+          (read-buffer-to-switch "Switch to buffer: "))
+      (completing-read "Switch to buffer: "
+                       (append
+                        (list (buffer-name (persp-other-buffer)))
+                        (cl-loop for buf in (persp-current-buffers)
+                                 if (and (buffer-live-p buf)
+                                         (not (equal buf (current-buffer)))
+                                         (not (equal buf (persp-other-buffer))))
+                                 collect (buffer-name buf)))))))
+  (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
+    (switch-to-buffer buffer)))
+
 ;; Buffer switching integration: bs.el.
 ;;;###autoload
 (defun persp-bs-show (arg)

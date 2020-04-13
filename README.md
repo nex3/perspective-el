@@ -172,6 +172,19 @@ in all perspectives. The distinction between the `ivy` and `counsel` versions is
 the same as between `ivy-switch-buffer` and `counsel-switch-buffer`: the latter
 shows a preview of the buffer to switch to, and the former does not.
 
+**Frameworks which change `completing-read`**: For completion frameworks which
+aim to enhance `completing-read` (such as
+[Selectrum](https://github.com/raxod502/selectrum)), Perspective provides
+`persp-switch-to-buffer*`. It behaves like the built-in `switch-to-buffer`, but
+uses `completing-read` directly. When this function is called normally, it shows
+a list of buffers filtered by the current perspective. With a prefix argument,
+it shows a list of buffers in all perspectives. For users of a framework like
+Selectrum, it might make sense to remap the key binding of `switch-to-buffer` to
+`persp-switch-to-buffer*` and gain the benefits of both Perspective and enhanced
+`completing-read`. (This will also work with Ivy and Counsel running in full
+`ivy-mode`, but sacrifices some of their dedicated switchers' more advanced
+features, like dedicated keymaps.)
+
 Globally binding one of these helper functions to a buffer-switching key is a
 good idea, e.g.:
 
