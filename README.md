@@ -134,6 +134,7 @@ Here are the main commands defined in `persp-mode-map`:
 - `r` — `persp-rename`: Rename current perspective
 - `a` — `persp-add-buffer`: Query an open buffer to add to current perspective
 - `A` — `persp-set-buffer`: Add buffer to current perspective and remove it from all others
+- `b` - `persp-switch-to-buffer`: Like `switch-to-buffer`; includes all buffers from all perspectives; changes perspective if necessary
 - `i` — `persp-import`: Import a given perspective from another frame.
 - `n`, `<right>` — `persp-next`: Switch to next perspective
 - `p`, `<left>` — `persp-prev`: Switch to previous perspective
