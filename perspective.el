@@ -151,11 +151,13 @@ After BODY is evaluated, frame parameters are reset to their original values."
 
 (defun persp--make-ignore-buffer-rx ()
   (defvar ido-ignore-buffers)
-  (when ido-ignore-buffers
-    ;; convert a list of regexps to one
-    (rx-to-string (append (list 'or)
-                          (mapcar (lambda (rx) `(regexp ,rx))
-                                  ido-ignore-buffers)))))
+  (if ido-ignore-buffers
+      ;; convert a list of regexps to one
+      (rx-to-string (append (list 'or)
+                            (mapcar (lambda (rx) `(regexp ,rx))
+                                    ido-ignore-buffers)))
+    ;; return a regex which matches nothing, and therefore should ignore nothing
+    "$^"))
 
 (defmacro persp-current-buffers ()
   "Return a list of all buffers in the current perspective."
@@ -166,9 +168,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
   (let ((ignore-rx (persp--make-ignore-buffer-rx)))
     (cl-loop for buf in (persp-current-buffers)
              if (and (buffer-live-p buf)
-                     (if ignore-rx
-                         (not (string-match-p ignore-rx (buffer-name buf)))
-                       t))
+                     (not (string-match-p ignore-rx (buffer-name buf))))
              collect (buffer-name buf))))
 
 (defun persp-is-current-buffer (buf)
