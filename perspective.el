@@ -149,9 +149,23 @@ After BODY is evaluated, frame parameters are reset to their original values."
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
 
+(defun persp--make-ignore-buffer-rx ()
+  (defvar ido-ignore-buffers)
+  (when ido-ignore-buffers
+    ;; convert a list of regexps to one
+    (rx-to-string (append (list 'or)
+                          (mapcar (lambda (rx) `(regexp ,rx))
+                                  ido-ignore-buffers)))))
+
 (defmacro persp-current-buffers ()
-  "Return a list of all buffers in the current perspective."
-  `(persp-buffers (persp-curr)))
+  "Return a list of all live buffers in the current perspective."
+  `(let ((ignore-rx (persp--make-ignore-buffer-rx)))
+     (cl-loop for buf in (persp-buffers (persp-curr))
+              if (and (buffer-live-p buf)
+                      (if ignore-rx
+                          (not (string-match-p ignore-rx (buffer-name buf)))
+                        t))
+              collect buf)))
 
 (defun persp-is-current-buffer (buf)
   "Return T if BUF is in the current perspective."
@@ -1124,14 +1138,9 @@ PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (unless (featurep 'bs)
     (user-error "bs not loaded"))
-  (defvar ido-ignore-buffers)
   (defvar bs-configurations)
   (declare-function bs--show-with-configuration "bs.el")
-  (let* ((ignore-rx (when ido-ignore-buffers
-                      ;; convert a list of regexps to one
-                      (rx-to-string (append (list 'or)
-                                            (mapcar (lambda (rx) `(regexp ,rx))
-                                                    ido-ignore-buffers)))))
+  (let* ((ignore-rx (persp--make-ignore-buffer-rx))
          (bs-configurations (append bs-configurations
                                     (list `("perspective" nil nil
                                             ,ignore-rx persp-buffer-filter nil))
