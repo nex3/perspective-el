@@ -172,19 +172,6 @@ in all perspectives. The distinction between the `ivy` and `counsel` versions is
 the same as between `ivy-switch-buffer` and `counsel-switch-buffer`: the latter
 shows a preview of the buffer to switch to, and the former does not.
 
-**Frameworks which change `completing-read`**: For completion frameworks which
-aim to enhance `completing-read` (such as
-[Selectrum](https://github.com/raxod502/selectrum)), Perspective provides
-`persp-switch-to-buffer*`. It behaves like the built-in `switch-to-buffer`, but
-uses `completing-read` directly. When this function is called normally, it shows
-a list of buffers filtered by the current perspective. With a prefix argument,
-it shows a list of buffers in all perspectives. For users of a framework like
-Selectrum, it might make sense to remap the key binding of `switch-to-buffer` to
-`persp-switch-to-buffer*` and gain the benefits of both Perspective and enhanced
-`completing-read`. (This will also work with Ivy and Counsel running in full
-`ivy-mode`, but sacrifices some of their dedicated switchers' more advanced
-features, like dedicated keymaps.)
-
 Globally binding one of these helper functions to a buffer-switching key is a
 good idea, e.g.:
 
@@ -194,6 +181,30 @@ good idea, e.g.:
                                   (if (fboundp 'persp-bs-show)
                                       (persp-bs-show arg)
                                     (bs-show "all"))))
+```
+
+
+### Notes on `completing-read` Enhancements
+
+Users of a `completing-read` enhancement framework (such as Ivy or
+[Selectrum](https://github.com/raxod502/selectrum)) may wish to use the
+following two functions:
+- `persp-switch-to-buffer*` replaces `switch-to-buffer`
+- `persp-kill-buffer*` replaces `kill-buffer`
+
+Both these functions behave like the built-ins, but use `completing-read`
+directly. When called normally, they list buffers filtered by the current
+perspective. With a prefix argument, they list buffers in all perspectives.
+
+The following sample `use-package` invocation changes Emacs default key bindings
+to use the replacements:
+
+```
+(use-package perspective
+  :bind (("C-x b" . persp-switch-to-buffer*)
+         ("C-x k" . persp-kill-buffer*))
+  :config
+  (persp-mode))
 ```
 
 
@@ -235,7 +246,8 @@ customize`). The following are likely to be of most interest:
   setting. Helm, unfortunately, does not have a `completing-read` compatible
   implementation out of the box (`helm-completing-read-default-1` purports to be
   this but does not have the same `&optional` defaults). _`ido-completing-read`
-  is the recommended setting here for most users._
+  is the recommended setting here unless a `completing-read` enhancement
+  framework is used._
 - `persp-mode-prefix-key`: Changes the default key prefix for Perspective
   commands.
 - `persp-state-default-file`: Changes the default file to use for saving and
