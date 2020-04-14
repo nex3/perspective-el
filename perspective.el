@@ -1120,17 +1120,34 @@ perspective beginning with the given letter."
    (list
     (if current-prefix-arg
         (let ((read-buffer-function nil))
-          (read-buffer-to-switch "Switch to buffer: "))
-      (completing-read "Switch to buffer: "
-                       (append
-                        (list (buffer-name (persp-other-buffer)))
-                        (cl-loop for buf in (persp-current-buffers)
-                                 if (and (buffer-live-p buf)
-                                         (not (equal buf (current-buffer)))
-                                         (not (equal buf (persp-other-buffer))))
-                                 collect (buffer-name buf)))))))
+          (read-buffer-to-switch "Switch to buffer"))
+      (let* ((candidates (persp-current-buffer-names))
+             (other (buffer-name (persp-other-buffer))))
+        (completing-read (format "Switch to buffer%s: "
+                                 (if other
+                                     (format " (default %s)" other)
+                                   ""))
+                         candidates
+                         nil nil nil nil
+                         (buffer-name (persp-other-buffer)))))))
   (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
     (switch-to-buffer buffer)))
+
+;; Buffer killing integration: useful for frameworks which enhance the
+;; built-in completing-read (e.g., Selectrum).
+;;;###autoload
+(defun persp-kill-buffer* (buffer-or-name)
+  "Like `kill-buffer', restricted to the current perspective."
+  (interactive
+   (list
+    (if current-prefix-arg
+        (let ((read-buffer-function nil))
+          (read-buffer "Kill buffer: " (current-buffer)))
+      (completing-read (format "Kill buffer (default %s): " (buffer-name (current-buffer)))
+                       (persp-current-buffer-names)
+                       nil nil nil nil
+                       (buffer-name (current-buffer))))))
+  (kill-buffer buffer-or-name))
 
 ;; Buffer switching integration: bs.el.
 ;;;###autoload
