@@ -158,14 +158,18 @@ After BODY is evaluated, frame parameters are reset to their original values."
                                   ido-ignore-buffers)))))
 
 (defmacro persp-current-buffers ()
-  "Return a list of all live buffers in the current perspective."
-  `(let ((ignore-rx (persp--make-ignore-buffer-rx)))
-     (cl-loop for buf in (persp-buffers (persp-curr))
-              if (and (buffer-live-p buf)
-                      (if ignore-rx
-                          (not (string-match-p ignore-rx (buffer-name buf)))
-                        t))
-              collect buf)))
+  "Return a list of all buffers in the current perspective."
+  `(persp-buffers (persp-curr)))
+
+(defun persp-current-buffer-names ()
+  "Return a list of names of all living buffers in the current perspective."
+  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
+    (cl-loop for buf in (persp-current-buffers)
+             if (and (buffer-live-p buf)
+                     (if ignore-rx
+                         (not (string-match-p ignore-rx (buffer-name buf)))
+                       t))
+             collect (buffer-name buf))))
 
 (defun persp-is-current-buffer (buf)
   "Return T if BUF is in the current perspective."
@@ -746,7 +750,8 @@ Prefers perspectives in the selected frame."
   "Disassociate BUFFER with the current perspective.
 
 See also `persp-switch' and `persp-add-buffer'."
-  (interactive "bRemove buffer from perspective: \n")
+  (interactive
+   (list (completing-read "Remove buffer from perspective: " (persp-current-buffer-names))))
   (setq buffer (when buffer (get-buffer buffer)))
   (cond ((not (buffer-live-p buffer)))
         ;; Only kill the buffer if no other perspectives are using it
