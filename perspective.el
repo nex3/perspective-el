@@ -1118,7 +1118,7 @@ perspective beginning with the given letter."
   "Like `switch-to-buffer', restricted to the current perspective."
   (interactive
    (list
-    (if current-prefix-arg
+    (if (or current-prefix-arg (not persp-mode))
         (let ((read-buffer-function nil))
           (read-buffer-to-switch "Switch to buffer"))
       (let* ((candidates (persp-current-buffer-names))
@@ -1140,7 +1140,7 @@ perspective beginning with the given letter."
   "Like `kill-buffer', restricted to the current perspective."
   (interactive
    (list
-    (if current-prefix-arg
+    (if (or current-prefix-arg (not persp-mode))
         (let ((read-buffer-function nil))
           (read-buffer "Kill buffer: " (current-buffer)))
       (completing-read (format "Kill buffer (default %s): " (buffer-name (current-buffer)))
