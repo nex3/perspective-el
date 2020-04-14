@@ -751,7 +751,7 @@ Prefers perspectives in the selected frame."
 
 See also `persp-switch' and `persp-add-buffer'."
   (interactive
-   (list (completing-read "Remove buffer from perspective: " (persp-current-buffer-names))))
+   (list (funcall persp-interactive-completion-function "Remove buffer from perspective: " (persp-current-buffer-names))))
   (setq buffer (when buffer (get-buffer buffer)))
   (cond ((not (buffer-live-p buffer)))
         ;; Only kill the buffer if no other perspectives are using it
@@ -1115,7 +1115,10 @@ perspective beginning with the given letter."
 ;; built-in completing-read (e.g., Selectrum).
 ;;;###autoload
 (defun persp-switch-to-buffer* (buffer-or-name)
-  "Like `switch-to-buffer', restricted to the current perspective."
+  "Like `switch-to-buffer', restricted to the current perspective.
+This respects ido-ignore-buffers, since we automatically add
+buffer filtering to ido-mode already (see use of
+PERSP-SET-IDO-BUFFERS)."
   (interactive
    (list
     (if (or current-prefix-arg (not persp-mode))
@@ -1123,6 +1126,9 @@ perspective beginning with the given letter."
           (read-buffer-to-switch "Switch to buffer"))
       (let* ((candidates (persp-current-buffer-names))
              (other (buffer-name (persp-other-buffer))))
+        ;; NB: This intentionally calls completing-read instead of
+        ;; persp-interactive-completion-function, since it is expected to have
+        ;; been replaced by a completion framework.
         (completing-read (format "Switch to buffer%s: "
                                  (if other
                                      (format " (default %s)" other)
@@ -1137,12 +1143,18 @@ perspective beginning with the given letter."
 ;; built-in completing-read (e.g., Selectrum).
 ;;;###autoload
 (defun persp-kill-buffer* (buffer-or-name)
-  "Like `kill-buffer', restricted to the current perspective."
+  "Like `kill-buffer', restricted to the current perspective.
+This respects ido-ignore-buffers, since we automatically add
+buffer filtering to ido-mode already (see use of
+PERSP-SET-IDO-BUFFERS)."
   (interactive
    (list
     (if (or current-prefix-arg (not persp-mode))
         (let ((read-buffer-function nil))
           (read-buffer "Kill buffer: " (current-buffer)))
+      ;; NB: This intentionally calls completing-read instead of
+      ;; persp-interactive-completion-function, since it is expected to have
+      ;; been replaced by a completion framework.
       (completing-read (format "Kill buffer (default %s): " (buffer-name (current-buffer)))
                        (persp-current-buffer-names)
                        nil nil nil nil
