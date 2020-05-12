@@ -808,7 +808,9 @@ perspective and no others are killed."
     (let* ((old-scratch-name (persp-scratch-buffer))
            (new-scratch-name (persp-scratch-buffer name))
            (scratch-buffer (get-buffer old-scratch-name)))
-      (when scratch-buffer
+      (when (and scratch-buffer
+                 ;; https://github.com/nex3/perspective-el/issues/128
+                 (not (get-buffer new-scratch-name)))
         (with-current-buffer scratch-buffer
           (rename-buffer new-scratch-name))))
     ;; rewire the rest of the perspective inside its data structures
