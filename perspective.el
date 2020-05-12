@@ -808,11 +808,15 @@ perspective and no others are killed."
     (let* ((old-scratch-name (persp-scratch-buffer))
            (new-scratch-name (persp-scratch-buffer name))
            (scratch-buffer (get-buffer old-scratch-name)))
-      (when (and scratch-buffer
-                 ;; https://github.com/nex3/perspective-el/issues/128
-                 (not (get-buffer new-scratch-name)))
-        (with-current-buffer scratch-buffer
-          (rename-buffer new-scratch-name))))
+      (when scratch-buffer
+        (if (get-buffer new-scratch-name)
+            ;; https://github.com/nex3/perspective-el/issues/128
+            ;; Buffer already exists, probably on another frame. Pull it into
+            ;; the current perspective; they'll be shared.
+            (persp-add-buffer new-scratch-name)
+          ;; Buffer with new-scratch-name does not exist, so just rename it.
+          (with-current-buffer scratch-buffer
+            (rename-buffer new-scratch-name)))))
     ;; rewire the rest of the perspective inside its data structures
     (remhash (persp-current-name) (perspectives-hash))
     (puthash name (persp-curr) (perspectives-hash))
