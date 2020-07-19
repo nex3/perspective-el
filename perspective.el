@@ -180,6 +180,12 @@ After BODY is evaluated, frame parameters are reset to their original values."
 filtering in buffer display modes like ibuffer."
   (not (persp-is-current-buffer buf)))
 
+(defun persp-buffer-list-filter (bufs)
+  "Return the subset of BUFS which is in the current perspective."
+  (cl-loop for buf in bufs
+           if (persp-is-current-buffer (get-buffer buf))
+           collect buf))
+
 (defun persp-valid-name-p (name)
   "Return T if NAME is a valid perspective name."
   (and (not (null name))
@@ -974,6 +980,7 @@ See also `persp-add-buffer'."
   (persp-protect
     (if (frame-parameter nil 'persp--recursive) (persp-switch (persp-name (frame-parameter nil 'persp--recursive))))))
 
+
 ;;;###autoload
 (define-minor-mode persp-mode
   "Toggle perspective mode.
@@ -983,20 +990,23 @@ named collections of buffers and window configurations."
   :keymap persp-mode-map
   (if persp-mode
       (persp-protect
+        ;; TODO: Convert to nadvice, which has been available since 24.4 and is
+        ;; the earliest Emacs version Perspective supports.
         (ad-activate 'switch-to-buffer)
         (ad-activate 'display-buffer)
         (ad-activate 'set-window-buffer)
         (ad-activate 'switch-to-prev-buffer)
         (ad-activate 'recursive-edit)
         (ad-activate 'exit-recursive-edit)
+        (advice-add 'helm-buffer-list-1 :filter-return #'persp-buffer-list-filter)
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'delete-frame-functions 'persp-delete-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
         (setf (persp-current-buffers) (buffer-list))
-
         (run-hooks 'persp-mode-hook))
+    (advice-remove 'helm-buffer-list-1 #'persp-buffer-list-filter)
     (ad-deactivate-regexp "^persp-.*")
     (remove-hook 'delete-frame-functions 'persp-delete-frame)
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
