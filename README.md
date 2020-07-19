@@ -161,8 +161,14 @@ list of buffers in all perspectives.
 buffers filtered by the current perspective. With a prefix argument, it shows a
 list of buffers in all perspectives.
 
-**Helm**: Helm relies on the machinery of `ido-mode` for listing buffers, so it
-is automatically Perspective-aware when `persp-mode` is enabled.
+**Helm**: Perspective ships with buffer-listing advice for Helm, so Helm's
+buffer listing code should be automatically Perspective-aware when `persp-mode`
+is enabled. (Older versions of Helm relied on the machinery of `ido-mode` for
+listing buffers, so they did not require this advice; see [`this Helm
+commit`](https://github.com/emacs-helm/helm/commit/f7fa3a9e0ef1f69c42e0c513d02c9f76ea9a4344)
+and [`this Perspective
+commit`](https://github.com/nex3/perspective-el/commit/c2d3542418967b55f05d5b5ba71c9fbfe4cd3d4f)
+for details.)
 
 **Ivy / Counsel**: Perspective provides two commands for listing buffers using
 Ivy and Counsel: `persp-ivy-switch-buffer` and `persp-counsel-switch-buffer`.
