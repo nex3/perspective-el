@@ -1026,11 +1026,9 @@ By default, this uses the current frame."
     (modify-frame-parameters
      frame
      '((persp--hash) (persp--curr) (persp--last) (persp--recursive) (persp--modestring)))
-
     ;; Don't set these variables in modify-frame-parameters
     ;; because that won't do anything if they've already been accessed
     (set-frame-parameter frame 'persp--hash (make-hash-table :test 'equal :size 10))
-
     (when persp-show-modestring
       (if (eq persp-show-modestring 'header)
           (let ((val (or (default-value 'header-line-format) '(""))))
@@ -1040,9 +1038,7 @@ By default, this uses the current frame."
         (unless (member '(:eval (persp-mode-line)) global-mode-string)
           (setq global-mode-string (append global-mode-string '((:eval (persp-mode-line)))))))
       (persp-update-modestring))
-
     (switch-to-buffer (persp-scratch-buffer persp-initial-frame-name) t)
-
     (persp-activate
      (make-persp :name persp-initial-frame-name :buffers (list (current-buffer))
        :window-configuration (current-window-configuration)
