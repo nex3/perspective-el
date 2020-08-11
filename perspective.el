@@ -1041,6 +1041,8 @@ By default, this uses the current frame."
           (setq global-mode-string (append global-mode-string '((:eval (persp-mode-line)))))))
       (persp-update-modestring))
 
+    (switch-to-buffer (persp-scratch-buffer persp-initial-frame-name) t)
+
     (persp-activate
      (make-persp :name persp-initial-frame-name :buffers (list (current-buffer))
        :window-configuration (current-window-configuration)
