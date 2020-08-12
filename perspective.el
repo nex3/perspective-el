@@ -1049,7 +1049,16 @@ By default, this uses the current frame."
   "Clean up perspectives in FRAME.
 By default this uses the current frame."
   (with-selected-frame frame
-    (mapcar #'persp-kill (persp-names))))
+    ;; XXX: Only clean up frame perspectives when frame was _not_ created with
+    ;; emacsclient. Attempting this cleanup causes crashes for unclear reasons.
+    ;; Investigation shows that persp-delete-frame gets called multiple times in
+    ;; unexpected ways. To reproduce: (1) get a session going with a main frame,
+    ;; (2) use emacsclient -c to edit a file in a new frame, (3) C-x 5 0 to kill
+    ;; that frame.
+    ;; TODO: Try to fix this, since emacsclient -c use with perspective can
+    ;; leave dangling buffers unassociated with any perspective.
+    (unless (frame-parameter frame 'client)
+      (mapcar #'persp-kill (persp-names)))))
 
 (defun persp-make-variable-persp-local (variable)
   "Make VARIABLE become perspective-local.
