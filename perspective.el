@@ -1038,8 +1038,16 @@ By default, this uses the current frame."
         (unless (member '(:eval (persp-mode-line)) global-mode-string)
           (setq global-mode-string (append global-mode-string '((:eval (persp-mode-line)))))))
       (persp-update-modestring))
+    ;; A frame must open with a reasonable initial buffer in its main
+    ;; perspective. This behaves differently from an emacsclient invocation, but
+    ;; should respect `initial-buffer-choice'.
     (when (frame-parameter frame 'client)
-      (switch-to-buffer (persp-scratch-buffer persp-initial-frame-name) t))
+      (let* ((scratch-buf (persp-scratch-buffer persp-initial-frame-name))
+             (init-buf (cond ((stringp initial-buffer-choice) initial-buffer-choice)
+                             ((functionp initial-buffer-choice) (or (funcall initial-buffer-choice)
+                                                                    scratch-buf))
+                             (t scratch-buf))))
+        (switch-to-buffer init-buf t)))
     (persp-activate
      (make-persp :name persp-initial-frame-name :buffers (list (current-buffer))
        :window-configuration (current-window-configuration)
