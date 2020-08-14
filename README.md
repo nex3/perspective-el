@@ -85,6 +85,19 @@ The following Emacs packages implement comparable functionality:
 - [ElScreen](https://github.com/knu/elscreen): Supports window layouts but not
   buffer lists; seems unmaintained.
 
+Emacs 27 includes two new buffer and window organizing features: Tab Line
+(`global-tab-line-mode`) and Tab Bar (`tab-bar-mode`).
+- Tab Line maintains a list of buffers which had been opened in a given window,
+  and anchors it to that window. It is analogous to tabs as used in web browsers
+  and other text editors, and therefore orthogonal to Perspective.
+- Tab Bar maintains window layouts (with optional names). In this, it is similar
+  to Perspective. Unlike Perspective, it does not support buffer lists. Using
+  Perspective and Tab Bar at the same time is not recommended at this time,
+  since the tab list is global (i.e., will show up in all perspectives) and is
+  likely to cause confusion. It would be an interesting future feature for
+  Perspective to adopt the tab bar and allow keeping a distinct set of tabs
+  per-perspective.
+
 
 ## Compatibility
 
