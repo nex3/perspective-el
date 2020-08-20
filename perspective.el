@@ -212,6 +212,21 @@ filtering in buffer display modes like ibuffer."
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
+(defvar persp-started-after-server-mode nil
+  "XXX: A nasty workaround for a strange timing bug which occurs
+  if the Emacs server was started before Perspective initialized.
+  For some reason, persp-delete-frame gets called multiple times
+  in unexpected ways. To reproduce: (0) make sure server-start is
+  called before persp-mode is turned on and comment out the use
+  of persp-started-after-server-mode, (1) get a session going
+  with a main frame, (2) switch perspectives a couple of
+  times, (3) use emacsclient -c to edit a file in a new
+  frame, (4) C-x 5 0 to kill that frame. This will cause an
+  unintended perspective switch in the primary frame, and mark
+  the previous perspective as deleted. There is also a note in
+  the *Messages* buffer. TODO: It would be good to get to the
+  bottom of this problem, rather than just paper over it.")
+
 (defvar persp-before-switch-hook nil
   "A hook that's run before `persp-switch'.
 Run with the previous perspective as `persp-curr'.")
@@ -990,6 +1005,8 @@ named collections of buffers and window configurations."
   :keymap persp-mode-map
   (if persp-mode
       (persp-protect
+        (when (bound-and-true-p server-process)
+          (setq persp-started-after-server-mode t))
         ;; TODO: Convert to nadvice, which has been available since 24.4 and is
         ;; the earliest Emacs version Perspective supports.
         (ad-activate 'switch-to-buffer)
@@ -1057,15 +1074,7 @@ By default, this uses the current frame."
   "Clean up perspectives in FRAME.
 By default this uses the current frame."
   (with-selected-frame frame
-    ;; XXX: Only clean up frame perspectives when frame was _not_ created with
-    ;; emacsclient. Attempting this cleanup causes crashes for unclear reasons.
-    ;; Investigation shows that persp-delete-frame gets called multiple times in
-    ;; unexpected ways. To reproduce: (1) get a session going with a main frame,
-    ;; (2) use emacsclient -c to edit a file in a new frame, (3) C-x 5 0 to kill
-    ;; that frame.
-    ;; TODO: Try to fix this, since emacsclient -c use with perspective can
-    ;; leave dangling buffers unassociated with any perspective.
-    (unless (frame-parameter frame 'client)
+    (unless persp-started-after-server-mode
       (mapcar #'persp-kill (persp-names)))))
 
 (defun persp-make-variable-persp-local (variable)
