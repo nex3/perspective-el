@@ -449,7 +449,7 @@ first."
 (defun persp-all-names (&optional not-frame)
   "Return a list of the perspective names for all frames.
 Excludes NOT-FRAME, if given."
-  (cl-reduce 'union
+  (cl-reduce 'cl-union
              (mapcar
               (lambda (frame)
                 (unless (equal frame not-frame)
