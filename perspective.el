@@ -1271,7 +1271,16 @@ PERSP-SET-IDO-BUFFERS)."
   "A version of `ivy-switch-buffer' which respects perspectives."
   (interactive "P")
   (declare-function ivy-switch-buffer "ivy.el")
-  (persp--switch-buffer-ivy-counsel-helper arg nil #'ivy-switch-buffer))
+  (declare-function ivy--buffer-list "ivy.el")
+  (let ((saved-ivy-buffer-list (symbol-function 'ivy--buffer-list))
+        (temp-ivy-buffer-list (lambda (_str &optional _virtual _predicate)
+                                (persp-current-buffer-names))))
+    (unwind-protect
+        (progn
+          (when (and persp-mode (null arg))
+            (setf (symbol-function 'ivy--buffer-list) temp-ivy-buffer-list))
+          (persp--switch-buffer-ivy-counsel-helper arg nil #'ivy-switch-buffer))
+      (setf (symbol-function 'ivy--buffer-list) saved-ivy-buffer-list))))
 
 ;; Buffer switching integration: Counsel.
 ;;;###autoload
