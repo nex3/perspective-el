@@ -2,16 +2,15 @@ sudo: required
 # for evm binaries
 dist: trusty
 env:
-  - EMACS_VERSION=26.3
-  - EMACS_VERSION=26.2
-  - EMACS_VERSION=26.1
-  - EMACS_VERSION=25.3
-  - EMACS_VERSION=24.4
+  - EMACS_EVM_TAG=27.1-travis-linux-trusty
+  - EMACS_EVM_TAG=26.3-travis
+  - EMACS_EVM_TAG=25.3-travis
+  - EMACS_EVM_TAG=24.4-travis
 script:
   - cd $TRAVIS_BUILD_DIR
   - git clone https://github.com/rejeep/evm ${TRAVIS_BUILD_DIR}/.evm
   - export PATH=${TRAVIS_BUILD_DIR}/.evm/bin:${PATH}
   - evm config path /tmp
-  - evm install emacs-${EMACS_VERSION}-travis --use --skip
+  - evm install emacs-${EMACS_EVM_TAG} --use --skip
   - emacs --version
   - make 
