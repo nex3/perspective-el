@@ -1260,6 +1260,7 @@ PERSP-SET-IDO-BUFFERS)."
                (cl-remove-if #'null (mapcar #'buffer-name (persp-current-buffers)))
                :preselect (buffer-name (persp-other-buffer (current-buffer)))
                :keymap ivy-switch-buffer-map
+               :caller #'ivy-switch-buffer
                :action #'ivy--switch-buffer-action
                :matcher #'ivy--switch-buffer-matcher)
               ivy-params))
@@ -1293,8 +1294,7 @@ PERSP-SET-IDO-BUFFERS)."
   (declare-function counsel--switch-buffer-unwind "counsel.el")
   (declare-function counsel--switch-buffer-update-fn "counsel.el")
   (persp--switch-buffer-ivy-counsel-helper arg
-                                           (list :caller #'counsel-switch-buffer
-                                                 :unwind #'counsel--switch-buffer-unwind
+                                           (list :unwind #'counsel--switch-buffer-unwind
                                                  :update-fn #'counsel--switch-buffer-update-fn)
                                            #'counsel-switch-buffer))
 
