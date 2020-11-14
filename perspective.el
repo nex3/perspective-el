@@ -1250,6 +1250,7 @@ PERSP-SET-IDO-BUFFERS)."
     (user-error "Ivy not loaded"))
   (defvar ivy-switch-buffer-map)
   (declare-function ivy-read "ivy.el")
+  (declare-function ivy-switch-buffer "ivy.el")
   (declare-function ivy--switch-buffer-matcher "ivy.el")
   (declare-function ivy--switch-buffer-action "ivy.el")
   (if (and persp-mode (null arg))
