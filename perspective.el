@@ -858,7 +858,7 @@ copied across frames."
         (let ((persp (gethash name (perspectives-hash))))
           (if persp (cl-return-from persp-all-get (persp-buffers persp))))))))
 
-(defun persp-read-buffer (prompt &optional def require-match)
+(defun persp-read-buffer (prompt &optional def require-match predicate)
   "A replacement for the built-in `read-buffer', meant to be used with `read-buffer-function'.
 Return the name of the buffer selected, only selecting from buffers
 within the current perspective.
@@ -869,7 +869,7 @@ With a prefix arg, uses the old `read-buffer' instead."
   (persp-protect
     (let ((read-buffer-function nil))
       (if current-prefix-arg
-          (read-buffer prompt def require-match)
+          (read-buffer prompt def require-match predicate)
         ;; Most of this is taken from `minibuffer-with-setup-hook',
         ;; slightly modified because it's not a macro.
         ;; The only functional difference is that the append argument
@@ -884,7 +884,7 @@ With a prefix arg, uses the old `read-buffer' instead."
           (unwind-protect
               (progn
                 (add-hook 'minibuffer-setup-hook persp-read-buffer-hook t)
-                (read-buffer prompt def require-match))
+                (read-buffer prompt def require-match predicate))
             (remove-hook 'minibuffer-setup-hook persp-read-buffer-hook)))))))
 
 (defun persp-complete-buffer ()
