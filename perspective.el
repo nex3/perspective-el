@@ -1259,7 +1259,11 @@ PERSP-SET-IDO-BUFFERS)."
              (append
               (list
                (format "Switch to buffer (%s): " (persp-current-name))
-               (cl-remove-if #'null (mapcar #'buffer-name (persp-current-buffers)))
+               (cl-remove-if #'null (mapcar #'buffer-name
+                                            ;; buffer-list is ordered by access time
+                                            ;; seq-intersection keeps the order
+                                            (seq-intersection (buffer-list)
+                                                              (persp-current-buffers))))
                :preselect (buffer-name (persp-other-buffer (current-buffer)))
                :keymap ivy-switch-buffer-map
                :caller #'ivy-switch-buffer
