@@ -284,7 +284,8 @@ To change keys used after the prefix key, with `use-package` you can do:
 Or without `use-package`:
 
     (define-key perspective-map (kbd "n") nil)
-    (define-key perspective-map (kbd "C-n") 'persp-next)
+    (define-key perspective-map (kbd "N") 'persp-next)
+
 
 ## Some Musings on Emacs Window Layouts
 
