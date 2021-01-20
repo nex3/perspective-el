@@ -272,6 +272,19 @@ customize`). The following are likely to be of most interest:
 - `persp-state-default-file`: Changes the default file to use for saving and
   loading Perspective state.
 
+To change keys used after the prefix key, with `use-package` you can do:
+
+    ;; remap n to N to switch to next perspective
+    (use-package perspective
+      :bind (
+        :map perspective-map
+          ("n" . nil)
+          ("N" . persp-next)))
+
+Or without `use-package`:
+
+    (define-key perspective-map (kbd "n") nil)
+    (define-key perspective-map (kbd "C-n") 'persp-next)
 
 ## Some Musings on Emacs Window Layouts
 
