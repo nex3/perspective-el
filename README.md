@@ -313,10 +313,11 @@ compile`? The answer is to fix the broken defaults. This is fairly easy:
 
 ```emacs-lisp
 (setq display-buffer-alist
-      '((".*" (display-buffer-reuse-window display-buffer-same-window))))
+      '((".*"
+         (display-buffer-reuse-window display-buffer-same-window)
+         (reusable-frames . t))))
 
-(setq display-buffer-reuse-frames t)         ; reuse windows in other frames
-(setq even-window-sizes nil)                 ; display-buffer: avoid resizing
+(setq even-window-sizes nil)  ; display-buffer hint: avoid resizing
 ```
 
 The Emacs framework responsible for "pop-up" windows is `display-buffer`. The
@@ -342,7 +343,7 @@ The suggested settings above do the following:
    run will be replaced with `*compilation*`. This may seem intrusive, since it
    changes out the current buffer, but keep in mind that most buffers popped up
    in this manner are easy to dismiss, either with a dedicated keybinding (often
-   `q`) or the universally-applicable `M-x kill-buffer`. This is easier than
+   `q`) or the universally-applicable `kill-buffer`. This is easier than
    restoring window arrangements. It is also easier to handle for pre-arranged
    window layouts, since the appropriate command can simply be run in a window
    prepared for it in advance. (If this is a step too far, then replace
