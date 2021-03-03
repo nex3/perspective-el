@@ -142,6 +142,7 @@ customize `persp-mode-prefix-key`. Additionally, creating a key binding for
 Here are the main commands defined in `persp-mode-map`:
 
 - `s` — `persp-switch`: Query a perspective to switch to, or create
+- `` ` `` — `persp-switch-by-number`: Switch to perspective by number, or switch quickly through number keys `1, 2, 3.. 0`
 - `k` — `persp-remove-buffer`: Query a buffer to remove from current perspective
 - `c` — `persp-kill` : Query a perspective to kill
 - `r` — `persp-rename`: Rename current perspective
