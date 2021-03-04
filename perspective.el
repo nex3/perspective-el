@@ -293,16 +293,16 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "C-s") 'persp-state-save)
 (define-key perspective-map (kbd "C-l") 'persp-state-load)
 (define-key perspective-map (kbd "`") 'persp-switch-by-number)
-(define-key perspective-map (kbd "1") 'persp-switch-1)
-(define-key perspective-map (kbd "2") 'persp-switch-2)
-(define-key perspective-map (kbd "3") 'persp-switch-3)
-(define-key perspective-map (kbd "4") 'persp-switch-4)
-(define-key perspective-map (kbd "5") 'persp-switch-5)
-(define-key perspective-map (kbd "6") 'persp-switch-6)
-(define-key perspective-map (kbd "7") 'persp-switch-7)
-(define-key perspective-map (kbd "8") 'persp-switch-8)
-(define-key perspective-map (kbd "9") 'persp-switch-9)
-(define-key perspective-map (kbd "0") 'persp-switch-10)
+(define-key perspective-map (kbd "1") '(lambda () (interactive) (persp-switch-by-number 1)))
+(define-key perspective-map (kbd "2") '(lambda () (interactive) (persp-switch-by-number 2)))
+(define-key perspective-map (kbd "3") '(lambda () (interactive) (persp-switch-by-number 3)))
+(define-key perspective-map (kbd "4") '(lambda () (interactive) (persp-switch-by-number 4)))
+(define-key perspective-map (kbd "5") '(lambda () (interactive) (persp-switch-by-number 5)))
+(define-key perspective-map (kbd "6") '(lambda () (interactive) (persp-switch-by-number 6)))
+(define-key perspective-map (kbd "7") '(lambda () (interactive) (persp-switch-by-number 7)))
+(define-key perspective-map (kbd "8") '(lambda () (interactive) (persp-switch-by-number 8)))
+(define-key perspective-map (kbd "9") '(lambda () (interactive) (persp-switch-by-number 9)))
+(define-key perspective-map (kbd "0") '(lambda () (interactive) (persp-switch-by-number 10)))
 
 (defun perspectives-hash (&optional frame)
   "Return a hash containing all perspectives in FRAME.
@@ -651,65 +651,8 @@ If NORECORD is non-nil, do not update the
 
 (defun persp-switch-by-number (num)
   "Switch to the perspective given by NUMBER."
-  (interactive "nEnter your num:")
-  (let ((counter 0)
-       (persp-seq (frame-parameter nil 'persp--modestring)))
-    (dolist (n persp-seq)
-      (if (eq (text-properties-at 0 n) nil)
-          ()
-        (setq counter (+ counter 1))
-        (if (eq counter num)
-          (persp-switch n))))))
-
-(defun persp-switch-1 ()
-  "Switch to perspective 1."
-  (interactive)
-  (persp-switch-by-number 1))
-
-(defun persp-switch-2 ()
-  "Switch to perspective 2."
-  (interactive)
-  (persp-switch-by-number 2))
-
-(defun persp-switch-3 ()
-  "Switch to perspective 3."
-  (interactive)
-  (persp-switch-by-number 3))
-
-(defun persp-switch-4 ()
-  "Switch to perspective 4."
-  (interactive)
-  (persp-switch-by-number 4))
-
-(defun persp-switch-5 ()
-  "Switch to perspective 5."
-  (interactive)
-  (persp-switch-by-number 5))
-
-(defun persp-switch-6 ()
-  "Switch to perspective 6."
-  (interactive)
-  (persp-switch-by-number 6))
-
-(defun persp-switch-7 ()
-  "Switch to perspective 7."
-  (interactive)
-  (persp-switch-by-number 7))
-
-(defun persp-switch-8 ()
-  "Switch to perspective 8."
-  (interactive)
-  (persp-switch-by-number 8))
-
-(defun persp-switch-9 ()
-  "Switch to perspective 9."
-  (interactive)
-  (persp-switch-by-number 9))
-
-(defun persp-switch-10 ()
-  "Switch to perspective 10."
-  (interactive)
-  (persp-switch-by-number 10))
+  (interactive "NEnter perspective number")
+  (persp-switch (nth (- num 1) (persp-names))))
 
 (defun persp-activate (persp)
   "Activate the perspective given by the persp struct PERSP."
