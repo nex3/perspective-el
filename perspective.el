@@ -667,8 +667,15 @@ If NORECORD is non-nil, do not update the
 
 (defun persp-switch-by-number (num)
   "Switch to the perspective given by NUMBER."
-  (interactive "NEnter perspective number")
-  (persp-switch (nth (- num 1) (persp-names))))
+  (interactive "NSwitch to perspective number: ")
+  (let* ((persps (persp-names))
+         (max-persps (length persps)))
+    (if (<= num max-persps)
+        (persp-switch (nth (- num 1) persps))
+      (message "Perspective %s not available, there are only %s" num max-persps)))
+  ;; XXX: Have to force the modestring to update in this case, since the call
+  ;; inside persp-switch happens too early.
+  (persp-update-modestring))
 
 (defun persp-activate (persp)
   "Activate the perspective given by the persp struct PERSP."
