@@ -305,6 +305,21 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "9") (lambda () (interactive) (persp-switch-by-number 9)))
 (define-key perspective-map (kbd "0") (lambda () (interactive) (persp-switch-by-number 10)))
 
+(when (featurep 'which-key)
+  (declare-function which-key-add-keymap-based-replacements "which-key.el")
+  (when (fboundp 'which-key-add-keymap-based-replacements)
+    (which-key-add-keymap-based-replacements perspective-map
+      "1" "switch to 1"
+      "2" "switch to 2"
+      "3" "switch to 3"
+      "4" "switch to 4"
+      "5" "switch to 5"
+      "6" "switch to 6"
+      "7" "switch to 7"
+      "8" "switch to 8"
+      "9" "switch to 9"
+      "0" "switch to 10")))
+
 (defun perspectives-hash (&optional frame)
   "Return a hash containing all perspectives in FRAME.
 FRAME defaults to the currently selected frame. The keys are the
