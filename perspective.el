@@ -292,6 +292,33 @@ Run with the activated perspective active.")
 (define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
 (define-key perspective-map (kbd "C-s") 'persp-state-save)
 (define-key perspective-map (kbd "C-l") 'persp-state-load)
+(define-key perspective-map (kbd "`") 'persp-switch-by-number)
+
+(define-key perspective-map (kbd "1") (lambda () (interactive) (persp-switch-by-number 1)))
+(define-key perspective-map (kbd "2") (lambda () (interactive) (persp-switch-by-number 2)))
+(define-key perspective-map (kbd "3") (lambda () (interactive) (persp-switch-by-number 3)))
+(define-key perspective-map (kbd "4") (lambda () (interactive) (persp-switch-by-number 4)))
+(define-key perspective-map (kbd "5") (lambda () (interactive) (persp-switch-by-number 5)))
+(define-key perspective-map (kbd "6") (lambda () (interactive) (persp-switch-by-number 6)))
+(define-key perspective-map (kbd "7") (lambda () (interactive) (persp-switch-by-number 7)))
+(define-key perspective-map (kbd "8") (lambda () (interactive) (persp-switch-by-number 8)))
+(define-key perspective-map (kbd "9") (lambda () (interactive) (persp-switch-by-number 9)))
+(define-key perspective-map (kbd "0") (lambda () (interactive) (persp-switch-by-number 10)))
+
+(when (featurep 'which-key)
+  (declare-function which-key-add-keymap-based-replacements "which-key.el")
+  (when (fboundp 'which-key-add-keymap-based-replacements)
+    (which-key-add-keymap-based-replacements perspective-map
+      "1" "switch to 1"
+      "2" "switch to 2"
+      "3" "switch to 3"
+      "4" "switch to 4"
+      "5" "switch to 5"
+      "6" "switch to 6"
+      "7" "switch to 7"
+      "8" "switch to 8"
+      "9" "switch to 9"
+      "0" "switch to 10")))
 
 (defun perspectives-hash (&optional frame)
   "Return a hash containing all perspectives in FRAME.
@@ -637,6 +664,18 @@ If NORECORD is non-nil, do not update the
         (setf (persp-last-switch-time persp) (current-time))
         (run-hooks 'persp-switch-hook))
       name)))
+
+(defun persp-switch-by-number (num)
+  "Switch to the perspective given by NUMBER."
+  (interactive "NSwitch to perspective number: ")
+  (let* ((persps (persp-names))
+         (max-persps (length persps)))
+    (if (<= num max-persps)
+        (persp-switch (nth (- num 1) persps))
+      (message "Perspective %s not available, there are only %s" num max-persps)))
+  ;; XXX: Have to force the modestring to update in this case, since the call
+  ;; inside persp-switch happens too early.
+  (persp-update-modestring))
 
 (defun persp-activate (persp)
   "Activate the perspective given by the persp struct PERSP."
