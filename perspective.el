@@ -577,7 +577,11 @@ For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
   "Select the clicked perspective.
 EVENT is the click event triggering this function call."
   (interactive "e")
-  (persp-switch (format "%s" (car (posn-string (event-start event))))))
+  (persp-switch (format "%s" (car (posn-string (event-start event)))))
+  ;; XXX: Force update of modestring because otherwise it's inconsistent with
+  ;; the order of perspectives maintained by persp-sort. The call to
+  ;; persp-update-modestring inside persp-switch happens too early.
+  (persp-update-modestring))
 
 (defun persp-mode-line ()
   "Return the string displayed in the modeline representing the perspectives."
@@ -674,7 +678,8 @@ If NORECORD is non-nil, do not update the
         (persp-switch (nth (- num 1) persps))
       (message "Perspective %s not available, there are only %s" num max-persps)))
   ;; XXX: Have to force the modestring to update in this case, since the call
-  ;; inside persp-switch happens too early.
+  ;; inside persp-switch happens too early. Otherwise, it may be inconsistent
+  ;; with persp-sort.
   (persp-update-modestring))
 
 (defun persp-activate (persp)
