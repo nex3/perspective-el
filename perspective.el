@@ -66,6 +66,11 @@ perspectives."
                (string :tag "Close")
                (string :tag "Divider")))
 
+(defcustom persp-modestring-short nil
+  "When t, show a shortened modeline string with only the current perspective instead of the full perspective list."
+  :group 'perspective-mode
+  :type 'boolean)
+
 (defcustom persp-mode-prefix-key (kbd "C-x x")
   "Prefix key to activate perspective-map."
   :group 'perspective-mode
@@ -596,8 +601,10 @@ Has no effect when `persp-show-modestring' is nil."
           (sep (nth 2 persp-modestring-dividers)))
       (set-frame-parameter nil 'persp--modestring
            (append open
-                   (persp-intersperse (mapcar 'persp-format-name
-                                              (persp-names)) sep)
+                   (if persp-modestring-short
+                       (list (persp-current-name))
+                     (persp-intersperse (mapcar 'persp-format-name
+                                                (persp-names)) sep))
                    close)))))
 
 (defun persp-format-name (name)
@@ -676,7 +683,10 @@ If NORECORD is non-nil, do not update the
          (max-persps (length persps)))
     (if (<= num max-persps)
         (persp-switch (nth (- num 1) persps))
-      (message "Perspective %s not available, there are only %s" num max-persps)))
+      (message "Perspective number %s not available, only %s exist%s"
+               num
+               max-persps
+               (if (= 1 max-persps) "s" ""))))
   ;; XXX: Have to force the modestring to update in this case, since the call
   ;; inside persp-switch happens too early. Otherwise, it may be inconsistent
   ;; with persp-sort.
