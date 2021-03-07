@@ -142,13 +142,16 @@ customize `persp-mode-prefix-key`. Additionally, creating a key binding for
 Here are the main commands defined in `persp-mode-map`:
 
 - `s` — `persp-switch`: Query a perspective to switch to, or create
-- `` ` `` — `persp-switch-by-number`: Switch to perspective by number, or switch quickly through number keys `1, 2, 3.. 0`
+- `` ` `` — `persp-switch-by-number`: Switch to perspective by number, or switch
+  quickly using numbers `1, 2, 3.. 0` as prefix args; note this will probably be
+  most useful with `persp-sort` set to `'created`
 - `k` — `persp-remove-buffer`: Query a buffer to remove from current perspective
 - `c` — `persp-kill` : Query a perspective to kill
 - `r` — `persp-rename`: Rename current perspective
 - `a` — `persp-add-buffer`: Query an open buffer to add to current perspective
 - `A` — `persp-set-buffer`: Add buffer to current perspective and remove it from all others
-- `b` - `persp-switch-to-buffer`: Like `switch-to-buffer`; includes all buffers from all perspectives; changes perspective if necessary
+- `b` - `persp-switch-to-buffer`: Like `switch-to-buffer`; includes all buffers
+  from all perspectives; changes perspective if necessary
 - `i` — `persp-import`: Import a given perspective from another frame.
 - `n`, `<right>` — `persp-next`: Switch to next perspective
 - `p`, `<left>` — `persp-prev`: Switch to previous perspective
@@ -258,7 +261,9 @@ customize`). The following are likely to be of most interest:
 
 - `persp-sort`: Select the order in which to sort perspectives when calling
   `persp-switch`. Defaults to `'name` (alphabetical), but `'access` (by most
-  recently accessed) and `'created` (by order created) are available.
+  recently accessed) and `'created` (by order created) are available. Note that
+  `persp-switch-by-number` is likely to be confusing when this is set to
+  `'access`, as the numbers associated with a perspective will change all the time.
 - `persp-interactive-completion-function`: Used for prompting for a perspective
   name. `completing-read` is the default, with `ido-completing-read` enabled
   with `ido-mode`. `ivy-completing-read` is broadly compatible, but
@@ -272,6 +277,12 @@ customize`). The following are likely to be of most interest:
   commands.
 - `persp-state-default-file`: Changes the default file to use for saving and
   loading Perspective state.
+- `persp-show-modestring`: Determines if Perspective should show its status in
+  the modeline. It defaults to `t`, but can also be `nil` (turning off the
+  modeline status display) or `'header` (which uses the header line instead of
+  the modeline).
+- `persp-modestring-short`: When set to `t`, show a shortened modeline string
+  with only the current perspective instead of the full list. Defaults to `nil`.
 
 To change keys used after the prefix key, with `use-package` you can do:
 

@@ -67,7 +67,9 @@ perspectives."
                (string :tag "Divider")))
 
 (defcustom persp-modestring-short nil
-  "When t, show a shortened modeline string with only the current perspective instead of the full perspective list."
+  "When t, show a shortened modeline string.
+A shortened modeline string only displays the current perspective
+instead of the full perspective list."
   :group 'perspective-mode
   :type 'boolean)
 
