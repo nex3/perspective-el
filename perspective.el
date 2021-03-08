@@ -826,6 +826,12 @@ Prefers perspectives in the selected frame."
           (persp-switch (cdr other-persp)))
         (switch-to-buffer buffer)))))
 
+(defun persp-list-buffers ()
+  "Like the default C-x C-b, but filters for the current perspective's buffers."
+  (interactive)
+  (switch-to-buffer
+   (list-buffers-noselect nil (seq-filter 'buffer-live-p (persp-current-buffers)))))
+
 (defun persp-remove-buffer (buffer)
   "Disassociate BUFFER with the current perspective.
 
