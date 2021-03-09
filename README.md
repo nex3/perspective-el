@@ -166,6 +166,11 @@ to use a Perspective-aware buffer switcher.
 in particular its `ido-switch-buffer` command, is automatically
 Perspective-aware when `persp-mode` is enabled.
 
+**buffer-menu**: Perspective provides a wrapper for
+[`buffer-menu`](https://www.gnu.org/software/emacs/manual/html_node/emacs/List-Buffers.html):
+`persp-buffer-menu`. When this function is called normally, it shows the buffer menu filtered by the current perspective. With a prefix argument, it shows the
+buffer menu of all the buffers in all perspectives.
+
 **`bs.el`**: Perspective provides a wrapper for
 [`bs-show`](https://www.gnu.org/software/emacs/manual/html_node/emacs/Buffer-Menus.html):
 `persp-bs-show`. When this function is called normally, it shows a list of
