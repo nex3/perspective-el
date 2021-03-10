@@ -166,10 +166,17 @@ to use a Perspective-aware buffer switcher.
 in particular its `ido-switch-buffer` command, is automatically
 Perspective-aware when `persp-mode` is enabled.
 
-**buffer-menu**: Perspective provides a wrapper for
-[`buffer-menu`](https://www.gnu.org/software/emacs/manual/html_node/emacs/List-Buffers.html):
-`persp-buffer-menu`. When this function is called normally, it shows the buffer menu filtered by the current perspective. With a prefix argument, it shows the
-buffer menu of all the buffers in all perspectives.
+**list-buffers / buffer-menu**: Perspective provides wrappers for the similar
+[`list-buffers` and
+`buffer-menu`](https://www.gnu.org/software/emacs/manual/html_node/emacs/List-Buffers.html):
+`persp-list-buffers` and `persp-buffer-menu`. (Note that Emacs binds `C-x C-b`
+to `list-buffers` by default.) When these functions are called normally, they
+show the buffer menu filtered by the current perspective. With a prefix
+argument, they show the buffer menu of all the buffers in all perspectives. (The
+difference between `list-buffers` and `buffer-menu`: the former calls
+`display-buffer`, i.e., may split windows depending on `display-buffer-alist`,
+and the latter calls `switch-to-buffer`, i.e., flips the current window to the
+buffer list buffer.)
 
 **`bs.el`**: Perspective provides a wrapper for
 [`bs-show`](https://www.gnu.org/software/emacs/manual/html_node/emacs/Buffer-Menus.html):

@@ -1261,13 +1261,23 @@ PERSP-SET-IDO-BUFFERS)."
                        (buffer-name (current-buffer))))))
   (kill-buffer buffer-or-name))
 
-;; Buffer switching integration: buffer-menu
+;; Buffer switching integration: buffer-menu.
 ;;;###autoload
 (defun persp-buffer-menu (arg)
   "Like the default C-x C-b, but filters for the current perspective's buffers."
   (interactive "P")
   (if (and persp-mode (null arg))
       (switch-to-buffer
+       (list-buffers-noselect nil (seq-filter 'buffer-live-p (persp-current-buffers))))
+    (switch-to-buffer (list-buffers-noselect))))
+
+;; Buffer switching integration: list-buffers.
+;;;###autoload
+(defun persp-list-buffers (arg)
+  "Like the default C-x C-b, but filters for the current perspective's buffers."
+  (interactive "P")
+  (if (and persp-mode (null arg))
+      (display-buffer
        (list-buffers-noselect nil (seq-filter 'buffer-live-p (persp-current-buffers))))
     (display-buffer (list-buffers-noselect))))
 
