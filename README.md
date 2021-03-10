@@ -118,9 +118,15 @@ Users of [`use-package`](https://github.com/jwiegley/use-package) can install Pe
 
 ```
 (use-package perspective
+  :bind
+  ("C-x C-b" . persp-list-buffers)   ; or use a nicer switcher, see below
   :config
   (persp-mode))
 ```
+
+Replace the binding for `C-x C-b`, the default Emacs buffer switcher, with one
+of the nicer implementations described in the [Buffer
+switchers](#buffer-switchers) section.
 
 Alternately, put `perspective.el` from this source repository in your load path
 and run `(require 'perspective)`.
@@ -157,6 +163,9 @@ Here are the main commands defined in `persp-mode-map`:
 - `p`, `<left>` — `persp-prev`: Switch to previous perspective
 - `C-s` — `persp-state-save`: Save all perspectives in all frames to a file
 - `C-l` — `persp-state-load`: Load all perspectives from a file
+
+
+### Buffer switchers
 
 Since Perspective maintains distinct buffer lists for each perspective, it helps
 to use a Perspective-aware buffer switcher.
@@ -207,8 +216,9 @@ in all perspectives. The distinction between the `ivy` and `counsel` versions is
 the same as between `ivy-switch-buffer` and `counsel-switch-buffer`: the latter
 shows a preview of the buffer to switch to, and the former does not.
 
-Globally binding one of these helper functions to a buffer-switching key is a
-good idea, e.g.:
+It is a good idea to bind one these helper functions with the `:bind` form of
+`use-package`. Or, if you do not use `use-package`, it can also be bound
+globally, e.g.:
 
 ```emacs-lisp
 (global-set-key (kbd "C-x C-b") (lambda (arg)
