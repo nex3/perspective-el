@@ -1633,6 +1633,51 @@ restored."
 
 (defalias 'persp-state-restore 'persp-state-load)
 
+;;; --- ibuffer
+(with-eval-after-load 'ibuffer
+  (defvar ibuffer-filtering-alist nil)
+  (define-ibuffer-filter persp-name
+      "Toggle current view to buffers with persp name QUALIFIER."
+    (:description "persp-name"
+                  :reader (read-regexp "Filter by persp name (regexp): "))
+    (ibuffer-awhen (persp-ibuffer-name buf)
+      (if (stringp qualifier)
+          (or (string-match-p qualifier (car it))
+              (string-match-p qualifier (cdr-safe it)))
+        (equal qualifier it)))))
+
+(defun persp-ibuffer-default-group-name (persp-name)
+  "Produce an ibuffer group name string for PERSP-NAME."
+  (format "%s" persp-name))
+
+(defun persp-ibuffer-name (buf)
+  "Return a PERSP-NAME of BUF."
+  (let ((persp-names (cl-loop for persp-name in (persp-all-names)
+                              if (memq buf (persp-all-get persp-name nil))
+                              collect persp-name)))
+    (list (car persp-names))))
+
+;;;###autoload
+(defun persp-ibuffer-generate-filter-groups ()
+  "Create a set of ibuffer filter groups based on the persp name of buffers."
+  (let ((persp-names (ibuffer-remove-duplicates
+                (delq nil (mapcar 'persp-ibuffer-name (buffer-list))))))
+    (mapcar (lambda (persp-name)
+              (cons (persp-ibuffer-default-group-name (car persp-name))
+                    `((persp-name . ,persp-name))))
+            persp-names)))
+
+;;;###autoload
+(defun persp-ibuffer-set-filter-groups ()
+  "Set the current filter groups to filter by persp name."
+  (interactive)
+  (setq ibuffer-filter-groups (persp-ibuffer-generate-filter-groups))
+  (message "persp-ibuffer: groups set")
+  (let ((ibuf (get-buffer "*Ibuffer*")))
+    (when ibuf
+      (with-current-buffer ibuf
+        (pop-to-buffer ibuf)
+        (ibuffer-update nil t)))))
 
 ;;; --- done
 
