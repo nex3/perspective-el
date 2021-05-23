@@ -1668,8 +1668,11 @@ restored."
 ;;;###autoload
 (defun persp-ibuffer-generate-filter-groups ()
   "Create a set of ibuffer filter groups based on the persp name of buffers."
+  (declare-function ibuffer-remove-duplicates "ibuf-ext.el")
+  (declare-function ibuffer-push-filter "ibuf-ext.el")
+  (declare-function ibuffer-pop-filter "ibuf-ext.el")
   (let ((persp-names (ibuffer-remove-duplicates
-                (delq nil (mapcar 'persp-ibuffer-name (buffer-list))))))
+                      (delq nil (mapcar 'persp-ibuffer-name (buffer-list))))))
     (mapcar (lambda (persp-name)
               (cons (persp-ibuffer-default-group-name (car persp-name))
                     `((persp-name . ,persp-name))))
@@ -1679,6 +1682,10 @@ restored."
 (defun persp-ibuffer-set-filter-groups ()
   "Set the current filter groups to filter by persp name."
   (interactive)
+  (unless (featurep 'ibuffer)
+    (user-error "IBuffer not loaded"))
+  (defvar ibuffer-filter-groups)
+  (declare-function ibuffer-update "ibuffer.el")
   (setq ibuffer-filter-groups (persp-ibuffer-generate-filter-groups))
   (message "persp-ibuffer: groups set")
   (let ((ibuf (get-buffer "*Ibuffer*")))
