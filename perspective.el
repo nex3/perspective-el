@@ -1211,6 +1211,9 @@ perspective beginning with the given letter."
       ;; `other-buffer'.
       (get-buffer-create (persp-scratch-buffer)))))
 
+
+;;; --- perspective-aware buffer switchers
+
 ;; Buffer switching integration: useful for frameworks which enhance the
 ;; built-in completing-read (e.g., Selectrum).
 ;;;###autoload
@@ -1381,6 +1384,9 @@ PERSP-SET-IDO-BUFFERS)."
                                            (list :unwind #'counsel--switch-buffer-unwind
                                                  :update-fn #'counsel--switch-buffer-update-fn)
                                            #'counsel-switch-buffer))
+
+
+;;; --- durability implementation (persp-state-save and persp-state-load)
 
 ;; Symbols namespaced by persp--state (internal) and persp-state (user
 ;; functions) provide functionality which allows saving perspective state on
@@ -1633,7 +1639,9 @@ restored."
 
 (defalias 'persp-state-restore 'persp-state-load)
 
-;;; --- ibuffer
+
+;;; --- ibuffer filter group code
+
 (with-eval-after-load 'ibuffer
   (defvar ibuffer-filtering-alist nil)
   (define-ibuffer-filter persp-name
@@ -1678,6 +1686,7 @@ restored."
       (with-current-buffer ibuf
         (pop-to-buffer ibuf)
         (ibuffer-update nil t)))))
+
 
 ;;; --- done
 

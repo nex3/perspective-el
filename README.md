@@ -199,11 +199,8 @@ list of buffers in all perspectives.
 buffers filtered by the current perspective. With a prefix argument, it shows a
 list of buffers in all perspectives.
 
-If you want group buffers by persp-name in ibuffer buffer:
-
-`M-x persp-ibuffer-set-filter-groups`
-
-Or, make this the default:
+If you want to group buffers by persp-name in ibuffer buffer, use
+`persp-ibuffer-set-filter-groups`. Or, make it the default:
 ```
 (add-hook 'ibuffer-hook
           (lambda ()
