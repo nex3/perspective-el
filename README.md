@@ -199,6 +199,19 @@ list of buffers in all perspectives.
 buffers filtered by the current perspective. With a prefix argument, it shows a
 list of buffers in all perspectives.
 
+If you want group buffers by persp-name in ibuffer buffer:
+
+`M-x persp-ibuffer-set-filter-groups`
+
+Or, make this the default:
+```
+(add-hook 'ibuffer-hook
+          (lambda ()
+            (persp-ibuffer-set-filter-groups)
+            (unless (eq ibuffer-sorting-mode 'alphabetic)
+              (ibuffer-do-sort-by-alphabetic))))
+```
+
 **Helm**: Perspective ships with buffer-listing advice for Helm, so Helm's
 buffer listing code should be automatically Perspective-aware when `persp-mode`
 is enabled. (Older versions of Helm relied on the machinery of `ido-mode` for
