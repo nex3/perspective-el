@@ -1694,6 +1694,17 @@ restored."
         (pop-to-buffer ibuf)
         (ibuffer-update nil t)))))
 
+;;; --- xref code
+
+(defvar persp-xref--marker-ring (make-hash-table :test 'equal))
+;;;###autoload
+(defun persp-set-xref--marker-ring ()
+  "Set xref--marker-ring per persp."
+  (let ((persp-curr-name (persp-name (persp-curr))))
+    (unless (gethash persp-curr-name persp-xref--marker-ring)
+      (puthash persp-curr-name (make-ring xref-marker-ring-length)
+               persp-xref--marker-ring))
+    (setq xref--marker-ring (gethash persp-curr-name persp-xref--marker-ring))))
 
 ;;; --- done
 
