@@ -20,6 +20,15 @@ Perspective supports saving its state to a file, so long-lived work sessions may
 be saved and recovered as needed.
 
 
+## Compatibility
+
+- Perspective versions 2.16 and later require Emacs 25 (at least 25.3 highly
+  recommended).
+- [Version 2.15](https://github.com/nex3/perspective-el/tree/2.15) also supports
+  Emacs 24.4.
+- Versions of Emacs prior to 24.4 are not supported.
+
+
 ## Sample Use Cases
 
 ### Multiple Projects
