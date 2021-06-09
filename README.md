@@ -6,10 +6,13 @@ The Perspective package provides multiple named workspaces (or "perspectives")
 in Emacs, similar to multiple desktops in window managers like Awesome and
 XMonad, and Spaces on the Mac.
 
-Each perspective has its own buffer list and its own window layout. This makes
-it easy to work on many separate projects without getting lost in all the
-buffers. Switching to a perspective activates its window configuration, and when
-in a perspective, only its buffers are available (by default).
+Each perspective has its own buffer list and its own window layout, along with
+some other isolated niceties, like the
+[xref](https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html)
+ring. This makes it easy to work on many separate projects without getting lost
+in all the buffers. Switching to a perspective activates its window
+configuration, and when in a perspective, only its buffers are available (by
+default).
 
 Each Emacs frame has a distinct list of perspectives.
 
@@ -84,6 +87,7 @@ The following Emacs packages implement comparable functionality:
   buffer lists.
 - [ElScreen](https://github.com/knu/elscreen): Supports window layouts but not
   buffer lists; seems unmaintained.
+- [Burly](https://github.com/alphapapa/burly.el): An approach to persisting window and frame configurations using Emacs bookmarks.
 
 Emacs 27 includes two new buffer and window organizing features: Tab Line
 (`global-tab-line-mode`) and Tab Bar (`tab-bar-mode`).
@@ -260,15 +264,6 @@ to use the replacements:
          ("C-x k" . persp-kill-buffer*))
   :config
   (persp-mode))
-```
-
-
-### xref integration
-
-Users of the the built-in Emacs [xref](https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html) cross-referencing system can isolate the xref marker ring (`xref--marker-ring`) between perspectives with this hook:
-
-```
-(add-hook 'persp-switch-hook #'persp-set-xref-marker-ring)
 ```
 
 
