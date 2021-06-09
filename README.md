@@ -208,10 +208,7 @@ If you want to group buffers by persp-name in ibuffer buffer, use
             (unless (eq ibuffer-sorting-mode 'alphabetic)
               (ibuffer-do-sort-by-alphabetic))))
 ```
-**Xref**: You can isolate `xref--marker-ring` between perspectives by:
-```
-(add-hook 'persp-switch-hook #'persp-set-xref--marker-ring)
-```
+
 **Helm**: Perspective ships with buffer-listing advice for Helm, so Helm's
 buffer listing code should be automatically Perspective-aware when `persp-mode`
 is enabled. (Older versions of Helm relied on the machinery of `ido-mode` for
@@ -263,6 +260,15 @@ to use the replacements:
          ("C-x k" . persp-kill-buffer*))
   :config
   (persp-mode))
+```
+
+
+### xref integration
+
+Users of the the built-in Emacs [xref](https://www.gnu.org/software/emacs/manual/html_node/emacs/Xref.html) cross-referencing system can isolate the xref marker ring (`xref--marker-ring`) between perspectives with this hook:
+
+```
+(add-hook 'persp-switch-hook #'persp-set-xref-marker-ring)
 ```
 
 
