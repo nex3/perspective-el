@@ -34,6 +34,7 @@
 (require 'rx)
 (require 'subr-x)
 (require 'thingatpt)
+(require 'xref)
 
 
 ;;; --- customization
@@ -675,6 +676,7 @@ If NORECORD is non-nil, do not update the
       (unless norecord
         (run-hooks 'persp-before-switch-hook))
       (persp-activate persp)
+      (persp--set-xref-marker-ring)
       (unless norecord
         (setf (persp-last-switch-time persp) (current-time))
         (run-hooks 'persp-switch-hook))
@@ -1699,11 +1701,8 @@ restored."
 
 (defvar persp--xref-marker-ring (make-hash-table :test 'equal))
 
-;;;###autoload
-(defun persp-set-xref-marker-ring ()
+(defun persp--set-xref-marker-ring ()
   "Set xref--marker-ring per persp."
-  (defvar xref-marker-ring-length)
-  (defvar xref--marker-ring)
   (let ((persp-curr-name (persp-name (persp-curr))))
     (unless (gethash persp-curr-name persp--xref-marker-ring)
       (puthash persp-curr-name (make-ring xref-marker-ring-length)
