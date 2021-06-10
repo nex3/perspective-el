@@ -34,7 +34,6 @@
 (require 'rx)
 (require 'subr-x)
 (require 'thingatpt)
-(require 'xref)
 
 
 ;;; --- customization
@@ -676,7 +675,7 @@ If NORECORD is non-nil, do not update the
       (unless norecord
         (run-hooks 'persp-before-switch-hook))
       (persp-activate persp)
-      (persp--set-xref-marker-ring)
+      (when (fboundp 'persp--set-xref-marker-ring) (persp--set-xref-marker-ring))
       (unless norecord
         (setf (persp-last-switch-time persp) (current-time))
         (run-hooks 'persp-switch-hook))
@@ -863,7 +862,7 @@ perspective and no others are killed."
     (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
   (remhash name (perspectives-hash))
-  (remhash name persp--xref-marker-ring)
+  (when (boundp 'persp--xref-marker-ring) (remhash name persp--xref-marker-ring))
   (persp-update-modestring)
   (when (and (persp-last) (equal name (persp-name (persp-last))))
     (set-frame-parameter
@@ -1700,15 +1699,20 @@ restored."
 
 ;;; --- xref code
 
-(defvar persp--xref-marker-ring (make-hash-table :test 'equal))
+;; xref is not available in Emacs 24, so be careful:
+(when (require 'xref nil t)
 
-(defun persp--set-xref-marker-ring ()
-  "Set xref--marker-ring per persp."
-  (let ((persp-curr-name (persp-name (persp-curr))))
-    (unless (gethash persp-curr-name persp--xref-marker-ring)
-      (puthash persp-curr-name (make-ring xref-marker-ring-length)
-               persp--xref-marker-ring))
-    (setq xref--marker-ring (gethash persp-curr-name persp--xref-marker-ring))))
+  (defvar persp--xref-marker-ring (make-hash-table :test 'equal))
+
+  (defun persp--set-xref-marker-ring ()
+    "Set xref--marker-ring per persp."
+    (defvar xref-marker-ring-length)
+    (defvar xref--marker-ring)
+    (let ((persp-curr-name (persp-name (persp-curr))))
+      (unless (gethash persp-curr-name persp--xref-marker-ring)
+        (puthash persp-curr-name (make-ring xref-marker-ring-length)
+                 persp--xref-marker-ring))
+      (setq xref--marker-ring (gethash persp-curr-name persp--xref-marker-ring)))))
 
 
 ;;; --- done
