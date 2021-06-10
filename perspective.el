@@ -863,6 +863,7 @@ perspective and no others are killed."
     (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
   (remhash name (perspectives-hash))
+  (remhash name persp--xref-marker-ring)
   (persp-update-modestring)
   (when (and (persp-last) (equal name (persp-name (persp-last))))
     (set-frame-parameter
