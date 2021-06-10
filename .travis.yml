@@ -5,6 +5,7 @@ env:
   - EMACS_EVM_TAG=27.1-travis-linux-trusty
   - EMACS_EVM_TAG=26.3-travis
   - EMACS_EVM_TAG=25.3-travis
+  - EMACS_EVM_TAG=24.4-travis
 script:
   - cd $TRAVIS_BUILD_DIR
   - git clone https://github.com/rejeep/evm ${TRAVIS_BUILD_DIR}/.evm
