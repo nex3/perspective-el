@@ -1101,10 +1101,11 @@ named collections of buffers and window configurations."
     (setq read-buffer-function nil)
     (set-frame-parameter nil 'persp--hash nil)
     (setq global-mode-string (delete '(:eval (persp-mode-line)) global-mode-string))
-    (set-default 'header-line-format (delete '(:eval (persp-mode-line)) header-line-format))
-    (unless (delete "" header-line-format)
-      ;; need to set header-line-format to nil to completely remove the header from the buffer
-      (set-default 'header-line-format nil))))
+    (let ((default-header-line-format (default-value 'header-line-format)))
+      (set-default 'header-line-format (delete '(:eval (persp-mode-line)) default-header-line-format))
+      (unless (delete "" default-header-line-format)
+        ;; need to set header-line-format to nil to completely remove the header from the buffer
+        (set-default 'header-line-format nil)))))
 
 (defun persp-init-frame (frame)
   "Initialize the perspectives system in FRAME.
