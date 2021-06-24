@@ -233,6 +233,12 @@ Create it if the current perspective doesn't have one yet."
           (set-buffer-modified-p nil))))
     scratch-buffer))
 
+(defun persp-switch-to-scratch-buffer ()
+  "Switch to the current perspective's scratch buffer.
+Create the scratch buffer if there isn't one yet."
+  (interactive)
+  (switch-to-buffer (persp-get-scratch-buffer)))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
@@ -308,6 +314,7 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "a") 'persp-add-buffer)
 (define-key perspective-map (kbd "A") 'persp-set-buffer)
 (define-key perspective-map (kbd "b") 'persp-switch-to-buffer)
+(define-key perspective-map (kbd "B") 'persp-switch-to-scratch-buffer)
 (define-key perspective-map (kbd "i") 'persp-import)
 (define-key perspective-map (kbd "n") 'persp-next)
 (define-key perspective-map (kbd "<right>") 'persp-next)

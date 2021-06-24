@@ -43,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `persp-switch-to-scratch-buffer`: interactive function to switch to the current perspective's scratch buffer, creating one if missing.
 - `persp-get-scratch-buffer`: utility function to properly get/create a scratch buffer.
 - `persp-forget-buffer`: disassociate buffer with perspective without the risk of killing it.  This balances `persp-add-buffer`.  Newly created buffers via `get-buffer-create` are rogue buffers not found in any perspective, this function allows to get back to that state.
 - `persp-maybe-kill-buffer`: designed as `kill-buffer-query-functions` hook to keep a perspective's last left buffer from being killed.
@@ -52,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `perspective-map`: Add binding `C-x x B` to call `persp-switch-to-scratch-buffer`.
 - `persp-other-buffer`: call `persp-get-scratch-buffer` to get/create a scratch buffer.
 - `persp-new`: call `persp-get-scratch-buffer` to get/create a scratch buffer.
 - `persp-switch`: remove duplicated code.  It's now possible to call `persp-new` either to get an existing perspective or to create a new one.
