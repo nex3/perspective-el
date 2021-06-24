@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `persp-new`: enable `initial-major-mode` only if the scratch buffer is in `fundamental-mode`.
 - `persp-new`: properly substitute command keys when inserting `initial-scratch-message` into scratch buffers.
 - `persp-new`: do not recreate existing perspectives.  This prevents from resetting perspectives to a state where in the perspective there's only the scratch buffer.
 - `persp-reset-windows`: set `switch-to-buffer-preserve-window-point` to `nil` before calling `delete-window`, that up to Emacs 27.2 updates `window-prev-buffers` of all windows, unless the former is turned off.

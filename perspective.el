@@ -557,7 +557,8 @@ buffer called \"*scratch* (NAME)\"."
   (or (gethash name (perspectives-hash))
       (make-persp :name name
         (switch-to-buffer (persp-scratch-buffer name))
-        (funcall initial-major-mode)
+        (when (eq major-mode 'fundamental-mode)
+          (funcall initial-major-mode))
         (when (and (zerop (buffer-size))
                    initial-scratch-message)
           (insert (substitute-command-keys initial-scratch-message))
