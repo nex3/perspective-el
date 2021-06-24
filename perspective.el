@@ -216,6 +216,23 @@ filtering in buffer display modes like ibuffer."
             (unless initial-persp
               (format " (%s)" name)))))
 
+(defun persp-get-scratch-buffer (&optional name)
+  "Return the \"*scratch* (NAME)\" buffer.
+Create it if the current perspective doesn't have one yet."
+  (let* ((scratch-buffer-name (persp-scratch-buffer name))
+         (scratch-buffer (get-buffer scratch-buffer-name)))
+    ;; Do not interfere with an existing scratch buffer's status.
+    (unless scratch-buffer
+      (setq scratch-buffer (get-buffer-create scratch-buffer-name))
+      (with-current-buffer scratch-buffer
+        (when (eq major-mode 'fundamental-mode)
+          (funcall initial-major-mode))
+        (when (and (zerop (buffer-size))
+                   initial-scratch-message)
+          (insert (substitute-command-keys initial-scratch-message))
+          (set-buffer-modified-p nil))))
+    scratch-buffer))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
@@ -556,13 +573,7 @@ The new perspective will start with only an `initial-major-mode'
 buffer called \"*scratch* (NAME)\"."
   (or (gethash name (perspectives-hash))
       (make-persp :name name
-        (switch-to-buffer (persp-scratch-buffer name))
-        (when (eq major-mode 'fundamental-mode)
-          (funcall initial-major-mode))
-        (when (and (zerop (buffer-size))
-                   initial-scratch-message)
-          (insert (substitute-command-keys initial-scratch-message))
-          (set-buffer-modified-p nil))
+        (switch-to-buffer (persp-get-scratch-buffer name))
         (persp-reset-windows))))
 
 (defun persp-reactivate-buffers (buffers)
