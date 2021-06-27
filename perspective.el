@@ -1396,12 +1396,12 @@ perspective beginning with the given letter."
   "A version of `other-buffer' which respects perspectives."
   (let ((other (other-buffer buffer visible-ok frame)))
     (if (member other (persp-current-buffers))
-	other
+        other
       ;; In cases where `other-buffer' produces a buffer that is not
       ;; part of the current perspective, select the current
       ;; perspective's *scratch* buffer, similar to the behaviour of
       ;; `other-buffer'.
-      (get-buffer-create (persp-scratch-buffer)))))
+      (persp-get-scratch-buffer))))
 
 
 ;;; --- perspective-aware buffer switchers

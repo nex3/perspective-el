@@ -52,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `persp-other-buffer`: call `persp-get-scratch-buffer` to get/create a scratch buffer.
 - `persp-new`: call `persp-get-scratch-buffer` to get/create a scratch buffer.
 - `persp-switch`: remove duplicated code.  It's now possible to call `persp-new` either to get an existing perspective or to create a new one.
 - `persp-mode`: add/remove `persp-maybe-kill-buffer` hook.
