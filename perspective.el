@@ -877,6 +877,15 @@ perspective and no others are killed."
     (persp-let-frame-parameters ((persp--last (persp-last)))
       (persp-switch (persp-find-some)))))
 
+(defun persp-kill-others ()
+  "Kill all perspectives except the current one."
+  (interactive)
+  (let ((self (persp-current-name)))
+    (when (yes-or-no-p (concat "Really kill all perspectives other than `" self "'? "))
+      (cl-loop for p in (persp-names)
+               when (not (string-equal p self)) do
+               (persp-kill p)))))
+
 (defun persp-rename (name)
   "Rename the current perspective to NAME."
   (interactive "sNew name: ")
