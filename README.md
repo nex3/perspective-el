@@ -1,5 +1,7 @@
 # Perspective for Emacs
 
+![Test perspective](https://github.com/nex3/perspective-el/actions/workflows/test-perspective.yml/badge.svg)
+
 ## Description
 
 The Perspective package provides multiple named workspaces (or "perspectives")

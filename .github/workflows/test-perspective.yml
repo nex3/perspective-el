@@ -1,0 +1,25 @@
+name: Perspective tests
+on: [push, pull_request]
+jobs:
+  test-perspective:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs-version:
+          - 27.2
+          - 27.1
+          - 26.3
+          - 25.3
+          - 24.4
+    steps:
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs-version }}
+      - uses: actions/checkout@v2
+      - name: Emacs version
+        run: |
+          emacs --version
+      - name: Run tests
+        run: |
+          make
