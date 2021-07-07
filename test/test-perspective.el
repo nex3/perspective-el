@@ -2079,6 +2079,37 @@ buffers into any perspective."
   (persp-test-kill-extra-buffers "*dummy*")
   (should (get-buffer-create "*scratch*")))
 
+(ert-deftest basic-persp-switch-to-scratch-buffer ()
+  (persp-test-with-persp
+    ;; currently in "main" perspective
+    (switch-to-buffer "*dummy*")
+    (should (get-buffer "*scratch*"))
+    (should (equal (buffer-name) "*dummy*"))
+    ;; switch to the perspective's scratch buffer
+    (persp-switch-to-scratch-buffer)
+    (should (equal (buffer-name) "*scratch*"))
+    (switch-to-buffer "*dummy*")
+    (should (kill-buffer "*scratch*"))
+    (should-not (get-buffer "*scratch*"))
+    ;; create and switch to the perspective's scratch buffer
+    (persp-switch-to-scratch-buffer)
+    (should (equal (buffer-name) "*scratch*"))
+    (persp-switch "A")
+    (switch-to-buffer "*dummy*")
+    (should (get-buffer "*scratch* (A)"))
+    (should (equal (buffer-name) "*dummy*"))
+    ;; switch to the perspective's scratch buffer
+    (persp-switch-to-scratch-buffer)
+    (should (equal (buffer-name) "*scratch* (A)"))
+    (switch-to-buffer "*dummy*")
+    (should (kill-buffer "*scratch* (A)"))
+    (should-not (get-buffer "*scratch* (A)"))
+    ;; create and switch to the perspective's scratch buffer
+    (persp-switch-to-scratch-buffer)
+    (should (equal (buffer-name) "*scratch* (A)"))
+    (should (kill-buffer "*dummy*"))
+    (should-not (get-buffer "*dummy*"))))
+
 (defmacro persp-test-make-sample-environment ()
   "Make a test environment with the following window layout:
 
