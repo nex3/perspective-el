@@ -1618,6 +1618,375 @@ has its scratch buffer set as `current-buffer'."
         (cl-loop for buf in (list A1 A2 B1 B2) do
                  (should-not (memq buf (persp-buffers (persp-curr)))))))))
 
+(ert-deftest basic-persp-get-scratch-buffer ()
+  "Verify that creating a new perspective also creates its own
+*scratch* buffer, if missing, or adds the existing one.  If
+created, expect the same as the startup *scratch* buffer.
+
+Enabling `persp-mode' shouldn't replace a missing *scratch*
+buffer, and `persp-new' shouldn't modify perspectives which
+already exist, re-creating *scratch* buffers or adding back
+existing ones, or resetting a perspective's list of buffer.
+
+Switching perspectives shouldn't re-create or add *scratch*
+buffers into any perspective."
+  (let ((default-scratch-message
+          (substitute-command-keys initial-scratch-message))
+        (dummy-buffer (get-buffer-create "*dummy*"))
+        scratch-buffer scratch-buffer-A)
+    ;; It's expected that `initial-scratch-message' contains a command
+    ;; key description.  We'll check if it's resolved to a name in the
+    ;; *scratch* buffers, like `default-scratch-message' should be.
+    (if (or (> emacs-major-version 25)
+            (and (= emacs-major-version 25) (>= emacs-minor-version 1)))
+        ;; Treat `initial-scratch-message' as a doc string.
+        (should-not (equal initial-scratch-message default-scratch-message))
+      ;; Treat `initial-scratch-message' as plain text.
+      (should (equal initial-scratch-message default-scratch-message)))
+    ;; Kill the *scratch* buffer.  We'll test if enabling `persp-mode'
+    ;; automatically re-creates it in the main perspective.
+    (should (buffer-live-p dummy-buffer))
+    (persp-test-kill-extra-buffers "*scratch*")
+    (persp-test-with-persp
+      ;; PERSPECTIVE / ACTION       | *scratch* | *scratch* (A) | *dummy* | NOTES
+      ;; -------------------------------------------------------------------------------------------------------
+      ;; main                       |           |               | main    | only main                   <- begin
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; main -> new A              |           |          A    | main    | add new *scratch* (A)
+      (persp-switch "A")
+      (should (setq scratch-buffer-A (persp-test-buffer-in-persps "*scratch* (A)" "A")))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; kill A -> main             |           |               | main    | kill *scratch* (A)
+      (persp-kill "A")
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; create *scratch*           |     -     |               | main    | new rogue *scratch*
+      (should (setq scratch-buffer (get-buffer-create "*scratch*")))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; main -> new A              |     -     |          A    | main    | add new *scratch* (A)
+      (persp-switch "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (setq scratch-buffer-A (persp-test-buffer-in-persps "*scratch* (A)" "A")))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill A -> main             |     -     |               | main    | kill *scratch* (A)
+      (persp-kill "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; create *scratch* (A)       |     -     |       -       | main    | new rogue *scratch* (A)
+      (should (setq scratch-buffer-A (get-buffer-create "*scratch* (A)")))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; main -> new A              |     -     |          A    | main    | add rogue *scratch* (A)
+      (persp-switch "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill A -> main             |     -     |               | main    | kill *scratch* (A)
+      (persp-kill "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; switch to *scratch* (A)    |     -     |    main       | main    | add new *scratch* (A)
+      (should (setq scratch-buffer-A (switch-to-buffer "*scratch* (A)")))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "main"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; main -> new A              |     -     |    main  A    | main    | share *scratch* (A)
+      (persp-switch "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "main" "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; add all of main to A       |     -     |    main  A    | main  A | share main buffers with A
+      (mapc #'persp-add-buffer (persp-get-buffers "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "main" "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill main                  |     -     |          A    |       A | keep shared buffers         <- end
+      (persp-kill "main")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill all scratch           |           |               |       A | only A                      <- begin
+      (mapc #'kill-buffer (persp-test-match-scratch-buffers))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; A -> new main              |  main     |               |       A | add new *scratch*
+      (persp-switch "main")
+      (should (setq scratch-buffer (persp-test-buffer-in-persps "*scratch*" "main")))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; kill main -> A             |           |               |       A | kill *scratch*
+      (persp-kill "main")
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; create *scratch* (A)       |           |       -       |       A | new rogue *scratch* (A)
+      (should (setq scratch-buffer-A (get-buffer-create "*scratch* (A)")))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; A -> new main              |  main     |       -       |       A | add new *scratch*
+      (persp-switch "main")
+      (should (setq scratch-buffer (persp-test-buffer-in-persps "*scratch*" "main")))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill main -> A             |           |       -       |       A | kill *scratch*
+      (persp-kill "main")
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; create *scratch*           |     -     |       -       |       A | new rogue *scratch*
+      (should (setq scratch-buffer (get-buffer-create "*scratch*")))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; A -> new main              |  main     |       -       |       A | add rogue *scratch*
+      (persp-switch "main")
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill main -> A             |           |       -       |       A | kill *scratch*
+      (persp-kill "main")
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; switch to *scratch*        |        A  |       -       |       A | add new *scratch*
+      (should (setq scratch-buffer (switch-to-buffer "*scratch*")))
+      (should (persp-test-buffer-in-persps scratch-buffer "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; A -> new main              |  main  A  |       -       |       A | share *scratch*
+      (persp-switch "main")
+      (should (persp-test-buffer-in-persps scratch-buffer "main" "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; add all of A to main       |  main  A  |       -       | main  A | share A buffers with main
+      (mapc #'persp-add-buffer (persp-get-buffers "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main" "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill A                     |  main     |       -       | main    | keep shared buffers         <- end
+      (persp-kill "A")
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill all scratch           |           |               | main    | only main                   <- begin
+      (mapc #'kill-buffer (persp-test-match-scratch-buffers))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; new A                      |           |          A    | main    | add new *scratch* (A)
+      (persp-new "A")
+      (should (setq scratch-buffer-A (persp-test-buffer-in-persps "*scratch* (A)" "A")))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; add *dummy* to A           |           |          A    | main  A | share *dummy*
+      (with-perspective "A"
+        (persp-add-buffer dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; kill all scratch           |           |               | main  A | reset state
+      (mapc #'kill-buffer (persp-test-match-scratch-buffers))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; re-create A                |           |               | main  A | nothing changes
+      (persp-new "A")
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; re-create main             |           |               | main  A | nothing changes
+      (persp-new "main")
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; create *scratch*           |     -     |               | main  A | new rogue *scratch*
+      (should (setq scratch-buffer (get-buffer-create "*scratch*")))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; create *scratch* (A)       |     -     |       -       | main  A | new rogue *scratch* (A)
+      (should (setq scratch-buffer-A (get-buffer-create "*scratch* (A)")))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; re-create A                |     -     |       -       | main  A | nothing changes
+      (persp-new "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; re-create main             |     -     |       -       | main  A | nothing changes
+      (persp-new "main")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; main -> A                  |     -     |       -       | main  A | nothing changes
+      (persp-switch "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; add all of main to A       |     -     |       -       | main  A | share main buffers with A
+      (mapc #'persp-add-buffer (persp-get-buffers "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill main                  |     -     |       -       |       A | keep shared buffers         <- end
+      (persp-kill "main")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill all scratch           |           |               |       A | only A                      <- begin
+      (mapc #'kill-buffer (persp-test-match-scratch-buffers))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; new main                   |  main     |               |       A | add new *scratch*
+      (persp-new "main")
+      (should (setq scratch-buffer (persp-test-buffer-in-persps "*scratch*" "main")))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; add *dummy* to main        |  main     |               | main  A | share *dummy*
+      (with-perspective "main"
+        (persp-add-buffer dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; kill all scratch           |           |               | main  A | reset state
+      (mapc #'kill-buffer (persp-test-match-scratch-buffers))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; re-create main             |           |               | main  A | nothing changes
+      (persp-new "main")
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; re-create A                |           |               | main  A | nothing changes
+      (persp-new "A")
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; create *scratch* (A)       |           |       -       | main  A | new rogue *scratch* (A)
+      (should (setq scratch-buffer-A (get-buffer-create "*scratch* (A)")))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; create *scratch*           |     -     |       -       | main  A | new rogue *scratch*
+      (should (setq scratch-buffer (get-buffer-create "*scratch*")))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; re-create main             |     -     |       -       | main  A | nothing changes
+      (persp-new "main")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; re-create A                |     -     |       -       | main  A | nothing changes
+      (persp-new "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; A -> main                  |     -     |       -       | main  A | nothing changes
+      (persp-switch "main")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; add all of A to main       |     -     |       -       | main  A | share A buffers with main
+      (mapc #'persp-add-buffer (persp-get-buffers "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill A                     |     -     |       -       | main    | keep shared buffers         <- end
+      (persp-kill "A")
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; kill all scratch           |           |               | main    | only main                   <- begin
+      (mapc #'kill-buffer (persp-test-match-scratch-buffers))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should-not (persp-test-match-scratch-buffers))
+      ;; main -> new A              |           |          A    | main    | add new *scratch* (A)
+      (persp-switch "A")
+      (should (setq scratch-buffer-A (persp-test-buffer-in-persps "*scratch* (A)" "A")))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; add all of main to A       |           |          A    | main  A | share main buffers with A
+      (mapc #'persp-add-buffer (persp-get-buffers "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; kill main                  |           |          A    |       A | keep shared buffers
+      (persp-kill "main")
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer-A))
+      ;; A -> new main              |  main     |          A    |       A | add new *scratch*
+      (persp-switch "main")
+      (should (setq scratch-buffer (persp-test-buffer-in-persps "*scratch*" "main")))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; add some buffers to main   |  main     |          A    | main  A | share most with main        <- end
+      (mapc #'persp-add-buffer (remq scratch-buffer-A (persp-get-buffers "A")))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; At this point, "*scratch*" and "*scratch* (A)" are brand new.
+      ;; The perspectives main and A, respectively, own the former and
+      ;; the latter.
+      ;; -------------------------------------------------------------------------------------------------------
+      ;; Verify if the "main" perspective scratch buffer is conformant
+      ;; to the startup scratch buffer.  Also verify if recreating the
+      ;; perspective duplicates the `initial-scratch-message'.
+      (persp-new "main")
+      (with-current-buffer scratch-buffer
+        (should-not (buffer-modified-p))
+        (should (eq major-mode initial-major-mode))
+        (should (equal (buffer-string) default-scratch-message)))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify if another perspective's scratch buffer is conformant,
+      ;; and if the `initial-scratch-message' is duplicated.
+      (persp-new "A")
+      (with-current-buffer scratch-buffer-A
+        (should-not (buffer-modified-p))
+        (should (eq major-mode initial-major-mode))
+        (should (equal (buffer-string) default-scratch-message)))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))))
+  ;; Cleanup.
+  (persp-test-kill-extra-buffers "*dummy*")
+  (should (get-buffer-create "*scratch*")))
+
 (defmacro persp-test-make-sample-environment ()
   "Make a test environment with the following window layout:
 
