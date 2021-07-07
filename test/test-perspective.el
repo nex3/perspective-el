@@ -1982,7 +1982,99 @@ buffers into any perspective."
       (should (persp-test-buffer-in-persps scratch-buffer "main"))
       (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
       (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
-      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify that `persp-get-scratch-buffer' does not automatically
+      ;; add scratch buffers to perspectives.
+      (with-perspective "main"
+        (setf (persp-current-buffers) (remq scratch-buffer (persp-current-buffers))))
+      (with-perspective "A"
+        (setf (persp-current-buffers) (remq scratch-buffer-A (persp-current-buffers))))
+      ;; Verify if `persp-get-scratch-buffer' gets the scratch buffers
+      ;; when calling it from the "main" perspective.
+      (with-perspective "main"
+        (should (eq scratch-buffer (persp-get-scratch-buffer)))
+        (should (eq scratch-buffer (persp-get-scratch-buffer "main")))
+        (should (eq scratch-buffer-A (persp-get-scratch-buffer "A"))))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify if `persp-get-scratch-buffer' gets the scratch buffers
+      ;; when calling it from another perspective.
+      (with-perspective "A"
+        (should (eq scratch-buffer-A (persp-get-scratch-buffer)))
+        (should (eq scratch-buffer (persp-get-scratch-buffer "main")))
+        (should (eq scratch-buffer-A (persp-get-scratch-buffer "A"))))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify that `persp-get-scratch-buffer' does not try to modify
+      ;; the "main" perspective's scratch buffer.
+      (with-perspective "main"
+        (with-current-buffer scratch-buffer
+          (erase-buffer)
+          (fundamental-mode))
+        (should (eq scratch-buffer (persp-get-scratch-buffer)))
+        (with-current-buffer scratch-buffer
+          (should (buffer-modified-p))
+          (should (zerop (buffer-size)))
+          (should (eq major-mode 'fundamental-mode))))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify that `persp-get-scratch-buffer' does not try to modify
+      ;; another perspective's scratch buffer.
+      (with-perspective "A"
+        (with-current-buffer scratch-buffer-A
+          (erase-buffer)
+          (fundamental-mode))
+        (should (eq scratch-buffer-A (persp-get-scratch-buffer)))
+        (with-current-buffer scratch-buffer-A
+          (should (buffer-modified-p))
+          (should (zerop (buffer-size)))
+          (should (eq major-mode 'fundamental-mode))))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify that `persp-get-scratch-buffer' created scratch buffer
+      ;; isn't automatically added to perspectives.  Try to create the
+      ;; buffers from the "main" perspective.
+      (should (kill-buffer scratch-buffer))
+      (should (kill-buffer scratch-buffer-A))
+      (should-not (persp-test-match-scratch-buffers))
+      (with-perspective "main"
+        (should (setq scratch-buffer (persp-get-scratch-buffer)))
+        (should (setq scratch-buffer-A (persp-get-scratch-buffer "A"))))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify that `persp-get-scratch-buffer' created scratch buffer
+      ;; isn't automatically added to perspectives.  Try to create the
+      ;; buffers from another perspective.
+      (should (kill-buffer scratch-buffer))
+      (should (kill-buffer scratch-buffer-A))
+      (should-not (persp-test-match-scratch-buffers))
+      (with-perspective "A"
+        (should (setq scratch-buffer (persp-get-scratch-buffer "main")))
+        (should (setq scratch-buffer-A (persp-get-scratch-buffer))))
+      (should (persp-test-buffer-in-persps scratch-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer-A))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      ;; Verify that `persp-get-scratch-buffer' created scratch buffer
+      ;; is conformant to the startup scratch buffer.
+      (with-current-buffer scratch-buffer
+        (should-not (buffer-modified-p))
+        (should (eq major-mode initial-major-mode))
+        (should (equal (buffer-string) default-scratch-message)))
+      (with-current-buffer scratch-buffer-A
+        (should-not (buffer-modified-p))
+        (should (eq major-mode initial-major-mode))
+        (should (equal (buffer-string) default-scratch-message)))))
   ;; Cleanup.
   (persp-test-kill-extra-buffers "*dummy*")
   (should (get-buffer-create "*scratch*")))
