@@ -7,7 +7,7 @@ Please follow the following procedures before opening a pull request.
 
 ** Run automated tests
 
-Perspective has a growing handful of tests. Please run them manually before [[https://travis-ci.org/nex3/perspective-el][Travis CI]] does.
+Perspective has a growing handful of tests. Please run them manually before [[https://github.com/nex3/perspective-el/actions][GitHub Actions]] does.
 
 From your ~perspective-el~ repository, run the following:
 
