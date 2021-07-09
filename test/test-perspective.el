@@ -129,6 +129,34 @@ deleted at cleanup."
   ;; no buffers should be open after all this
   (should (= 0 (length (persp-test-buffer-list-all)))))
 
+(ert-deftest basic-persp-header-line-format-default-value ()
+  "Disabling `persp-mode' should properly restore the default
+value of `header-line-format'.
+
+Updating `header-line-format' default value using a buffer
+local value of it is a mistake."
+  (let ((persp-show-modestring 'header)
+	(default-header-line-format (default-value 'header-line-format)))
+    ;; Since `persp-test-with-persp' may change in the future, do not
+    ;; use it.  We need to avoid switching to another buffer than the
+    ;; *dummy* buffer just before `persp-mode' is disabled.  For this
+    ;; test to work, a buffer with a locally modified header needs to
+    ;; be the current buffer when `persp-mode' is disabled.
+    (persp-mode 1)
+    (should (switch-to-buffer "*dummy*"))
+    (should (equal (buffer-name) "*dummy*"))
+    (setq header-line-format "custom header")
+    ;; This is just being paranoid about the header's default value.
+    (should-not (equal header-line-format default-header-line-format))
+    (should-not (equal header-line-format (default-value 'header-line-format)))
+    (persp-mode -1)
+    (should (equal (buffer-name) "*dummy*"))
+    (should (equal header-line-format "custom header"))
+    (let ((updated-header-line-format (default-value 'header-line-format)))
+      (should (equal updated-header-line-format default-header-line-format)))
+    ;; Cleanup.
+    (kill-buffer "*dummy*")))
+
 (ert-deftest basic-persp-creation-deletion ()
   (persp-test-with-persp
     (should (equal (list "main") (persp-names)))
