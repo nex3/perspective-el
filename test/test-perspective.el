@@ -639,16 +639,59 @@ local value of it is a mistake."
     (kill-buffer "*dummy*")))
 
 (ert-deftest basic-persp-creation-deletion ()
+  "Switching to a non-existing perspective should create the new
+perspective.  Switching to an existing perspective should not
+duplicate the perspective.  Creating a new perspective should
+not automatically switch to the perspective."
   (persp-test-with-persp
-    (should (equal (list "main") (persp-names)))
+    (should (equal (persp-current-name) "main"))
+    (should (equal (list "main") (sort (persp-names) #'string-lessp)))
+    ;; test if switching to a non-existing perspective also creates it
     (persp-switch "A")
+    (should (equal (persp-current-name) "A"))
     (should (equal (list "A" "main") (sort (persp-names) #'string-lessp)))
-    (persp-switch "B")
+    ;; test if creating a new perspective switches to it automatically
+    (persp-new "B")
+    (should (equal (persp-current-name) "A"))
     (should (equal (list "A" "B" "main") (sort (persp-names) #'string-lessp)))
-    (persp-kill "A")
+    ;; test if switching to an existing perspective duplicates it
+    (persp-switch "B")
+    (should (equal (persp-current-name) "B"))
+    (should (equal (list "A" "B" "main") (sort (persp-names) #'string-lessp)))
+    (persp-switch "A")
+    (should (equal (persp-current-name) "A"))
+    (should (equal (list "A" "B" "main") (sort (persp-names) #'string-lessp)))
+    ;; kill the current perspective to see where we land
+    (persp-kill (persp-current-name))
+    (should (equal (persp-current-name) "B"))
     (should (equal (list "B" "main") (sort (persp-names) #'string-lessp)))
-    (persp-kill "B")
-    (should (equal (list "main") (persp-names)))))
+    (persp-kill (persp-current-name))
+    (should (equal (persp-current-name) "main"))
+    (should (equal (list "main") (sort (persp-names) #'string-lessp)))
+    ;; sanity checks before killing the main perspective
+    (should (get-buffer "*Messages*"))
+    (should (get-buffer-create "*scratch*"))
+    (persp-set-buffer (get-buffer "*scratch*"))
+    (let ((ert-buffer (get-buffer "*ert*"))
+          (msg-buffer (get-buffer "*Messages*")))
+      ;; interactively run ert requires the *ert* buffer
+      (setf (persp-current-buffers) (remq ert-buffer (persp-current-buffers)))
+      ;; the *Messages* buffer is also ert's requiremet
+      (setf (persp-current-buffers) (remq msg-buffer (persp-current-buffers)))
+      ;; *scratch* is in main, not *ert* and *Messages*
+      (should (persp-test-buffer-in-persps "*scratch*" "main"))
+      (should-not (persp-test-buffer-in-persps ert-buffer "main"))
+      (should-not (persp-test-buffer-in-persps msg-buffer "main"))
+      ;; kill the main perspective except above buffers
+      (persp-kill (persp-current-name))
+      ;; the *scratch* buffer should have been killed
+      (should-not (get-buffer "*scratch*"))
+      ;; *ert* is needed by interactively run tests
+      (should (eq ert-buffer (get-buffer "*ert*")))
+      ;; the *Messages* buffer is needed by ert
+      (should (eq msg-buffer (get-buffer "*Messages*")))))
+  ;; cleanup
+  (should (get-buffer-create "*scratch*")))
 
 (ert-deftest basic-persp-switching ()
   (persp-test-with-persp
