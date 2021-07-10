@@ -362,13 +362,17 @@ carefully preserving window layouts if Emacs just throws them away on a `M-x
 compile`? The answer is to fix the broken defaults. This is fairly easy:
 
 ```emacs-lisp
-(setq display-buffer-alist
-      '((".*"
-         (display-buffer-reuse-window display-buffer-same-window)
-         (reusable-frames . t))))
+(customize-set-variable 'display-buffer-base-action
+  '((display-buffer-reuse-window display-buffer-same-window)
+    (reusable-frames . t)))
 
-(setq even-window-sizes nil)  ; display-buffer hint: avoid resizing
+(customize-set-variable 'even-window-sizes nil)     ; avoid resizing
 ```
+
+(An earlier version of this hint modified `display-buffer-alist` instead of
+`display-buffer-base-action`. This was [too
+aggressive](https://debbugs.gnu.org/cgi/bugreport.cgi?bug=49069#25) and can
+impact packages which may legitimately want to split windows.)
 
 The Emacs framework responsible for "pop-up" windows is `display-buffer`. The
 relevant [section of the Emacs
