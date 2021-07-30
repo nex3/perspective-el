@@ -791,19 +791,20 @@ See also `persp-switch' and `persp-remove-buffer'."
       (unless (persp-is-current-buffer buffer)
         (push buffer (persp-current-buffers))))))
 
-(defun persp-set-buffer (buffer-name)
-  "Associate BUFFER-NAME with the current perspective and remove it from any other."
+(defun persp-set-buffer (buffer-or-name)
+  "Associate BUFFER-OR-NAME with the current perspective and remove it from any other."
   (interactive
    (list
     (let ((read-buffer-function nil))
       (read-buffer "Set buffer to perspective: "))))
-  (cond ((get-buffer buffer-name)
-         (persp-add-buffer buffer-name)
-         (cl-loop for other-persp = (persp-buffer-in-other-p (get-buffer buffer-name))
-                  while other-persp
-                  do (with-perspective (cdr other-persp)
-                                       (persp-remove-buffer buffer-name))))
-        (t (message "buffer %s doesn't exist" buffer-name))))
+  (let ((buffer (get-buffer buffer-or-name)))
+    (if (not (buffer-live-p buffer))
+        (message "buffer %s doesn't exist" buffer-or-name)
+      (persp-add-buffer buffer)
+      (cl-loop for other-persp = (persp-buffer-in-other-p buffer)
+               while other-persp
+               do (with-perspective (cdr other-persp)
+                    (persp-remove-buffer buffer))))))
 
 (cl-defun persp-buffer-in-other-p (buffer)
   "Returns nil if BUFFER is only in the current perspective.

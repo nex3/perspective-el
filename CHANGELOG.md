@@ -41,6 +41,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `persp-get-buffers`: get any perspective's list of buffers.
 
 
+### Changed
+
+- `persp-set-buffer`: follow the coding style of `persp-add-buffer`.
+
+
 ### Fixed
 
 - `persp-add-buffer`: discard unexisting buffer as argument.
