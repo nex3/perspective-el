@@ -777,17 +777,19 @@ create a new main perspective and return \"main\"."
          :point-marker (point-marker)))
       persp-initial-frame-name)))
 
-(defun persp-add-buffer (buffer)
-  "Associate BUFFER with the current perspective.
+(defun persp-add-buffer (buffer-or-name)
+  "Associate BUFFER-OR-NAME with the current perspective.
 
 See also `persp-switch' and `persp-remove-buffer'."
   (interactive
    (list
     (let ((read-buffer-function nil))
       (read-buffer "Add buffer to perspective: "))))
-  (let ((buffer (get-buffer buffer)))
-    (unless (persp-is-current-buffer buffer)
-      (push buffer (persp-current-buffers)))))
+  (let ((buffer (get-buffer buffer-or-name)))
+    (if (not (buffer-live-p buffer))
+        (message "buffer %s doesn't exist" buffer-or-name)
+      (unless (persp-is-current-buffer buffer)
+        (push buffer (persp-current-buffers))))))
 
 (defun persp-set-buffer (buffer-name)
   "Associate BUFFER-NAME with the current perspective and remove it from any other."

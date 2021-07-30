@@ -42,6 +42,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `persp-add-buffer`: discard unexisting buffer as argument.
 - Added a workaround for potential problems caused by recursive minibuffer use.
 
 
