@@ -770,6 +770,56 @@ Expect the list of a perspective's live buffers."
   ;; cleanup
   (persp-test-kill-extra-buffers " *foo*"))
 
+(ert-deftest basic-persp-add-buffer ()
+  "Test that `persp-add-buffer' shares buffers between perspectives.
+A non-existing buffer passed as argument should be discarded."
+  ;; Starting conditions.
+  (persp-test-kill-extra-buffers "*dummy*")
+  (persp-test-with-persp
+    (let ((dummy-buffer (get-buffer-create "*dummy*")))
+      (should (buffer-live-p dummy-buffer))
+      ;; Add the new *dummy* buffer to each perspective.
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (persp-add-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (persp-switch "A")
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (persp-add-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (persp-switch "B")
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (persp-add-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A" "B"))
+      ;; Verify that perspectives only stored buffers.
+      (should (cl-every #'bufferp (persp-get-buffers "A")))
+      (should (cl-every #'bufferp (persp-get-buffers "B")))
+      (should (cl-every #'bufferp (persp-get-buffers "main")))
+      ;; Don't add the same buffer more than one time.
+      (persp-add-buffer dummy-buffer)
+      ;; The *dummy* buffer should be a shared buffer.
+      (should (eq 1 (cl-count dummy-buffer (persp-get-buffers "A"))))
+      (should (eq 1 (cl-count dummy-buffer (persp-get-buffers "B"))))
+      (should (eq 1 (cl-count dummy-buffer (persp-get-buffers "main"))))
+      ;; Kill the other perspectives sharing *dummy*.
+      (persp-kill "A")
+      (persp-kill "B")
+      ;; The *dummy* buffer should still be there.
+      (should (buffer-live-p dummy-buffer))
+      (should (persp-is-current-buffer dummy-buffer))
+      ;; Kill the *dummy* buffer (also cleanup).
+      (persp-remove-buffer dummy-buffer)
+      (should-not (buffer-live-p dummy-buffer))
+      (should-not (persp-is-current-buffer dummy-buffer))
+      ;; Try to add an unexisting buffer.
+      (let ((buffers (copy-sequence (persp-current-buffers))))
+        (persp-add-buffer "*dummy*")
+        (should (equal buffers (persp-current-buffers)))
+        ;; Try to add a killed buffer.
+        (persp-add-buffer dummy-buffer)
+        (should (equal buffers (persp-current-buffers))))))
+  ;; Forced cleanup when tests failed.
+  (persp-test-kill-extra-buffers "*dummy*"))
+
 (ert-deftest basic-persp-switching ()
   (persp-test-with-persp
     (persp-test-with-temp-buffers (A1 A2 B1 B2 B3)
