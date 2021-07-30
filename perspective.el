@@ -933,6 +933,25 @@ copied across frames."
         (let ((persp (gethash name (perspectives-hash))))
           (if persp (cl-return-from persp-all-get (persp-buffers persp))))))))
 
+(defun persp-get-buffers (&optional persp-or-name frame)
+  "Return the list of PERSP-OR-NAME buffers in FRAME.
+If PERSP-OR-NAME isn't given or nil use the current perspective.
+If FRAME isn't nil, fetch PERSP-OR-NAME in FRAME, otherwise stay
+in the selected frame.
+
+Uses `persp-current-buffers' as backhand.
+
+See also `persp-all-get' to get buffers from all frames."
+  (let ((name (if (stringp persp-or-name)
+                  persp-or-name
+                (persp-name (or persp-or-name (persp-curr)))))
+        buffers)
+    (with-selected-frame (or frame (selected-frame))
+      (when (member name (persp-names))
+        (with-perspective name
+          (setq buffers (persp-current-buffers)))))
+    buffers))
+
 (defun persp-read-buffer (prompt &optional def require-match predicate)
   "A replacement for the built-in `read-buffer', meant to be used with `read-buffer-function'.
 Return the name of the buffer selected, only selecting from buffers

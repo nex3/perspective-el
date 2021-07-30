@@ -31,6 +31,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `persp-test-with-persp`: verify that a `*scratch* (NAME)` buffer exists before killing it.
 
 
+### Added
+
+- `persp-get-buffers`: get any perspective's list of buffers.
+
+
 ### Fixed
 
 - Added a workaround for potential problems caused by recursive minibuffer use.
