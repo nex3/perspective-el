@@ -693,6 +693,46 @@ not automatically switch to the perspective."
   ;; cleanup
   (should (get-buffer-create "*scratch*")))
 
+(ert-deftest basic-persp-get-buffers ()
+  "Test `persp-get-buffers'.
+Expect the list of a perspective's buffers."
+  (persp-test-with-persp
+    ;; buffers whose name is special should be listed
+    (let ((special-buffer (get-buffer-create " *foo*")))
+      (should (buffer-live-p special-buffer))
+      (persp-add-buffer special-buffer)
+      (let ((buffers (copy-sequence (persp-buffers (persp-curr)))))
+        (should (equal buffers (persp-get-buffers (persp-curr))))
+        (should (equal buffers (persp-get-buffers "main")))
+        (should (equal buffers (persp-current-buffers)))
+        (should (equal buffers (persp-get-buffers)))
+        (should (memq special-buffer buffers)))
+      (persp-switch "A")
+      (persp-add-buffer special-buffer)
+      (let ((buffers (copy-sequence (persp-buffers (persp-curr)))))
+        (should (equal buffers (persp-get-buffers (persp-curr))))
+        (should (equal buffers (persp-get-buffers "A")))
+        (should (equal buffers (persp-current-buffers)))
+        (should (equal buffers (persp-get-buffers)))
+        (should (memq special-buffer buffers)))
+      (persp-switch "B")
+      (persp-add-buffer special-buffer)
+      (let ((buffers (copy-sequence (persp-buffers (persp-curr)))))
+        (should (equal buffers (persp-get-buffers (persp-curr))))
+        (should (equal buffers (persp-get-buffers "B")))
+        (should (equal buffers (persp-current-buffers)))
+        (should (equal buffers (persp-get-buffers)))
+        (should (memq special-buffer buffers)))
+      (persp-switch "main")
+      (should (memq special-buffer (persp-get-buffers)))
+      (should (memq special-buffer (persp-get-buffers "A")))
+      (should (memq special-buffer (persp-get-buffers "B")))
+      (should (equal (persp-get-buffers) (persp-get-buffers "main")))
+      (should-not (equal (persp-get-buffers) (persp-get-buffers "A")))
+      (should-not (equal (persp-get-buffers "A") (persp-get-buffers "B")))))
+  ;; cleanup
+  (persp-test-kill-extra-buffers " *foo*"))
+
 (ert-deftest basic-persp-switching ()
   (persp-test-with-persp
     (persp-test-with-temp-buffers (A1 A2 B1 B2 B3)
