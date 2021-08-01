@@ -733,6 +733,43 @@ Expect the list of a perspective's buffers."
   ;; cleanup
   (persp-test-kill-extra-buffers " *foo*"))
 
+(ert-deftest basic-persp-get-buffer-names ()
+  "Test `persp-get-buffer-names'.
+Expect the list of a perspective's live buffers."
+  (persp-test-with-persp
+    ;; buffers whose name is special should be filtered
+    (let ((special-buffer (get-buffer-create " *foo*")))
+      (should (buffer-live-p special-buffer))
+      (persp-add-buffer special-buffer)
+      (let ((buffers (copy-sequence (persp-current-buffer-names))))
+        (should (equal buffers (persp-get-buffer-names (persp-curr))))
+        (should (equal buffers (persp-get-buffer-names "main")))
+        (should (equal buffers (persp-get-buffer-names)))
+        (should-not (memq special-buffer buffers)))
+      (persp-switch "A")
+      (persp-add-buffer special-buffer)
+      (let ((buffers (copy-sequence (persp-current-buffer-names))))
+        (should (equal buffers (persp-get-buffer-names (persp-curr))))
+        (should (equal buffers (persp-get-buffer-names "A")))
+        (should (equal buffers (persp-get-buffer-names)))
+        (should-not (memq special-buffer buffers)))
+      (persp-switch "B")
+      (persp-add-buffer special-buffer)
+      (let ((buffers (copy-sequence (persp-current-buffer-names))))
+        (should (equal buffers (persp-get-buffer-names (persp-curr))))
+        (should (equal buffers (persp-get-buffer-names "B")))
+        (should (equal buffers (persp-get-buffer-names)))
+        (should-not (memq special-buffer buffers)))
+      (persp-switch "main")
+      (should-not (memq special-buffer (persp-get-buffer-names)))
+      (should-not (memq special-buffer (persp-get-buffer-names "A")))
+      (should-not (memq special-buffer (persp-get-buffer-names "B")))
+      (should (equal (persp-get-buffer-names) (persp-get-buffer-names "main")))
+      (should-not (equal (persp-get-buffer-names) (persp-get-buffer-names "A")))
+      (should-not (equal (persp-get-buffer-names "A") (persp-get-buffer-names "B")))))
+  ;; cleanup
+  (persp-test-kill-extra-buffers " *foo*"))
+
 (ert-deftest basic-persp-switching ()
   (persp-test-with-persp
     (persp-test-with-temp-buffers (A1 A2 B1 B2 B3)

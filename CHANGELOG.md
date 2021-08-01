@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests added
 
+- `basic-persp-get-buffer-names`: evaluate `persp-get-buffer-names`.
 - `basic-persp-get-buffers`: evaluate `persp-get-buffers`.
 - `basic-persp-test-buffer-in-persps`: evaluate `persp-test-buffer-in-persps`.
 - `persp-test-buffer-in-persps`: utility function to verify that a buffer is in specified perspectives only.
