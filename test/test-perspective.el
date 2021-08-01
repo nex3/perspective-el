@@ -820,6 +820,52 @@ A non-existing buffer passed as argument should be discarded."
   ;; Forced cleanup when tests failed.
   (persp-test-kill-extra-buffers "*dummy*"))
 
+(ert-deftest basic-persp-set-buffer ()
+  "Test that `persp-set-buffer' doesn't share buffers between perspectives.
+A non-existing buffer passed as argument should be discarded."
+  ;; Starting conditions.
+  (persp-test-kill-extra-buffers "*dummy*")
+  (persp-test-with-persp
+    (let ((dummy-buffer (get-buffer-create "*dummy*")))
+      (should (buffer-live-p dummy-buffer))
+      ;; Set the new *dummy* buffer in each perspective.
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (persp-set-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (persp-switch "A")
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (persp-set-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (persp-switch "B")
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (persp-set-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "B"))
+      ;; Verify that perspectives only stored buffers.
+      (should (cl-every #'bufferp (persp-get-buffers "A")))
+      (should (cl-every #'bufferp (persp-get-buffers "B")))
+      (should (cl-every #'bufferp (persp-get-buffers "main")))
+      ;; Don't add the same buffer more than one time.
+      (persp-set-buffer dummy-buffer)
+      ;; The *dummy* buffer shan't be a shared buffer.
+      (should (eq 0 (cl-count dummy-buffer (persp-get-buffers "A"))))
+      (should (eq 1 (cl-count dummy-buffer (persp-get-buffers "B"))))
+      (should (eq 0 (cl-count dummy-buffer (persp-get-buffers "main"))))
+      ;; Kill the other perspectives except the main.
+      (persp-kill "A")
+      (persp-kill "B")
+      ;; Verify that *dummy* has been killed.
+      (should-not (buffer-live-p dummy-buffer))
+      (should-not (persp-is-current-buffer dummy-buffer))
+      ;; Try to set an unexisting buffer.
+      (let ((buffers (copy-sequence (persp-current-buffers))))
+        (persp-set-buffer "*dummy*")
+        (should (equal buffers (persp-current-buffers)))
+        ;; Try to set a killed buffer.
+        (persp-set-buffer dummy-buffer)
+        (should (equal buffers (persp-current-buffers))))))
+  ;; Forced cleanup when tests failed.
+  (persp-test-kill-extra-buffers "*dummy*"))
+
 (ert-deftest basic-persp-switching ()
   (persp-test-with-persp
     (persp-test-with-temp-buffers (A1 A2 B1 B2 B3)

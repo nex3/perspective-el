@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests added
 
+- `basic-persp-set-buffer`: evaluate `persp-set-buffer`.
 - `basic-persp-add-buffer`: evaluate `persp-add-buffer`.
 - `basic-persp-get-buffer-names`: evaluate `persp-get-buffer-names`.
 - `basic-persp-get-buffers`: evaluate `persp-get-buffers`.
