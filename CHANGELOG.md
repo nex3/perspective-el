@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `persp-get-buffer-names`: get any perspective's list of live buffers.
 - `persp-get-buffers`: get any perspective's list of buffers.
 
 

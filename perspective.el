@@ -941,7 +941,8 @@ in the selected frame.
 
 Uses `persp-current-buffers' as backhand.
 
-See also `persp-all-get' to get buffers from all frames."
+See also `persp-get-buffer-names' to get only live buffers.  See
+`persp-all-get' to get buffers from all frames."
   (let ((name (if (stringp persp-or-name)
                   persp-or-name
                 (persp-name (or persp-or-name (persp-curr)))))
@@ -950,6 +951,25 @@ See also `persp-all-get' to get buffers from all frames."
       (when (member name (persp-names))
         (with-perspective name
           (setq buffers (persp-current-buffers)))))
+    buffers))
+
+(defun persp-get-buffer-names (&optional persp-or-name frame)
+  "Return the list of PERSP-OR-NAME live buffers in FRAME.
+If PERSP-OR-NAME isn't given or nil use the current perspective.
+If FRAME isn't nil, fetch PERSP-OR-NAME in FRAME, otherwise stay
+in the selected frame.
+
+Uses `persp-current-buffer-names' as backhand.
+
+See also `persp-get-buffers' to get all buffers."
+  (let ((name (if (stringp persp-or-name)
+                  persp-or-name
+                (persp-name (or persp-or-name (persp-curr)))))
+        buffers)
+    (with-selected-frame (or frame (selected-frame))
+      (when (member name (persp-names))
+        (with-perspective name
+          (setq buffers (persp-current-buffer-names)))))
     buffers))
 
 (defun persp-read-buffer (prompt &optional def require-match predicate)
