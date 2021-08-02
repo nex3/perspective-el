@@ -819,9 +819,11 @@ See also `persp-switch' and `persp-remove-buffer'."
     (if (not (buffer-live-p buffer))
         (message "buffer %s doesn't exist" buffer-or-name)
       (persp-add-buffer buffer)
-      (cl-loop for other-persp = (persp-buffer-in-other-p buffer)
-               while other-persp
-               do (with-perspective (cdr other-persp)
+      ;; Do not use the combination "while `persp-buffer-in-other-p'",
+      ;; if the buffer is not removed from other perspectives, it will
+      ;; go into an infinite loop.
+      (cl-loop for other-persp in (remove (persp-current-name) (persp-all-names))
+               do (with-perspective other-persp
                     (persp-remove-buffer buffer))))))
 
 (cl-defun persp-buffer-in-other-p (buffer)
@@ -853,6 +855,62 @@ Prefers perspectives in the selected frame."
           (persp-switch (cdr other-persp)))
         (switch-to-buffer buffer)))))
 
+(defun persp-maybe-kill-buffer ()
+  "Don't kill a buffer if it's the only buffer in a perspective.
+
+This is the default behaviour of `kill-buffer'.  Perspectives
+with only one buffer should keep it alive to prevent adding a
+buffer from another perspective, replacing the killed buffer.
+
+Will also cleanup killed buffers form each perspective's list
+of buffers containing the buffer to be killed.
+
+This is a hook for `kill-buffer-query-functions'.  Don't call
+this directly, otherwise the current buffer may be removed or
+killed from perspectives.
+
+See also `persp-remove-buffer'."
+  ;; List candidates where the buffer to be killed should be removed
+  ;; instead, whom are perspectives with more than one buffer.  This
+  ;; is to allow the buffer to live for perspectives that have it as
+  ;; their only buffer.
+  (persp-protect
+    (let* ((buffer (current-buffer))
+           (bufstr (buffer-name buffer))
+           candidates-for-removal candidates-for-keeping)
+      (dolist (name (persp-names))
+        (let ((buffer-names (persp-get-buffer-names name)))
+          (when (member bufstr buffer-names)
+            (if (cdr buffer-names)
+                (push name candidates-for-removal)
+              ;; We use a list for debugging purposes, a simple bool
+              ;; can suffice for what we are doing here.
+              (push name candidates-for-keeping)))))
+      (cond
+       ;; When there aren't perspectives with the buffer as the only
+       ;; buffer, it can be killed safely.  Also cleanup killed ones
+       ;; found in perspectives listing the buffer to be killed.
+       ((not candidates-for-keeping)
+        ;; Switching to a perspective that isn't the current, should
+        ;; automatically cleanup previously killed buffers which are
+        ;; still in the perspective's list of buffers.  Removing the
+        ;; buffer to be killed should also keep the list clean.
+        (dolist (name candidates-for-removal)
+          (with-perspective name
+            ;; remove the buffer that has to be killed from the list
+            (setf (persp-current-buffers) (remq buffer (persp-current-buffers)))))
+        t)
+       ;; When a perspective have the buffer as the only buffer, the
+       ;; buffer should not be killed, but removed from perspectives
+       ;; that have more than one buffer.  To remove the buffer, all
+       ;; that's needed is `persp-remove-buffer' while the buffer is
+       ;; kept alive in at least one perspective.
+       (candidates-for-removal
+        (dolist (name candidates-for-removal)
+          (with-perspective name
+            (persp-remove-buffer buffer)))
+        nil)))))
+
 (defun persp-remove-buffer (buffer)
   "Disassociate BUFFER with the current perspective.
 
@@ -861,7 +919,16 @@ See also `persp-switch' and `persp-add-buffer'."
    (list (funcall persp-interactive-completion-function "Remove buffer from perspective: " (persp-current-buffer-names))))
   (setq buffer (when buffer (get-buffer buffer)))
   (cond ((not (buffer-live-p buffer)))
-        ;; Only kill the buffer if no other perspectives are using it
+        ;; Do not kill or remove a buffer if the perspective will then
+        ;; switch to the buffer of another perspective.  It may happen
+        ;; when the buffer is the perspective's last left buffer or if
+        ;; the next candidate is a perspective's special buffer.  This
+        ;; could not be enforced when a perspective is killed.
+        ((and (persp-is-current-buffer buffer)
+              (memq 'persp-maybe-kill-buffer kill-buffer-query-functions)
+              (not (remove (buffer-name buffer) (persp-current-buffer-names))))
+         (setq buffer nil))
+        ;; Only kill the buffer if no other perspectives are using it.
         ((not (persp-buffer-in-other-p buffer))
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
@@ -894,10 +961,12 @@ Killing a perspective means that all buffers associated with that
 perspective and no others are killed."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (persp-current-name) t)))
+  (remove-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
   (with-perspective name
     (run-hooks 'persp-killed-hook)
     (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
+  (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
   (remhash name (perspectives-hash))
   (when (boundp 'persp--xref-marker-ring) (remhash name persp--xref-marker-ring))
   (persp-update-modestring)
@@ -1165,6 +1234,7 @@ named collections of buffers and window configurations."
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'delete-frame-functions 'persp-delete-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
+        (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
         (setf (persp-current-buffers) (buffer-list))
@@ -1174,6 +1244,7 @@ named collections of buffers and window configurations."
     (remove-hook 'delete-frame-functions 'persp-delete-frame)
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
     (remove-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
+    (remove-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
     (setq read-buffer-function nil)
     (set-frame-parameter nil 'persp--hash nil)
     (setq global-mode-string (delete '(:eval (persp-mode-line)) global-mode-string))
