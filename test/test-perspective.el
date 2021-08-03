@@ -47,17 +47,23 @@ perspectives and open buffers."
   `(progn
      (persp-mode 1)
      ,@body
-     ;; get rid of perspective-specific *scratch* buffers first
-     (mapc (lambda (persp)
-             ;; `get-buffer' should suffice here, there's no need to
-             ;; also call `buffer-live-p' when a string is passed as
-             ;; argument to the former, but we do it anyway ;)
-             (let* ((scratch-name (format "*scratch* (%s)" persp))
-                    (scratch-buffer (get-buffer scratch-name)))
-               (when (buffer-live-p scratch-buffer)
-                 (kill-buffer scratch-buffer))))
-           (delete persp-initial-frame-name (persp-names)))
+     (let ((other-persps (delete persp-initial-frame-name (persp-names))))
+       ;; Kill other perspectives than the main perspective to get rid
+       ;; of buffers that are not found in the main perspective.
+       (mapc #'persp-kill other-persps)
+       ;; Then get rid of perspective-specific *scratch* buffers which
+       ;; have become part of the main perspective.
+       (mapc (lambda (persp)
+               ;; `get-buffer' should suffice here, there's no need to
+               ;; also call `buffer-live-p' when a string is passed as
+               ;; argument to the former, but we do it anyway ;)
+               (let* ((scratch-name (format "*scratch* (%s)" persp))
+                      (scratch-buffer (get-buffer scratch-name)))
+                 (when (buffer-live-p scratch-buffer)
+                   (kill-buffer scratch-buffer))))
+             other-persps))
      (persp-mode -1)
+     ;; Remove live buffers that are not temporaries.
      (mapc #'kill-buffer (persp-test-buffer-list-all))))
 
 (defmacro persp-test-with-temp-buffers (vars &rest body)
