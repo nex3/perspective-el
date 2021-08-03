@@ -129,6 +129,93 @@ deleted at cleanup."
   ;; no buffers should be open after all this
   (should (= 0 (length (persp-test-buffer-list-all)))))
 
+(ert-deftest basic-persp-test-with-persp ()
+  "Test `persp-test-with-persp'.
+
+When cleaning up, don't assume there's a \"*scratch* (NAME)\" for
+every perspective NAME still existing before the cleanup.  That
+may cause `kill-buffer' to fail passing a non-existent buffer.
+
+Buffers like \"*dummy* (NAME)\" should not be killed just because
+they follow the pattern \"*scratch* (NAME)\".
+
+Buffers should always be killed when only found in perspectives
+that are not the main perspective."
+  (unwind-protect
+      (persp-test-with-persp
+        ;; Summary before exiting `persp-test-with-persp':
+        ;;
+        ;; main: *dummy*, *dummy* (A), *scratch*, *scratch* (A), *scratch* (C)
+        ;;    A:          *dummy* (A)
+        ;;    B:          *dummy* (B)
+        ;;    C is killed before the cleanup
+        ;;    D:                                  *scratch* (D)
+        ;;
+        ;; Expected buffers after `persp-test-with-persp' cleanup:
+        ;;
+        ;;       *dummy*, *dummy* (A), *scratch*, *scratch* (C)
+        ;;
+        ;; *scratch* (A) is killed during cleanup, because perspective
+        ;; A exists before the cleanup, instead *scratch* (C) will not
+        ;; be killed, because perspective C has been killed before the
+        ;; cleanup.  There should be no attempt killing *scratch* (B),
+        ;; since it's non-existent and *scratch* (D) is killed killing
+        ;; perspective D.  *dummy* (A) persists, it is shared with the
+        ;; main perspective, instead *dummy* (B) is killed killing the
+        ;; perspective B, it's not shared with the main perspective.
+        (let ((dummy-buffer (get-buffer-create "*dummy*"))
+              (dummy-buffer-A (get-buffer-create "*dummy* (A)"))
+              (dummy-buffer-B (get-buffer-create "*dummy* (B)")))
+          (should persp-mode)
+          (should (buffer-live-p dummy-buffer))
+          (should (buffer-live-p dummy-buffer-A))
+          (should (buffer-live-p dummy-buffer-B))
+          (should (get-buffer-create "*scratch*"))
+          (persp-set-buffer (get-buffer "*scratch*"))
+          (persp-switch "A")
+          (persp-set-buffer dummy-buffer-A)
+          (should (get-buffer "*scratch* (A)"))
+          (persp-switch "B")
+          (persp-set-buffer dummy-buffer-B)
+          (should (get-buffer "*scratch* (B)"))
+          (persp-switch "C")
+          (persp-set-buffer dummy-buffer)
+          (should (get-buffer "*scratch* (C)"))
+          (persp-switch "D")
+          (should (get-buffer "*scratch* (D)"))
+          (persp-switch "main")
+          (persp-add-buffer dummy-buffer)
+          (persp-add-buffer dummy-buffer-A)
+          (should (kill-buffer "*scratch* (B)"))
+          (should-not (get-buffer "*scratch* (B)"))
+          (persp-set-buffer (get-buffer "*scratch* (A)"))
+          (persp-set-buffer (get-buffer "*scratch* (C)"))
+          (persp-kill "C")))
+    (should-not persp-mode)
+    ;; Buffers found only in the main perspective or shared with main.
+    (should (get-buffer "*dummy*"))
+    (should (get-buffer "*scratch*"))
+    (should (get-buffer "*dummy* (A)"))
+    ;; Buffers found in the main perspective while perspective NAME is
+    ;; killed before the cleanup.
+    (should (get-buffer "*scratch* (C)"))
+    ;; Buffers found in the main perspective while perspective NAME is
+    ;; alive before the cleanup.
+    (should-not (get-buffer "*scratch* (A)"))
+    ;; Buffers found only in other perspectives than main perspective.
+    (should-not (get-buffer "*dummy* (B)"))
+    (should-not (get-buffer "*scratch* (D)"))
+    ;; Buffers manually killed but perspective NAME is kept alive till
+    ;; the cleanup.
+    (should-not (get-buffer "*scratch* (B)"))
+    ;; Reset state.
+    (should (kill-buffer "*dummy*"))
+    (should-not (get-buffer "*dummy*"))
+    (should (kill-buffer "*dummy* (A)"))
+    (should-not (get-buffer "*dummy* (A)"))
+    (should (kill-buffer "*scratch* (C)"))
+    (should-not (get-buffer "*scratch* (C)"))))
+
 (ert-deftest basic-persp-header-line-format-default-value ()
   "Disabling `persp-mode' should properly restore the default
 value of `header-line-format'.

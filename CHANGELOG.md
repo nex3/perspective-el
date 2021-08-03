@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### ERT tests added
+
+- `basic-persp-test-with-persp`: evaluate `persp-test-with-persp` macro.
+
+
 ### Fixed
 
 - Added a workaround for potential problems caused by recursive minibuffer use.
