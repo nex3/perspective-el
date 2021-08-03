@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests changed
 
+- `persp-test-with-persp`: `unwind-protect` BODY to ensure a proper cleanup upon failures.
 - `persp-test-with-persp`: kill other perspectives than the main perspective when cleaning up.
 
 
