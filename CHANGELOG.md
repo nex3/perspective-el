@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `basic-persp-test-with-persp`: evaluate `persp-test-with-persp` macro.
 
 
+### ERT tests fixed
+
+- `persp-test-with-persp`: verify that a `*scratch* (NAME)` buffer exists before killing it.
+
+
 ### Fixed
 
 - Added a workaround for potential problems caused by recursive minibuffer use.

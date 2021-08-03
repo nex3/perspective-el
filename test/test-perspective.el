@@ -49,7 +49,13 @@ perspectives and open buffers."
      ,@body
      ;; get rid of perspective-specific *scratch* buffers first
      (mapc (lambda (persp)
-             (kill-buffer (format "*scratch* (%s)" persp)))
+             ;; `get-buffer' should suffice here, there's no need to
+             ;; also call `buffer-live-p' when a string is passed as
+             ;; argument to the former, but we do it anyway ;)
+             (let* ((scratch-name (format "*scratch* (%s)" persp))
+                    (scratch-buffer (get-buffer scratch-name)))
+               (when (buffer-live-p scratch-buffer)
+                 (kill-buffer scratch-buffer))))
            (delete persp-initial-frame-name (persp-names)))
      (persp-mode -1)
      (mapc #'kill-buffer (persp-test-buffer-list-all))))
