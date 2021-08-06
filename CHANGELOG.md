@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests added
 
+- `baisc-persp-test-kill-extra-buffers`: evaluate `persp-test-kill-extra-buffers`
 - `persp-test-kill-extra-buffers`: utility function for cleaning up and killing extra buffers.
 - `basic-persp-test-match-scratch-buffers`: evaluate `persp-test-match-scratch-buffers`.
 - `persp-test-match-scratch-buffers`: utility function to list live scratch buffers.

@@ -348,6 +348,85 @@ return nil."
           (buffer-list))
     (should (get-buffer-create "*scratch*"))))
 
+(ert-deftest basic-persp-test-kill-extra-buffers ()
+  "Test `persp-test-kill-extra-buffers'.
+
+Expect to automatically cleanup *scratch* buffers that are not
+the \"*scratch*\" buffer, and all the buffers and buffer's names
+given as arguments, \"*scratch*\" buffer itself when included."
+  ;; Cleanup from extra *scratch* buffers.
+  (mapc #'kill-buffer (persp-test-match-scratch-buffers))
+  (should (get-buffer-create "*scratch*"))
+  ;; Try to kill some buffers and buffer's names.
+  (let ((some-buffer (get-buffer-create "*some*"))
+        (live-buffer (get-buffer-create "*live*"))
+        (dead-buffer (get-buffer-create "*dead*")))
+    (should (get-buffer "*some*"))
+    (should (get-buffer "*live*"))
+    (should (get-buffer "*dead*"))
+    (should (kill-buffer dead-buffer))
+    (should-not (get-buffer "*dead*"))
+    (should (buffer-live-p some-buffer))
+    (should (buffer-live-p live-buffer))
+    (should-not (buffer-live-p dead-buffer))
+    ;; As result, expect a list of names in alphabetical order of the
+    ;; buffers the function tries to kill.  Expect nil if there is no
+    ;; suitable candidate.  If the killing does not happen, it may be
+    ;; due to reasons outside of the scope of the function.
+    (should-not (persp-test-kill-extra-buffers))
+    (should-not (persp-test-kill-extra-buffers "*dead*"))
+    (should-not (persp-test-kill-extra-buffers dead-buffer))
+    (should-not (persp-test-kill-extra-buffers "*dead*" dead-buffer))
+    (should (equal (list "*live*" "*some*")
+                   (persp-test-kill-extra-buffers "*some*" dead-buffer "*dead*" live-buffer)))
+    (should (persp-test-match-scratch-buffers "*scratch*"))
+    (should-not (buffer-live-p dead-buffer))
+    (should-not (buffer-live-p live-buffer))
+    (should-not (buffer-live-p some-buffer))
+    (should-not (get-buffer "*dead*"))
+    (should-not (get-buffer "*live*"))
+    (should-not (get-buffer "*some*"))
+    ;; Duplicate arguments, as buffer or buffer's name, should not be
+    ;; a problem.
+    (should (setq some-buffer (get-buffer-create "*some*")))
+    (should (equal (list "*some*")
+                   (persp-test-kill-extra-buffers "*some*" some-buffer "*some*" some-buffer)))
+    (should (persp-test-match-scratch-buffers "*scratch*"))
+    (should-not (buffer-live-p some-buffer))
+    (should-not (get-buffer "*some*")))
+  ;; Expect to kill extra scratch buffers that aren't the "*scratch*"
+  ;; buffer, doing a cleanup after exiting `persp-mode'.
+  (persp-test-with-persp
+    (should (switch-to-buffer "*dummy*"))
+    (should (switch-to-buffer "*scratch*"))
+    (should (switch-to-buffer "*scratch* "))
+    (should (switch-to-buffer "*scratch* (A)"))
+    (should (switch-to-buffer "*scratch* (B)")))
+  (should (equal (list "*scratch* " "*scratch* (A)" "*scratch* (B)")
+                 (persp-test-kill-extra-buffers)))
+  (should (persp-test-match-scratch-buffers "*scratch*"))
+  (should (get-buffer "*dummy*"))
+  ;; Do a cleanup while in `persp-mode', killing the "*scratch*" too.
+  ;; Expect a list of names of buffers the function tries to kill, it
+  ;; doesn't matter if the buffers survive the killing.  The function
+  ;; tries to kill what matches its criteria.  Candidates to kill can
+  ;; be given in any order, the result will be in alphabetical order.
+  (persp-test-with-persp
+    (persp-switch "A")
+    (persp-switch "B")
+    (should (get-buffer "*dummy*"))
+    (should (get-buffer-create "*scratch* "))
+    (should (equal (list "*scratch*" "*scratch* " "*scratch* (A)" "*scratch* (B)")
+                   (persp-test-kill-extra-buffers "*scratch* (C)" "*scratch* (B)" "*scratch*"))))
+  (should-not (persp-test-match-scratch-buffers))
+  (should (get-buffer "*dummy*"))
+  ;; Cleanup.
+  (should (get-buffer-create "*scratch*"))
+  (should (equal (list "*dummy*")
+                 (persp-test-kill-extra-buffers "*dummy*")))
+  (should (persp-test-match-scratch-buffers "*scratch*"))
+  (should-not (get-buffer "*dummy*")))
+
 (ert-deftest basic-persp-header-line-format-default-value ()
   "Disabling `persp-mode' should properly restore the default
 value of `header-line-format'.
