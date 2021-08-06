@@ -58,6 +58,23 @@ with \"*scratch*\".  Sort the list by names via `string-lessp'."
             (lambda (a b)
               (string-lessp (buffer-name a) (buffer-name b)))))))
 
+(defun persp-test-kill-extra-buffers (&rest buffer-or-name)
+  "Kill BUFFER-OR-NAME and extra scratch buffers found.
+Return a list of names of the killed buffers, or nil if there's
+no candidate to kill.
+
+Extra scratch buffers have a name that begins with \"*scratch*\",
+like \"*scratch* \" and \"*scratch* (NAME)\"."
+  (let* (kill-list-names
+         (scratch-buffer (get-buffer "*scratch*"))
+         (extra-buffers (mapcar #'get-buffer buffer-or-name))
+         (matched-buffers (remq scratch-buffer (persp-test-match-scratch-buffers))))
+    (dolist (buffer (cl-remove-duplicates (append extra-buffers matched-buffers)))
+      (when (buffer-live-p buffer)
+        (push (buffer-name buffer) kill-list-names)
+        (kill-buffer buffer)))
+    (sort kill-list-names #'string-lessp)))
+
 (defmacro persp-test-with-persp (&rest body)
   "Allow multiple tests to run with reasonable assumption of
 isolation. This macro assumes persp-mode is turned off, then
