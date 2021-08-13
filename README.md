@@ -2,8 +2,6 @@
 
 ![Test perspective](https://github.com/nex3/perspective-el/actions/workflows/test-perspective.yml/badge.svg)
 
-## Description
-
 The Perspective package provides multiple named workspaces (or "perspectives")
 in Emacs, similar to multiple desktops in window managers like Awesome and
 XMonad, and Spaces on the Mac.
@@ -20,6 +18,21 @@ Each Emacs frame has a distinct list of perspectives.
 
 Perspective supports saving its state to a file, so long-lived work sessions may
 be saved and recovered as needed.
+
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+- [Sample Use Cases](#sample-use-cases)
+    - [Multiple Projects](#multiple-projects)
+    - [[Yak Shaving](http://catb.org/jargon/html/Y/yak-shaving.html)](#yak-shavinghttpcatborgjargonhtmlyyak-shavinghtml)
+- [Similar Packages](#similar-packages)
+- [Compatibility](#compatibility)
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Buffer switchers](#buffer-switchers)
+    - [Notes on `completing-read` Enhancements](#notes-on-completing-read-enhancements)
+- [Saving Sessions to Disk](#saving-sessions-to-disk)
+- [Customization](#customization)
+- [Some Musings on Emacs Window Layouts](#some-musings-on-emacs-window-layouts)
+<!-- markdown-toc end -->
 
 
 ## Sample Use Cases
