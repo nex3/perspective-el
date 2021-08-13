@@ -38,6 +38,26 @@ perspectives), filtering out temporaries."
 filtering out temporaries."
   (cl-remove-if-not #'persp-test-interesting-buffer? (persp-buffers persp)))
 
+(defun persp-test-match-scratch-buffers (&rest buffer-or-name)
+  "Return a list of buffers that are considered *scratch* buffers.
+If not nil, verify that BUFFER-OR-NAME are all the buffers that
+are in the list of buffers or return nil otherwise.  Return nil
+if there are no *scratch* buffers to be found.
+
+Consider buffers being *scratch* buffers when their name begins
+with \"*scratch*\".  Sort the list by names via `string-lessp'."
+  (let ((scratch-buffers (mapcar #'get-buffer buffer-or-name))
+        (matched-buffers (cl-remove-if-not
+                          (lambda (buffer)
+                            (string-match-p "^\\*scratch\\*.*$" (buffer-name buffer)))
+                          (buffer-list))))
+    (when (cl-every (lambda (buffer)
+                      (memq buffer matched-buffers))
+                    scratch-buffers)
+      (sort matched-buffers
+            (lambda (a b)
+              (string-lessp (buffer-name a) (buffer-name b)))))))
+
 (defmacro persp-test-with-persp (&rest body)
   "Allow multiple tests to run with reasonable assumption of
 isolation. This macro assumes persp-mode is turned off, then
