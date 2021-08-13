@@ -75,6 +75,39 @@ like \"*scratch* \" and \"*scratch* (NAME)\"."
         (kill-buffer buffer)))
     (sort kill-list-names #'string-lessp)))
 
+(defun persp-test-buffer-in-persps (buffer-or-name &rest persp-or-name)
+  "Return the buffer BUFFER-OR-NAME when live and found in each of
+PERSP-OR-NAME, and, at the same time, not in any other existing
+perspective that is not PERSP-OR-NAME.  Otherwise return nil.
+
+If PERSP-OR-NAME is nil or not given, BUFFER-OR-NAME should not
+be found in any existing perspective.  Otherwise return nil.
+
+PERSP-OR-NAME may be a perspective's name or a perspective data
+object `perspective-p', if the latter it may even not exist."
+  (let (whitelist
+        (persps (hash-table-values (perspectives-hash)))
+        (buffer (when buffer-or-name (get-buffer buffer-or-name))))
+    (catch 'result
+      (unless (and buffer (buffer-live-p buffer))
+        (throw 'result nil))
+      ;; whitelist
+      (dolist (persp persp-or-name)
+        (when (stringp persp)
+          ;; resolve a perspective's name to its data
+          (setq persp (cl-find-if (lambda (p)
+                                    (equal persp (persp-name p)))
+                                  persps)))
+        (unless (and (perspective-p persp)
+                     (memq buffer (persp-buffers persp)))
+          (throw 'result nil))
+        (push persp whitelist))
+      ;; blacklist
+      (dolist (persp (cl-set-difference persps whitelist))
+        (when (memq buffer (persp-buffers persp))
+          (throw 'result nil)))
+      (throw 'result buffer))))
+
 (defmacro persp-test-with-persp (&rest body)
   "Allow multiple tests to run with reasonable assumption of
 isolation. This macro assumes persp-mode is turned off, then
