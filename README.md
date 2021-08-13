@@ -27,7 +27,7 @@ be saved and recovered as needed.
 - [Compatibility](#compatibility)
 - [Installation](#installation)
 - [Usage](#usage)
-    - [Buffer switchers](#buffer-switchers)
+    - [Buffer Switchers](#buffer-switchers)
     - [Notes on `completing-read` Enhancements](#notes-on-completing-read-enhancements)
 - [Saving Sessions to Disk](#saving-sessions-to-disk)
 - [Customization](#customization)
@@ -184,7 +184,7 @@ Here are the main commands defined in `persp-mode-map`:
 - `C-l` — `persp-state-load`: Load all perspectives from a file
 
 
-### Buffer switchers
+### Buffer Switchers
 
 Since Perspective maintains distinct buffer lists for each perspective, it helps
 to use a Perspective-aware buffer switcher.
