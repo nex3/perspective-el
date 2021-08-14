@@ -460,6 +460,156 @@ given as arguments, \"*scratch*\" buffer itself when included."
   (should (persp-test-match-scratch-buffers "*scratch*"))
   (should-not (get-buffer "*dummy*")))
 
+(ert-deftest basic-persp-test-buffer-in-persps ()
+  "Test that `persp-test-buffer-in-persps' is working properly.
+
+Verify that a buffer can only be found in perspectives owning it
+and, at the same time, not in other existing perspectives.  keep
+in mind that a perspective owning the buffer may be bare data of
+a formally non-existent `perspective-p' object."
+  (should (get-buffer-create "*dummy*"))
+  (should (get-buffer-create "*scratch*"))
+  (persp-test-kill-extra-buffers "*rogue*")
+  (persp-test-with-persp
+    (persp-new "A")
+    (persp-new "B")
+    (let (persp
+          persp-A
+          persp-B
+          buffers
+          buffers-A
+          buffers-B
+          rogue-buffer
+          (dummy-buffer (get-buffer "*dummy*"))
+          (scratch-buffer (get-buffer "*scratch*"))
+          (scratch-buffer-A (get-buffer "*scratch* (A)"))
+          (scratch-buffer-B (get-buffer "*scratch* (B)")))
+      ;; Get perspective's data from each existing perspective.
+      (setq persp (persp-curr))
+      (should (persp-is-current-buffer dummy-buffer))
+      (should (persp-is-current-buffer scratch-buffer))
+      (should-not (persp-is-current-buffer scratch-buffer-A))
+      (should-not (persp-is-current-buffer scratch-buffer-B))
+      (setq buffers (copy-sequence (persp-buffers (persp-curr))))
+      (with-perspective "A"
+        (setq persp-A (persp-curr))
+        (should-not (persp-is-current-buffer dummy-buffer))
+        (should-not (persp-is-current-buffer scratch-buffer))
+        (should (persp-is-current-buffer scratch-buffer-A))
+        (should-not (persp-is-current-buffer scratch-buffer-B))
+        (setq buffers-A (copy-sequence (persp-buffers (persp-curr)))))
+      (with-perspective "B"
+        (setq persp-B (persp-curr))
+        (should-not (persp-is-current-buffer dummy-buffer))
+        (should-not (persp-is-current-buffer scratch-buffer))
+        (should-not (persp-is-current-buffer scratch-buffer-A))
+        (should (persp-is-current-buffer scratch-buffer-B))
+        (setq buffers-B (copy-sequence (persp-buffers (persp-curr)))))
+      ;; Read the list of buffers from each perspective's data.
+      (should (equal buffers (persp-buffers persp)))
+      (should (equal buffers-A (persp-buffers persp-A)))
+      (should (equal buffers-B (persp-buffers persp-B)))
+      ;; *dummy* is in main, not in A and B
+      (should (memq dummy-buffer buffers))
+      (should-not (memq dummy-buffer buffers-A))
+      (should-not (memq dummy-buffer buffers-B))
+      ;; *scratch* is in main, not in A and B
+      (should (memq scratch-buffer buffers))
+      (should-not (memq scratch-buffer buffers-A))
+      (should-not (memq scratch-buffer buffers-B))
+      ;; *scratch* (A) is in A, not in main and B
+      (should (memq scratch-buffer-A buffers-A))
+      (should-not (memq scratch-buffer-A buffers))
+      (should-not (memq scratch-buffer-A buffers-B))
+      ;; *scratch* (B) is in B, not is main and A
+      (should (memq scratch-buffer-B buffers-B))
+      (should-not (memq scratch-buffer-B buffers))
+      (should-not (memq scratch-buffer-B buffers-A))
+      ;; Find buffer by name in specific perspectives.
+      (should (persp-test-buffer-in-persps "*dummy*" "main"))
+      (should (persp-test-buffer-in-persps "*scratch*" "main"))
+      (should (persp-test-buffer-in-persps "*scratch* (A)" "A"))
+      (should (persp-test-buffer-in-persps "*scratch* (B)" "B"))
+      ;; Find buffer by name in perspective's data.
+      (should (persp-test-buffer-in-persps "*dummy*" persp))
+      (should (persp-test-buffer-in-persps "*scratch*" persp))
+      (should (persp-test-buffer-in-persps "*scratch* (A)" persp-A))
+      (should (persp-test-buffer-in-persps "*scratch* (B)" persp-B))
+      ;; Find buffer in specific perspectives.
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer-B "B"))
+      ;; Find buffer in perspective's data.
+      (should (persp-test-buffer-in-persps dummy-buffer persp))
+      (should (persp-test-buffer-in-persps scratch-buffer persp))
+      (should (persp-test-buffer-in-persps scratch-buffer-A persp-A))
+      (should (persp-test-buffer-in-persps scratch-buffer-B persp-B))
+      ;; Try buffer in wrong perspective.
+      (should-not (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      ;; Try in non-existent perspective.
+      (should-not (persp-test-buffer-in-persps dummy-buffer "main" "C"))
+      ;; Try buffer in duplicate targets.
+      (should (persp-test-buffer-in-persps dummy-buffer (persp-curr)))
+      (should (persp-test-buffer-in-persps dummy-buffer persp (persp-curr)))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" (persp-curr)))
+      (should (persp-test-buffer-in-persps dummy-buffer persp "main" (persp-curr)))
+      ;; Try finding non-existent buffer.
+      (should-not (get-buffer "*rogue*"))
+      (should-not (persp-test-buffer-in-persps "*rogue*"))
+      ;; Try finding a new rogue buffer.
+      (should (setq rogue-buffer (get-buffer-create "*rogue*")))
+      (should (persp-test-buffer-in-persps "*rogue*"))
+      (should-not (persp-is-current-buffer rogue-buffer))
+      (with-perspective "A"
+        (should-not (persp-is-current-buffer rogue-buffer)))
+      (with-perspective "B"
+        (should-not (persp-is-current-buffer rogue-buffer)))
+      ;; Try a rogue perspective's data.
+      (persp-set-buffer rogue-buffer)
+      (setq persp (copy-perspective (persp-curr)))
+      (setf (persp-current-buffers) (remq rogue-buffer (persp-current-buffers)))
+      (should (memq rogue-buffer (persp-buffers persp)))
+      (should-not (persp-is-current-buffer rogue-buffer))
+      (should (persp-test-buffer-in-persps "*rogue*" persp))
+      (should-not (persp-test-buffer-in-persps "*rogue*" "main"))
+      (should-not (persp-test-buffer-in-persps "*rogue*" (persp-curr)))
+      (should-not (persp-test-buffer-in-persps "*rogue*" persp "main" (persp-curr)))
+      ;; Try finding a killed buffer.
+      (persp-remove-buffer dummy-buffer)
+      (should-not (get-buffer "*dummy*"))
+      (should-not (buffer-live-p dummy-buffer))
+      (should (memq dummy-buffer (persp-buffers persp)))
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (should-not (persp-test-buffer-in-persps "*dummy*"))
+      (should-not (persp-test-buffer-in-persps dummy-buffer))
+      (should-not (persp-test-buffer-in-persps "*dummy*" persp))
+      (should-not (persp-test-buffer-in-persps dummy-buffer persp))
+      ;; Try finding a shared buffer.
+      (should (setq dummy-buffer (get-buffer-create "*dummy*")))
+      ;; *dummy* is a rogue buffer
+      (should (persp-test-buffer-in-persps "*dummy*"))
+      ;; put *dummy* in A and B
+      (setq persp (persp-curr))
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (with-perspective "A"
+        (setq persp-A (persp-curr))
+        (persp-add-buffer dummy-buffer)
+        (should (persp-is-current-buffer dummy-buffer)))
+      (with-perspective "B"
+        (setq persp-B (persp-curr))
+        (persp-add-buffer dummy-buffer)
+        (should (persp-is-current-buffer dummy-buffer)))
+      ;; where is *dummy*?
+      (should (persp-test-buffer-in-persps "*dummy*" "A" "B"))
+      (should (persp-test-buffer-in-persps "*dummy*" persp-A "B"))
+      (should (persp-test-buffer-in-persps dummy-buffer "A" persp-B))
+      (should-not (persp-test-buffer-in-persps "*dummy*" "A" "B" persp))
+      (should (persp-test-buffer-in-persps dummy-buffer persp-A persp-B))
+      (should (persp-test-buffer-in-persps dummy-buffer "A" persp-A persp-B "B"))))
+  ;; Cleanup.
+  (persp-test-kill-extra-buffers "*dummy*" "*rogue*"))
+
 (ert-deftest basic-persp-header-line-format-default-value ()
   "Disabling `persp-mode' should properly restore the default
 value of `header-line-format'.
