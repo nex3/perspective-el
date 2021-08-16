@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests added
 
+- `basic-persp-test-match-scratch-buffers`: evaluate `persp-test-match-scratch-buffers`.
 - `persp-test-match-scratch-buffers`: utility function to list live scratch buffers.
 - `basic-persp-test-with-persp`: evaluate `persp-test-with-persp` macro.
 

@@ -249,6 +249,88 @@ that are not the main perspective."
     (should (kill-buffer "*scratch* (C)"))
     (should-not (get-buffer "*scratch* (C)"))))
 
+(ert-deftest basic-persp-test-match-scratch-buffers ()
+  "Test `persp-test-match-scratch-buffers'.
+
+Expect a list of live buffers that may be considered *scratch*
+buffers, aka the buffer's name begins with \"*scratch*\", or nil
+if there's none.
+
+When providing buffer or buffer's name arguments, them should
+include exactly what the function would find.  Repetition and
+order do not matter.  If just one argument isn't a candidate,
+return nil."
+  (let (matched-buffers dummy-buffer scratch-buffer scratch-buffer-A)
+    ;; Cleanup *scratch* buffers.
+    (mapc (lambda (buffer)
+            (when (string-match-p "^\\*scratch\\*.*$" (buffer-name buffer))
+              (kill-buffer buffer)))
+          (buffer-list))
+    ;; Match live *scratch* buffers.
+    (persp-test-with-persp
+      (should (setq dummy-buffer (get-buffer-create "*dummy*")))
+      (should (setq scratch-buffer (get-buffer-create "*scratch*")))
+      ;; get a list of all live *scratch* buffers
+      (should (setq matched-buffers (list scratch-buffer)))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers)))
+      ;; verify that all arguemnts meet the criteria
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch*")))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers scratch-buffer)))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch*" scratch-buffer)))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers scratch-buffer "*scratch*")))
+      ;; verify that the matching criteria cannot be subverted
+      (should-not (persp-test-match-scratch-buffers "*dummy*"))
+      (should-not (persp-test-match-scratch-buffers dummy-buffer))
+      (should-not (persp-test-match-scratch-buffers "*scratch* "))
+      (should-not (persp-test-match-scratch-buffers "*scratch*" "*dummy*"))
+      (should-not (persp-test-match-scratch-buffers "*dummy*" "*scratch*"))
+      (should-not (persp-test-match-scratch-buffers "*scratch*" "*scratch* "))
+      (should-not (persp-test-match-scratch-buffers "*scratch* " "*scratch*"))
+      (should-not (persp-test-match-scratch-buffers scratch-buffer dummy-buffer))
+      (should-not (persp-test-match-scratch-buffers dummy-buffer scratch-buffer))
+      (should-not (persp-test-match-scratch-buffers "*scratch*" "*scratch* " "*scratch*"))
+      (should (kill-buffer dummy-buffer))
+      (should-not (get-buffer "*dummy*"))
+      (should-not (buffer-live-p dummy-buffer))
+      (should-not (persp-test-match-scratch-buffers dummy-buffer))
+      (should-not (persp-test-match-scratch-buffers scratch-buffer dummy-buffer))
+      (should-not (persp-test-match-scratch-buffers dummy-buffer scratch-buffer))
+      (should (get-buffer-create "*scratch* "))
+      (setq matched-buffers (list scratch-buffer (get-buffer "*scratch* ")))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch*" "*scratch* ")))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch* " "*scratch*")))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch*" "*scratch* " "*scratch*"))))
+    ;; Cleanup *scratch* buffers.
+    (mapc (lambda (buffer)
+            (when (string-match-p "^\\*scratch\\*.*$" (buffer-name buffer))
+              (kill-buffer buffer)))
+          (buffer-list))
+    ;; Match live *scratch* buffers.
+    (persp-test-with-persp
+      (persp-new "A")
+      (should (setq scratch-buffer (get-buffer-create "*scratch*")))
+      (should (setq scratch-buffer-A (get-buffer "*scratch* (A)")))
+      ;; get a list of all live *scratch* buffers
+      (should (setq matched-buffers (list scratch-buffer scratch-buffer-A)))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers)))
+      ;; verify that all arguemnts meet the criteria
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch*" "*scratch* (A)")))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch* (A)" "*scratch*")))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A)))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers scratch-buffer-A "*scratch* (A)" scratch-buffer "*scratch*")))
+      ;; verify that the matching criteria cannot be subverted
+      (should-not (persp-test-match-scratch-buffers "*scratch*" "*scratch* " "*scratch* (A)"))
+      (should (get-buffer-create "*scratch* "))
+      (setq matched-buffers (list scratch-buffer (get-buffer "*scratch* ") scratch-buffer-A))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch*" "*scratch* " "*scratch* (A)")))
+      (should (equal matched-buffers (persp-test-match-scratch-buffers "*scratch* (A)" "*scratch*" "*scratch* "))))
+    ;; Cleanup *scratch* buffers.
+    (mapc (lambda (buffer)
+            (when (string-match-p "^\\*scratch\\*.*$" (buffer-name buffer))
+              (kill-buffer buffer)))
+          (buffer-list))
+    (should (get-buffer-create "*scratch*"))))
+
 (ert-deftest basic-persp-header-line-format-default-value ()
   "Disabling `persp-mode' should properly restore the default
 value of `header-line-format'.
