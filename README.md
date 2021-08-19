@@ -235,7 +235,11 @@ listing buffers, so they did not require this advice; see [`this Helm
 commit`](https://github.com/emacs-helm/helm/commit/f7fa3a9e0ef1f69c42e0c513d02c9f76ea9a4344)
 and [`this Perspective
 commit`](https://github.com/nex3/perspective-el/commit/c2d3542418967b55f05d5b5ba71c9fbfe4cd3d4f)
-for details.)
+for details.) If `helm-buffers-list` is called with a prefix argument, it will
+show buffers in all perspectives. In addition, Perspective adds actions to
+`helm-buffers-list` to add buffers to the current perspective (mainly relevant
+to the prefix-argument version) and to remove buffers from the current
+perspective.
 
 **Ivy / Counsel**: Perspective provides two commands for listing buffers using
 Ivy and Counsel: `persp-ivy-switch-buffer` and `persp-counsel-switch-buffer`.

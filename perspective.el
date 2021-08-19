@@ -1085,7 +1085,7 @@ named collections of buffers and window configurations."
         (ad-activate 'switch-to-prev-buffer)
         (ad-activate 'recursive-edit)
         (ad-activate 'exit-recursive-edit)
-        (advice-add 'helm-buffer-list-1 :filter-return #'persp-buffer-list-filter)
+        (persp--helm-enable)
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'delete-frame-functions 'persp-delete-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
@@ -1093,7 +1093,7 @@ named collections of buffers and window configurations."
         (mapc 'persp-init-frame (frame-list))
         (setf (persp-current-buffers) (buffer-list))
         (run-hooks 'persp-mode-hook))
-    (advice-remove 'helm-buffer-list-1 #'persp-buffer-list-filter)
+    (persp--helm-disable)
     (ad-deactivate-regexp "^persp-.*")
     (remove-hook 'delete-frame-functions 'persp-delete-frame)
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
@@ -1382,6 +1382,57 @@ PERSP-SET-IDO-BUFFERS)."
     (user-error "Counsel not loaded"))
   (declare-function counsel-switch-buffer "counsel.el")
   (persp--switch-buffer-ivy-counsel-helper arg #'counsel-switch-buffer))
+
+
+;;; --- Helm integration
+
+(defun persp--helm-buffer-list-filter (bufs)
+  (if current-prefix-arg
+      bufs
+    (persp-buffer-list-filter bufs)))
+
+(defun persp--helm-remove-buffers-from-perspective (_arg)
+  (interactive)
+  (declare-function helm-marked-candidates "helm.el")
+  (cl-loop for candidate in (helm-marked-candidates) do
+           (persp-remove-buffer candidate)))
+
+(defun persp--helm-add-buffers-to-perspective (_arg)
+  (declare-function helm-marked-candidates "helm.el")
+  (cl-loop for candidate in (helm-marked-candidates) do
+           (persp-add-buffer candidate)))
+
+(defun persp--helm-activate (&rest _args)
+  (defvar helm-source-buffers-list)
+  (declare-function helm-add-action-to-source "helm.el")
+  (advice-add 'helm-buffer-list-1 :filter-return #'persp--helm-buffer-list-filter)
+  (helm-add-action-to-source
+   "Perspective: Add buffer to current perspective"
+   #'persp--helm-add-buffers-to-perspective helm-source-buffers-list)
+  (helm-add-action-to-source
+   "Perspective: Remove buffer from current perspective"
+   #'persp--helm-remove-buffers-from-perspective helm-source-buffers-list)
+  ;; remove persp--helm-activate advice once it has run
+  (advice-remove 'helm-initial-setup #'persp--helm-activate))
+
+(defun persp--helm-enable ()
+  ;; We do not know if Helm has been loaded before Perspective is activated, so
+  ;; we need a way to activate Perspective-Helm integration once we know for
+  ;; certain that Helm is ready. An advice functino should do the trick, which
+  ;; will remove itself once it does its job.
+  (advice-add 'helm-initial-setup :before #'persp--helm-activate))
+
+(defun persp--helm-disable ()
+  (defvar helm-source-buffers-list)
+  (declare-function helm-delete-action-from-source "helm.el")
+  (if (not (featurep 'helm))
+      (advice-remove 'helm-initial-setup #'persp--helm-activate)
+    ;; actual cleanup if Helm-perspective integration has loaded:
+    (helm-delete-action-from-source
+     #'persp--helm-remove-buffers-from-perspective helm-source-buffers-list)
+    (helm-delete-action-from-source
+     #'persp--helm-add-buffers-to-perspective helm-source-buffers-list)
+    (advice-remove 'helm-buffer-list-1 #'persp--helm-buffer-list-filter)))
 
 
 ;;; --- durability implementation (persp-state-save and persp-state-load)
