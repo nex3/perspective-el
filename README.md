@@ -19,6 +19,10 @@ Each Emacs frame has a distinct list of perspectives.
 Perspective supports saving its state to a file, so long-lived work sessions may
 be saved and recovered as needed.
 
+At long last this project has a
+[changelog](https://github.com/nex3/perspective-el/blob/master/CHANGELOG.md);
+please refer to it for release notes.
+
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 - [Sample Use Cases](#sample-use-cases)
     - [Multiple Projects](#multiple-projects)
