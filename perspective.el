@@ -1404,7 +1404,16 @@ PERSP-SET-IDO-BUFFERS)."
 
 (defun persp--helm-activate (&rest _args)
   (defvar helm-source-buffers-list)
+  (declare-function helm-make-source "helm-source.el")
   (declare-function helm-add-action-to-source "helm.el")
+  ;; XXX: Ugly Helm initialization, works around the way
+  ;; helm-source-buffers-list is lazily initialized in helm-buffers.el
+  ;; helm-buffers-list and helm-mini (copypasta code).
+  (require 'helm-buffers)
+  (unless helm-source-buffers-list
+    (setq helm-source-buffers-list
+          (helm-make-source "Buffers" 'helm-source-buffers)))
+  ;; actually activate things
   (advice-add 'helm-buffer-list-1 :filter-return #'persp--helm-buffer-list-filter)
   (helm-add-action-to-source
    "Perspective: Add buffer to current perspective"
