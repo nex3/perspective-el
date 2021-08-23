@@ -867,29 +867,96 @@ A non-existing buffer passed as argument should be discarded."
   (persp-test-kill-extra-buffers "*dummy*"))
 
 (ert-deftest basic-persp-switching ()
+  "Test switching buffers and perspectives.
+
+Verify the `current-buffer' when switching buffer/perspective and
+when removing a perspective's buffer.
+
+Verify that after switching to a new perspective, the perspective
+has its scratch buffer set as `current-buffer'."
   (persp-test-with-persp
     (persp-test-with-temp-buffers (A1 A2 B1 B2 B3)
-      ;; currently in "main" perspective
-      (cl-loop for buf in (list A1 A2 B1 B2 B3) do
-               (should-not (memq buf (persp-buffers (persp-curr)))))
-      (persp-switch "A")
-      (switch-to-buffer A1)
-      (switch-to-buffer A2)
-      (cl-loop for buf in (list A1 A2) do
-               (should (memq buf (persp-buffers (persp-curr)))))
-      (cl-loop for buf in (list B1 B2 B3) do
-               (should-not (memq buf (persp-buffers (persp-curr)))))
-      (persp-switch "B")
-      (switch-to-buffer B1)
-      (switch-to-buffer B2)
-      (switch-to-buffer B3)
-      (cl-loop for buf in (list A1 A2) do
-               (should-not (memq buf (persp-buffers (persp-curr)))))
-      (cl-loop for buf in (list B1 B2 B3) do
-               (should (memq buf (persp-buffers (persp-curr)))))
-      (persp-switch "main")
-      (cl-loop for buf in (list A1 A2 B1 B2 B3) do
-               (should-not (memq buf (persp-buffers (persp-curr))))))))
+      (let (scratch-buffer)
+        ;; currently in "main" perspective
+        (cl-loop for buf in (list A1 A2 B1 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (should (switch-to-buffer B3))
+        (should (eq B3 (current-buffer)))
+        (should (memq B3 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A1 A2 B1 B2) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (persp-new "A")
+        (should (get-buffer "*scratch* (A)"))
+        (should (eq B3 (current-buffer)))
+        (should (memq B3 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A1 A2 B1 B2) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (persp-switch "A")
+        (should (eq (get-buffer "*scratch* (A)") (current-buffer)))
+        (cl-loop for buf in (list A1 A2 B1 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (should (switch-to-buffer A1))
+        (should (eq A1 (current-buffer)))
+        (should (memq A1 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A2 B1 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (should (switch-to-buffer A2))
+        (should (eq A2 (current-buffer)))
+        (cl-loop for buf in (list A1 A2) do
+                 (should (memq buf (persp-buffers (persp-curr)))))
+        (cl-loop for buf in (list B1 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        ;; A2 is killed, since it's not a shared buffer
+        (persp-remove-buffer A2)
+        (should-not (buffer-live-p A2))
+        (should (eq A1 (current-buffer)))
+        (should (memq A1 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A2 B1 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (persp-switch "main")
+        (should (eq B3 (current-buffer)))
+        (should (memq B3 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A1 A2 B1 B2) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (persp-switch "A")
+        (should (eq A1 (current-buffer)))
+        (should (memq A1 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A2 B1 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (persp-switch "B")
+        (should (eq (get-buffer "*scratch* (B)") (current-buffer)))
+        (cl-loop for buf in (list A1 A2 B1 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (should (switch-to-buffer B1))
+        (should (eq B1 (current-buffer)))
+        (should (memq B1 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A1 A2 B2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (should (switch-to-buffer B2))
+        (should (eq B2 (current-buffer)))
+        (cl-loop for buf in (list B1 B2) do
+                 (should (memq buf (persp-buffers (persp-curr)))))
+        (cl-loop for buf in (list A1 A2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (should (switch-to-buffer B3))
+        (should (eq B3 (current-buffer)))
+        (cl-loop for buf in (list B1 B2 B3) do
+                 (should (memq buf (persp-buffers (persp-curr)))))
+        (cl-loop for buf in (list A1 A2) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        ;; B3 is not killed, since it's a shared buffer
+        (persp-remove-buffer B3)
+        (should (buffer-live-p B3))
+        (should (eq B2 (current-buffer)))
+        (cl-loop for buf in (list B1 B2) do
+                 (should (memq buf (persp-buffers (persp-curr)))))
+        (cl-loop for buf in (list A1 A2 B3) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))
+        (persp-switch "main")
+        (should (eq B3 (current-buffer)))
+        (should (memq B3 (persp-buffers (persp-curr))))
+        (cl-loop for buf in (list A1 A2 B1 B2) do
+                 (should-not (memq buf (persp-buffers (persp-curr)))))))))
 
 (defmacro persp-test-make-sample-environment ()
   "Make a test environment with the following window layout:
