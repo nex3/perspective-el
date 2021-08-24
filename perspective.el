@@ -860,12 +860,19 @@ See also `persp-switch' and `persp-add-buffer'."
         ((get-buffer-window buffer)
          (let ((window (get-buffer-window buffer)))
            (while window
+             ;; `with-selected-window' restores the `current-buffer'.
+             ;; If the current buffer is buried, it should not be the
+             ;; next current buffer.  Remember to fix it later.
              (with-selected-window window (bury-buffer))
              (let ((new-window (get-buffer-window buffer)))
                ;; If `window' is still selected even after being buried, exit
                ;; the loop because otherwise it will go on infinitely.
                (setq window (unless (eq window new-window) new-window))))))
         (t (bury-buffer buffer)))
+  ;; If the `current-buffer' was buried in `with-selected-window', set
+  ;; the real current buffer, since `with-selected-window' restored it
+  ;; as the next current buffer after processing its body.
+  (set-buffer (window-buffer))
   (setf (persp-current-buffers) (remq buffer (persp-current-buffers))))
 
 (defun persp-kill (name)
