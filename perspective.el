@@ -857,17 +857,21 @@ See also `persp-switch' and `persp-add-buffer'."
         ((not (persp-buffer-in-other-p buffer))
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
-        ((get-buffer-window buffer)
-         (let ((window (get-buffer-window buffer)))
-           (while window
-             ;; `with-selected-window' restores the `current-buffer'.
-             ;; If the current buffer is buried, it should not be the
-             ;; next current buffer.  Remember to fix it later.
-             (with-selected-window window (bury-buffer))
-             (let ((new-window (get-buffer-window buffer)))
-               ;; If `window' is still selected even after being buried, exit
-               ;; the loop because otherwise it will go on infinitely.
-               (setq window (unless (eq window new-window) new-window))))))
+        ((let (buffer-in-any-window)
+           (walk-windows (lambda (window)
+                           (when (eq buffer (window-buffer window))
+                             (setq buffer-in-any-window t)
+                             ;; Burying the current buffer should also
+                             ;; act as an `unrecord-window-buffer'.
+                             (with-selected-window window (bury-buffer)))))
+           (let ((window (get-buffer-window buffer)))
+             (when window
+               (error "Buried buffer %s found in window %s, but it shouldn't"
+                      buffer window)))
+           ;; `with-selected-window' restores the `current-buffer'.
+           ;; If the current buffer is buried, it should not be the
+           ;; next current buffer.  Remember to fix it later.
+           buffer-in-any-window))
         (t (bury-buffer buffer)))
   ;; If the `current-buffer' was buried in `with-selected-window', set
   ;; the real current buffer, since `with-selected-window' restored it

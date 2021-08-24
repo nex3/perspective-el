@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `persp-remove-buffer`: when burying a buffer, walk windows rather than using a while loop, since the former isn't prone to infinite loops.
 - `make-persp`: document that executing BODY saves/restores the `current-buffer`.
 - `persp-set-buffer`: follow the coding style of `persp-add-buffer`.
 
