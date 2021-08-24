@@ -44,11 +44,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `make-persp`: document that executing BODY saves/restores the `current-buffer`.
 - `persp-set-buffer`: follow the coding style of `persp-add-buffer`.
 
 
 ### Fixed
 
+- `persp-activate`: force update the `current-buffer` to the current window's buffer due to `make-persp` saving/restoring the `current-buffer` when executing it's BODY.  This properly updates the `current-buffer` to what should be the real current buffer when switching to a new perspective.
 - `persp-add-buffer`: discard unexisting buffer as argument.
 - Added a workaround for potential problems caused by recursive minibuffer use.
 

@@ -428,7 +428,12 @@ ARGS will be interpreted by `format-message'."
 ARGS is a list of keyword arguments followed by an optional BODY.
 The keyword arguments set the fields of the perspective struct.
 If BODY is given, it is executed to set the window configuration
-for the perspective."
+for the perspective.
+
+Save point, and current buffer before executing BODY, and then
+restore them after.  If the current buffer is changed in BODY,
+that change is lost when getting out, hence the current buffer
+will need to be changed again after calling `make-persp'."
   (declare (indent defun))
   (let ((keywords))
     (while (keywordp (car args))
@@ -442,6 +447,9 @@ for the perspective."
          ,(when args
             ;; Body form given
             `(save-excursion ,@args))
+         ;; If the `current-buffer' changes while in `save-excursion',
+         ;; that change isn't kept when getting out, since the current
+         ;; buffer is saved before executing BODY and restored after.
          (run-hooks 'persp-created-hook))
        persp)))
 
@@ -714,6 +722,8 @@ If NORECORD is non-nil, do not update the
   (when (marker-position (persp-point-marker persp))
     (goto-char (persp-point-marker persp)))
   (persp-update-modestring)
+  ;; force update of `current-buffer'
+  (set-buffer (window-buffer))
   (run-hooks 'persp-activated-hook))
 
 (defun persp-switch-quick (char)
