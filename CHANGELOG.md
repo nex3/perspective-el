@@ -64,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `persp-new`: do not recreate existing perspectives.  This prevents from resetting perspectives to a state where in the perspective there's only the scratch buffer.
 - `persp-reset-windows`: set `switch-to-buffer-preserve-window-point` to `nil` before calling `delete-window`, that up to Emacs 27.2 updates `window-prev-buffers` of all windows, unless the former is turned off.
 - `persp-remove-buffer`: force update the `current-buffer` to the current window's buffer due to `with-selected-window` saving/restoring the `current-buffer` when executing it's BODY.  This properly updates the `current-buffer` to what should be the real current buffer when burying the current buffer.
 - `persp-activate`: force update the `current-buffer` to the current window's buffer due to `make-persp` saving/restoring the `current-buffer` when executing it's BODY.  This properly updates the `current-buffer` to what should be the real current buffer when switching to a new perspective.
