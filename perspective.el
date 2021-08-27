@@ -950,7 +950,11 @@ See also `persp-add-buffer' and `persp-remove-buffer'."
   (setf (persp-current-buffers) (remq buffer (persp-current-buffers))))
 
 (defun persp-remove-buffer (buffer)
-  "Disassociate BUFFER with the current perspective.
+  "Remove BUFFER from the current perspective.
+Kill BUFFER if it falls into limbo (not in any perspective).
+
+To disassociate BUFFER without the chance of killing it, see
+`persp-forget-buffer'.
 
 See also `persp-switch' and `persp-add-buffer'."
   (interactive
@@ -964,33 +968,12 @@ See also `persp-switch' and `persp-add-buffer'."
         ;; could not be enforced when a perspective is killed.
         ((and (persp-is-current-buffer buffer)
               (memq 'persp-maybe-kill-buffer kill-buffer-query-functions)
-              (not (remove (buffer-name buffer) (persp-current-buffer-names))))
-         (setq buffer nil))
+              (not (remove (buffer-name buffer) (persp-current-buffer-names)))))
         ;; Only kill the buffer if no other perspectives are using it.
         ((not (persp-buffer-in-other-p buffer))
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
-        ((let (buffer-in-any-window)
-           (walk-windows (lambda (window)
-                           (when (eq buffer (window-buffer window))
-                             (setq buffer-in-any-window t)
-                             ;; Burying the current buffer should also
-                             ;; act as an `unrecord-window-buffer'.
-                             (with-selected-window window (bury-buffer)))))
-           (let ((window (get-buffer-window buffer)))
-             (when window
-               (error "Buried buffer %s found in window %s, but it shouldn't"
-                      buffer window)))
-           ;; `with-selected-window' restores the `current-buffer'.
-           ;; If the current buffer is buried, it should not be the
-           ;; next current buffer.  Remember to fix it later.
-           buffer-in-any-window))
-        (t (bury-buffer buffer)))
-  ;; If the `current-buffer' was buried in `with-selected-window', set
-  ;; the real current buffer, since `with-selected-window' restored it
-  ;; as the next current buffer after processing its body.
-  (set-buffer (window-buffer))
-  (setf (persp-current-buffers) (remq buffer (persp-current-buffers))))
+        ((persp-forget-buffer buffer))))
 
 (defun persp-kill (name)
   "Kill the perspective given by NAME.
