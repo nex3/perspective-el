@@ -690,10 +690,8 @@ If NORECORD is non-nil, do not update the
   (unless (persp-valid-name-p name)
     (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
   (if (and (persp-curr) (equal name (persp-current-name))) name
-    (let ((persp (gethash name (perspectives-hash))))
+    (let ((persp (persp-new name)))
       (set-frame-parameter nil 'persp--last (persp-curr))
-      (when (null persp)
-        (setq persp (persp-new name)))
       (unless norecord
         (run-hooks 'persp-before-switch-hook))
       (persp-activate persp)
