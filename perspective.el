@@ -911,6 +911,44 @@ See also `persp-remove-buffer'."
             (persp-remove-buffer buffer)))
         nil)))))
 
+(defun persp-forget-buffer (buffer)
+  "Disassociate BUFFER with the current perspective.
+If BUFFER isn't in any perspective, then it is in limbo.
+
+See also `persp-add-buffer' and `persp-remove-buffer'."
+  (interactive
+   (list (funcall persp-interactive-completion-function "Disassociate buffer with perspective: " (persp-current-buffer-names))))
+  (setq buffer (when buffer (get-buffer buffer)))
+  (cond ((not (buffer-live-p buffer)))
+        ;; Do not disassociate a perspective's last left buffer or one
+        ;; that's not part of the current perspective.
+        ((or (not (persp-is-current-buffer buffer))
+             (and (memq 'persp-maybe-kill-buffer kill-buffer-query-functions)
+                  (not (remove (buffer-name buffer) (persp-current-buffer-names)))))
+         (setq buffer nil))
+        ;; Make the buffer go away if we can see it.
+        ((let (buffer-in-any-window)
+           (walk-windows (lambda (window)
+                           (when (eq buffer (window-buffer window))
+                             (setq buffer-in-any-window t)
+                             ;; Burying the current buffer should also
+                             ;; act as an `unrecord-window-buffer'.
+                             (with-selected-window window (bury-buffer)))))
+           (let ((window (get-buffer-window buffer)))
+             (when window
+               (error "Buried buffer %s found in window %s, but it shouldn't"
+                      buffer window)))
+           ;; `with-selected-window' restores the `current-buffer'.
+           ;; If the current buffer is buried, it should not be the
+           ;; next current buffer.  Remember to fix it later.
+           buffer-in-any-window))
+        (t (bury-buffer buffer)))
+  ;; If the `current-buffer' was buried in `with-selected-window', set
+  ;; the real current buffer, since `with-selected-window' restored it
+  ;; as the next current buffer after processing its body.
+  (set-buffer (window-buffer))
+  (setf (persp-current-buffers) (remq buffer (persp-current-buffers))))
+
 (defun persp-remove-buffer (buffer)
   "Disassociate BUFFER with the current perspective.
 
