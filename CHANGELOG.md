@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests added
 
+- `basic-persp-forget-buffer`: evaluate `persp-forget-buffer`.
 - `basic-persp-killing-buffers`: test killing buffers, a perspective's last left live buffer should not be killable/removable.
 - `basic-persp-window-prev-buffers`: evaluate if `window-perv-buffers` gets buffers of other perspectives.
 - `basic-persp-set-buffer`: evaluate `persp-set-buffer`.

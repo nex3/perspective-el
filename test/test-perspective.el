@@ -1287,6 +1287,245 @@ the number of buffers, shared or not, that it has, though."
   ;; Forced cleanup when tests failed.
   (persp-test-kill-extra-buffers " *foo*" "*dummy*"))
 
+(ert-deftest basic-persp-forget-buffer ()
+  "Test `persp-forget-buffer' and `persp-remove-buffer'.
+
+The former should disassociate buffers with perspectives, never
+killing them, the latter disassociates shared buffers and kills
+unshared ones, aka buffers not found in any other perspective."
+  (persp-test-with-persp
+    (let (dummy-buffer scratch-buffer scratch-buffer-A)
+      ;; switch to *scratch* in main
+      (should (setq scratch-buffer (switch-to-buffer "*scratch*")))
+      (should (eq scratch-buffer (current-buffer)))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; switch to *dummy* in main
+      (should (setq dummy-buffer (switch-to-buffer "*dummy*")))
+      (should (eq dummy-buffer (current-buffer)))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; disassociate *dummy* with main
+      (persp-forget-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer (current-buffer)))
+      (should (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; disassociate unassociated *dummy*
+      (persp-forget-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer (current-buffer)))
+      (should (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; remove unassociated *dummy*
+      (persp-remove-buffer dummy-buffer)
+      (should-not (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer (current-buffer)))
+      (should-not (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; switch to *dummy* in main
+      (should (setq dummy-buffer (switch-to-buffer "*dummy*")))
+      (should (eq dummy-buffer (current-buffer)))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; remove *dummy* from main
+      (persp-remove-buffer dummy-buffer)
+      (should-not (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer (current-buffer)))
+      (should-not (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; switch to *dummy* in main
+      (should (setq dummy-buffer (switch-to-buffer "*dummy*")))
+      (should (eq dummy-buffer (current-buffer)))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-match-scratch-buffers scratch-buffer))
+      ;; switch to new perspective A
+      (persp-switch "A")
+      (should (setq scratch-buffer-A (get-buffer "*scratch* (A)")))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq dummy-buffer (current-buffer))))
+      ;; disassociate unassociated *dummy*
+      (persp-forget-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq dummy-buffer (current-buffer))))
+      ;; remove unassociated *dummy*
+      (persp-remove-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq dummy-buffer (current-buffer))))
+      ;; switch to *dummy* in A
+      (should (switch-to-buffer dummy-buffer))
+      (should (eq dummy-buffer (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 2))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq dummy-buffer (current-buffer))))
+      ;; disassociate *dummy* with A
+      (persp-forget-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq dummy-buffer (current-buffer))))
+      ;; switch to *dummy* in A
+      (should (switch-to-buffer dummy-buffer))
+      (should (eq dummy-buffer (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 2))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq dummy-buffer (current-buffer))))
+      ;; remove *dummy* from A
+      (persp-remove-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq dummy-buffer (current-buffer))))
+      ;; set *dummy* to A
+      (persp-set-buffer dummy-buffer)
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 2))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; disassociate *dummy* with A
+      (persp-forget-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; disassociate unassociated *dummy*
+      (persp-forget-buffer dummy-buffer)
+      (should (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; remove unassociated *dummy*
+      (persp-remove-buffer dummy-buffer)
+      (should-not (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should-not (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; switch to *dummy* in A
+      (should (setq dummy-buffer (switch-to-buffer "*dummy*")))
+      (should (eq dummy-buffer (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 2))
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; remove *dummy* from A
+      (persp-remove-buffer dummy-buffer)
+      (should-not (buffer-live-p dummy-buffer))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should-not (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; disassociate "*scratch* (A)" with A
+      (persp-forget-buffer scratch-buffer-A)
+      (should (buffer-live-p scratch-buffer-A))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; remove "*scratch* (A)" from A
+      (persp-remove-buffer scratch-buffer-A)
+      (should (buffer-live-p scratch-buffer-A))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "main"
+        (should (eq scratch-buffer (current-buffer))))
+      ;; switch to perspective main
+      (persp-switch "main")
+      (should (eq scratch-buffer (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "A"
+        (should (eq scratch-buffer-A (current-buffer))))
+      ;; set "*scratch* (A)" to main
+      (persp-set-buffer scratch-buffer-A)
+      (should (eq scratch-buffer (current-buffer)))
+      (should (= (length (persp-get-buffers "A")) 1))
+      (should (persp-test-buffer-in-persps scratch-buffer "main"))
+      (should (persp-test-buffer-in-persps scratch-buffer-A "main" "A"))
+      (should (persp-test-match-scratch-buffers scratch-buffer scratch-buffer-A))
+      (with-perspective "A"
+        (should (eq scratch-buffer-A (current-buffer))))))
+  ;; forced cleanup when tests failed
+  (persp-test-kill-extra-buffers "*dummy*"))
+
 (ert-deftest basic-persp-switching ()
   "Test switching buffers and perspectives.
 
