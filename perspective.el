@@ -902,13 +902,12 @@ See also `persp-remove-buffer'."
         t)
        ;; When a perspective have the buffer as the only buffer, the
        ;; buffer should not be killed, but removed from perspectives
-       ;; that have more than one buffer.  To remove the buffer, all
-       ;; that's needed is `persp-remove-buffer' while the buffer is
-       ;; kept alive in at least one perspective.
+       ;; that have more than one buffer.  Those perspectives should
+       ;; forget about the buffer.
        (candidates-for-removal
         (dolist (name candidates-for-removal)
           (with-perspective name
-            (persp-remove-buffer buffer)))
+            (persp-forget-buffer buffer)))
         nil)))))
 
 (defun persp-forget-buffer (buffer)
