@@ -824,7 +824,7 @@ See also `persp-switch' and `persp-remove-buffer'."
       ;; go into an infinite loop.
       (cl-loop for other-persp in (remove (persp-current-name) (persp-all-names))
                do (with-perspective other-persp
-                    (persp-remove-buffer buffer))))))
+                    (persp-forget-buffer buffer))))))
 
 (cl-defun persp-buffer-in-other-p (buffer)
   "Returns nil if BUFFER is only in the current perspective.
