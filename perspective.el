@@ -1752,8 +1752,32 @@ restored."
         (pop-to-buffer ibuf)
         (ibuffer-update nil t)))))
 
+
+;;; --- modify perspectives from ibuffer
 
-;;; --- xref code
+;;;###autoload
+(defun persp-ibuffer-add-marked-buffers ()
+  "Add all marked buffers within ibuffer to the current perspective."
+  (interactive)
+  (unless (featurep 'ibuffer)
+    (user-error "IBuffer not loaded"))
+  (declare-function ibuffer-get-marked-buffers "ibuffer.el")
+  (dolist (buffer (ibuffer-get-marked-buffers))
+    (persp-add-buffer buffer)))
+
+;;;###autoload
+(defun persp-ibuffer-remove-marked-buffers ()
+  "Remove all marked buffers within ibuffer from the current perspective."
+  (interactive)
+  (unless (featurep 'ibuffer)
+    (user-error "IBuffer not loaded"))
+  (declare-function ibuffer-get-marked-buffers "ibuffer.el")
+  (dolist (buffer (ibuffer-get-marked-buffers))
+    (persp-remove-buffer buffer)))
+    ;; TODO: if the current ibuffer is filtered to the current perspective, update
+    ;; the view to not show the removed buffers
+
+ ;;; --- xref code
 
 ;; xref is not available in Emacs 24, so be careful:
 (when (require 'xref nil t)
