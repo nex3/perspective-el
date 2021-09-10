@@ -1769,6 +1769,12 @@ restored."
   (persp--ibuffer-function-on-marked #'persp-add-buffer))
 
 ;;;###autoload
+(defun persp-ibuffer-set-marked-buffers ()
+  "Add all marked buffers within ibuffer to the current perspective."
+  (interactive)
+  (persp--ibuffer-function-on-marked #'persp-set-buffer))
+
+;;;###autoload
 (defun persp-ibuffer-remove-marked-buffers ()
   "Add all marked buffers within ibuffer to the current perspective."
   (interactive)
