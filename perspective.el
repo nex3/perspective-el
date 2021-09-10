@@ -1755,27 +1755,26 @@ restored."
 
 ;;; --- modify perspectives from ibuffer
 
+(defun persp--ibuffer-function-on-marked (persp-buffer-function)
+  "Apply PERSP-BUFFER-FUNCTION to all buffers marked in ibuffer."
+  (unless (featurep 'ibuffer)
+    (user-error "IBuffer not loaded"))
+  (declare-function ibuffer-get-marked-buffers "ibuffer.el")
+  (mapc persp-buffer-function (ibuffer-get-marked-buffers)))
+
 ;;;###autoload
 (defun persp-ibuffer-add-marked-buffers ()
   "Add all marked buffers within ibuffer to the current perspective."
   (interactive)
-  (unless (featurep 'ibuffer)
-    (user-error "IBuffer not loaded"))
-  (declare-function ibuffer-get-marked-buffers "ibuffer.el")
-  (dolist (buffer (ibuffer-get-marked-buffers))
-    (persp-add-buffer buffer)))
+  (persp--ibuffer-function-on-marked #'persp-add-buffer))
 
 ;;;###autoload
 (defun persp-ibuffer-remove-marked-buffers ()
-  "Remove all marked buffers within ibuffer from the current perspective."
+  "Add all marked buffers within ibuffer to the current perspective."
   (interactive)
-  (unless (featurep 'ibuffer)
-    (user-error "IBuffer not loaded"))
-  (declare-function ibuffer-get-marked-buffers "ibuffer.el")
-  (dolist (buffer (ibuffer-get-marked-buffers))
-    (persp-remove-buffer buffer)))
-    ;; TODO: if the current ibuffer is filtered to the current perspective, update
-    ;; the view to not show the removed buffers
+  (persp--ibuffer-function-on-marked #'persp-remove-buffer))
+;; TODO: if the current ibuffer is filtered to the current perspective, update
+;; the view to not show the removed buffers
 
  ;;; --- xref code
 
