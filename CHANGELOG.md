@@ -6,6 +6,13 @@ Perspective was started in 2008 and this log was only added in 2021.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
+## Unreleased
+
+### Fixed
+
+- Added a workaround for potential problems caused by recursive minibuffer use.
+
+
 ## [2.17] — 2021-09-18
 
 ### Added
