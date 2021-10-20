@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests changed
 
+- `basic-persp-header-line-format-default-value`: remove leading tab.
 - `basic-persp-get-scratch-buffer`: evaluate `persp-get-scratch-buffer`.
 - `basic-persp-switching`: tests the `current-buffer` too.
 - `basic-persp-creation-deletion`: test killing all perspectives, main perspective included.

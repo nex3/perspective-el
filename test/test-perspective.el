@@ -617,7 +617,7 @@ value of `header-line-format'.
 Updating `header-line-format' default value using a buffer
 local value of it is a mistake."
   (let ((persp-show-modestring 'header)
-	(default-header-line-format (default-value 'header-line-format)))
+        (default-header-line-format (default-value 'header-line-format)))
     ;; Since `persp-test-with-persp' may change in the future, do not
     ;; use it.  We need to avoid switching to another buffer than the
     ;; *dummy* buffer just before `persp-mode' is disabled.  For this
