@@ -531,7 +531,15 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   "Remove all windows, ensure the remaining one has no window parameters.
 This prevents the propagation of reserved window parameters like
 window-side creating perspectives."
-  (let ((ignore-window-parameters t))
+  (let ((ignore-window-parameters t)
+        ;; Required up to Emacs 27.2 to prevent `delete-window' from
+        ;; updating `window-prev-buffers' for all windows.  Allowing
+        ;; to create a fresh window (aka `split-window'), with empty
+        ;; `window-prev-buffers'.  If the latter is not empty, other
+        ;; perspectives may pull in buffers of the current one, as a
+        ;; side effect when `persp-reactivate-buffers' is called and
+        ;; the perspective is then switched.
+        (switch-to-buffer-preserve-window-point nil))
     (delete-other-windows)
     (when (ignore-errors
             ;; Create a fresh window without any window parameters, the
