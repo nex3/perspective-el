@@ -866,6 +866,43 @@ A non-existing buffer passed as argument should be discarded."
   ;; Forced cleanup when tests failed.
   (persp-test-kill-extra-buffers "*dummy*"))
 
+(ert-deftest basic-persp-window-prev-buffers ()
+  "Test if `window-prev-buffers' gets buffers of other perspectives.
+
+A dirty `window-prev-buffers' may allow a perspective to pull in
+buffers from other perspectives.
+
+Till Emacs 27.2, `delete-window' may update `window-prev-buffers'
+for all windows.  This means that after `persp-reset-windows' the
+single window left may end up with a dirty `window-prev-buffers',
+unless `switch-to-buffer-preserve-window-point' is nil.
+
+Upstream commit 8f63f0078a23421eada97b4da51b9308b82532ce reverted
+window/winner changes (Revert 0454bfd3313) in Emacs (bug#23621).
+So, what said above should not apply any more after that commit,
+and `switch-to-buffer-preserve-window-point' could not be used."
+  (should (get-buffer-create "*scratch*"))
+  (persp-test-kill-extra-buffers "*dummy*")
+  (persp-test-with-persp
+    (let (dummy-buffer scratch-buffer scratch-buffer-A)
+      (should (setq scratch-buffer (switch-to-buffer "*scratch*")))
+      (should (setq dummy-buffer (switch-to-buffer "*dummy*")))
+      (should-not (assq dummy-buffer (window-prev-buffers)))
+      (should (assq scratch-buffer (window-prev-buffers)))
+      (should (eq dummy-buffer (current-buffer)))
+      (persp-switch "A")
+      (persp-set-buffer "*dummy*")
+      (should (setq scratch-buffer-A (get-buffer "*scratch* (A)")))
+      (should-not (assq scratch-buffer-A (window-prev-buffers)))
+      (should-not (assq scratch-buffer (window-prev-buffers)))
+      (should-not (assq dummy-buffer (window-prev-buffers)))
+      (should (eq scratch-buffer-A (current-buffer)))
+      (persp-switch "main")
+      (should-not (assq scratch-buffer-A (window-prev-buffers)))
+      (should-not (assq dummy-buffer (window-prev-buffers)))
+      (should (assq scratch-buffer (window-prev-buffers)))
+      (should (eq scratch-buffer (current-buffer))))))
+
 (ert-deftest basic-persp-switching ()
   "Test switching buffers and perspectives.
 
