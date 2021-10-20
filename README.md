@@ -300,7 +300,7 @@ A custom variable, `persp-state-default-file`, sets a default file to use for
 saving and restoring perspectives. When it is set, `persp-state-save` may be
 called non-interactively without an argument and it will save to the file
 referenced by that variable. This makes it easy to automatically save
-perspective sessions when Emacs exists:
+perspective sessions when Emacs exits:
 
 ```
 (add-hook 'kill-emacs-hook #'persp-state-save)
