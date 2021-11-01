@@ -706,7 +706,7 @@ If NORECORD is non-nil, do not update the
   ;; TODO: See https://github.com/nex3/perspective-el/issues/163 for the source
   ;; of this workaround. It would be good to investigate exactly why recursive
   ;; minibuffers break Perspective.
-  (when (> (minibuffer-depth) 0)
+  (when (> (recursion-depth) 0)
     (user-error "Perspective operations in recursive minibuffers not supported"))
   (unless (persp-valid-name-p name)
     (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
