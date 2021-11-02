@@ -564,7 +564,12 @@ window-side creating perspectives."
         ;; side effect when `persp-reactivate-buffers' is called and
         ;; the perspective is then switched.
         (switch-to-buffer-preserve-window-point nil))
-    (delete-other-windows)
+    (delete-other-windows
+     ;; XXX: Ugly workaround for problems related to
+     ;; https://github.com/nex3/perspective-el/issues/163 and
+     ;; https://github.com/nex3/perspective-el/issues/167
+     (when (eq (minibuffer-window) (selected-window))
+       (previous-window (minibuffer-window))))
     (when (ignore-errors
             ;; Create a fresh window without any window parameters, the
             ;; selected window is still in a window that may have window
@@ -703,11 +708,6 @@ perspective's local variables are set.
 If NORECORD is non-nil, do not update the
 `persp-last-switch-time' for the switched perspective."
   (interactive "i")
-  ;; TODO: See https://github.com/nex3/perspective-el/issues/163 for the source
-  ;; of this workaround. It would be good to investigate exactly why recursive
-  ;; minibuffers break Perspective.
-  (when (> (recursion-depth) 0)
-    (user-error "Perspective operations in recursive minibuffers not supported"))
   (unless (persp-valid-name-p name)
     (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
   (if (and (persp-curr) (equal name (persp-current-name))) name
