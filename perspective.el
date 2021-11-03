@@ -1435,7 +1435,10 @@ PERSP-SET-IDO-BUFFERS)."
                                  (if other
                                      (format " (default %s)" other)
                                    ""))
-                         candidates
+                         (lambda (string predicate action)
+                           (if (eq 'metadata action)
+                               '(metadata (category . buffer))
+                             (complete-with-action action candidates string predicate)))
                          nil nil nil nil
                          (buffer-name (persp-other-buffer)))))))
   (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
