@@ -61,7 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `persp-switch`: remove duplicated code.  It's now possible to call `persp-new` either to get an existing perspective or to create a new one.
 - `persp-mode`: add/remove `persp-maybe-kill-buffer` hook.
 - `persp-kill`: switch `persp-maybe-kill-buffer` on/off to allow killing a perspective's last left buffer.
-- `persp-set-buffer`: walk perspectives rather than using a while `persp-buffer-in-other-p` loop, since the former isn't prone to infinite loops.  This is needed due to buffers kept in perspectives by `persp-maybe-kill-buffer` and `persp-remove-buffer` when a buffer is a perspective`s last left buffer.
+- `persp-set-buffer`: walk perspectives rather than using a while `persp-buffer-in-other-p` loop, since the former isn't prone to infinite loops.  This is needed due to buffers kept in perspectives by `persp-maybe-kill-buffer` and `persp-remove-buffer` when a buffer is a perspective's last left buffer.
 - `persp-set-buffer`: use `persp-forget-buffer` to remove a buffer from a perspective.
 - `persp-maybe-kill-buffer`: use `persp-forget-buffer` to remove a buffer from a perspective.
 - `persp-remove-buffer`: use `persp-forget-buffer` to remove a buffer from a perspective.
@@ -69,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `persp-remove-buffer`: when burying a buffer, walk windows rather than using a while loop, since the former isn't prone to infinite loops.
 - `make-persp`: document that executing BODY saves/restores the `current-buffer`.
 - `persp-set-buffer`: follow the coding style of `persp-add-buffer`.
+- `persp-switch-to-buffer*`: tag with `'buffer` category so Marginalia can add its annotations.
 
 
 ### Fixed
