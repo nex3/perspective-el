@@ -873,7 +873,7 @@ Prefers perspectives in the selected frame."
           (persp-switch (cdr other-persp)))
         (switch-to-buffer buffer)))))
 
-(defun persp-maybe-kill-buffer ()
+(cl-defun persp-maybe-kill-buffer ()
   "Don't kill a buffer if it's the only buffer in a perspective.
 
 This is the default behaviour of `kill-buffer'.  Perspectives
@@ -896,6 +896,11 @@ See also `persp-remove-buffer'."
     (let* ((buffer (current-buffer))
            (bufstr (buffer-name buffer))
            candidates-for-removal candidates-for-keeping)
+      ;; XXX: For performance reasons, always allow killing off obviously
+      ;; temporary buffers. According to Emacs convention, these buffers' names
+      ;; start with a space.
+      (when (string-match-p (rx string-start (one-or-more blank)) bufstr)
+        (cl-return-from persp-maybe-kill-buffer t))
       (dolist (name (persp-names))
         (let ((buffer-names (persp-get-buffer-names name)))
           (when (member bufstr buffer-names)
@@ -999,12 +1004,12 @@ Killing a perspective means that all buffers associated with that
 perspective and no others are killed."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (persp-current-name) t)))
-  ;;(remove-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
+  (remove-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
   (with-perspective name
     (run-hooks 'persp-killed-hook)
     (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
-  ;;(add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
+  (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
   (remhash name (perspectives-hash))
   (when (boundp 'persp--xref-marker-ring) (remhash name persp--xref-marker-ring))
   (persp-update-modestring)
@@ -1272,7 +1277,7 @@ named collections of buffers and window configurations."
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'delete-frame-functions 'persp-delete-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
-        ;;(add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
+        (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
         (setf (persp-current-buffers) (buffer-list))
@@ -1282,7 +1287,7 @@ named collections of buffers and window configurations."
     (remove-hook 'delete-frame-functions 'persp-delete-frame)
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
     (remove-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
-    ;;(remove-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
+    (remove-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
     (setq read-buffer-function nil)
     (set-frame-parameter nil 'persp--hash nil)
     (setq global-mode-string (delete '(:eval (persp-mode-line)) global-mode-string))
