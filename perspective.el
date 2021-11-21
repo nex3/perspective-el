@@ -1759,8 +1759,7 @@ restored."
 ;;; --- xref code
 
 ;; xref is not available in Emacs 24, so be careful:
-(when (require 'xref nil t)
-
+(with-eval-after-load 'xref
   (defvar persp--xref-marker-ring (make-hash-table :test 'equal))
 
   (defun persp--set-xref-marker-ring ()
