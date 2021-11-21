@@ -312,9 +312,7 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "9") (lambda () (interactive) (persp-switch-by-number 9)))
 (define-key perspective-map (kbd "0") (lambda () (interactive) (persp-switch-by-number 10)))
 
-(declare-function which-key-mode "which-key.el")
-(when (fboundp 'which-key-mode)
-  (require 'which-key)
+(with-eval-after-load 'which-key
   (declare-function which-key-add-keymap-based-replacements "which-key.el")
   (when (fboundp 'which-key-add-keymap-based-replacements)
     (which-key-add-keymap-based-replacements perspective-map
