@@ -22,6 +22,9 @@
 (set-frame-height (selected-frame) 80)
 (set-frame-width (selected-frame) 160)
 
+;; Set feature flag(s):
+(customize-set-variable 'persp-feature-flag-prevent-killing-last-buffer-in-perspective t)
+
 (defun persp-test-interesting-buffer? (buf)
   "Return t if BUF is a non-temporary buffer (i.e., lacks
 tell-tale leading '*' characters)."

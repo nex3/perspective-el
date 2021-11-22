@@ -113,6 +113,11 @@ save state when exiting Emacs."
   :group 'perspective-mode
   :type 'file)
 
+(defcustom persp-feature-flag-prevent-killing-last-buffer-in-perspective nil
+  "Experimental feature flag: prevent killing the last buffer in a perspective."
+  :group 'perspective-mode
+  :type 'boolean)
+
 
 ;;; --- implementation
 
@@ -1009,7 +1014,8 @@ perspective and no others are killed."
     (run-hooks 'persp-killed-hook)
     (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
-  (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
+  (when persp-feature-flag-prevent-killing-last-buffer-in-perspective
+    (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer))
   (remhash name (perspectives-hash))
   (when (boundp 'persp--xref-marker-ring) (remhash name persp--xref-marker-ring))
   (persp-update-modestring)
@@ -1277,7 +1283,8 @@ named collections of buffers and window configurations."
         (add-hook 'after-make-frame-functions 'persp-init-frame)
         (add-hook 'delete-frame-functions 'persp-delete-frame)
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
-        (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
+        (when persp-feature-flag-prevent-killing-last-buffer-in-perspective
+          (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer))
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
         (setf (persp-current-buffers) (buffer-list))
