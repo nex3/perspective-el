@@ -268,9 +268,10 @@ globally, e.g.:
 
 ### Notes on `completing-read` Enhancements
 
-Users of a `completing-read` enhancement framework (such as Ivy or
-[Selectrum](https://github.com/raxod502/selectrum)) may wish to use the
-following two functions:
+Users of a `completing-read` enhancement framework (such as Ivy,
+[Selectrum](https://github.com/raxod502/selectrum), or
+[Vertico](https://github.com/minad/vertico)) may wish to use the following two
+functions:
 - `persp-switch-to-buffer*` replaces `switch-to-buffer`
 - `persp-kill-buffer*` replaces `kill-buffer`
 
