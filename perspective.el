@@ -900,11 +900,12 @@ See also `persp-remove-buffer'."
   (persp-protect
     (let* ((buffer (current-buffer))
            (bufstr (buffer-name buffer))
+           (ignore-rx (persp--make-ignore-buffer-rx))
            candidates-for-removal candidates-for-keeping)
       ;; XXX: For performance reasons, always allow killing off obviously
       ;; temporary buffers. According to Emacs convention, these buffers' names
       ;; start with a space.
-      (when (string-match-p (rx string-start (one-or-more blank)) bufstr)
+      (when (string-match-p ignore-rx bufstr)
         (cl-return-from persp-maybe-kill-buffer t))
       (dolist (name (persp-names))
         (let ((buffer-names (persp-get-buffer-names name)))
