@@ -118,6 +118,17 @@ save state when exiting Emacs."
   :group 'perspective-mode
   :type 'boolean)
 
+(defcustom persp-feature-flag-directly-kill-ido-ignore-buffers t
+  "Experimental feature flag: kill temporary buffers skipping checks.
+
+For performance reasons, a `persp-maybe-kill-buffer' call is allowed
+to kill `ido-ignore-buffers' (aka temporary buffers) skipping checks
+when this feature flag isn't nil.
+
+Temproray buffers usually have a name starting with a space."
+  :group 'perspective-mode
+  :type 'boolean)
+
 
 ;;; --- implementation
 
@@ -905,8 +916,9 @@ See also `persp-remove-buffer'."
       ;; XXX: For performance reasons, always allow killing off obviously
       ;; temporary buffers. According to Emacs convention, these buffers' names
       ;; start with a space.
-      (when (string-match-p ignore-rx bufstr)
-        (cl-return-from persp-maybe-kill-buffer t))
+      (and persp-feature-flag-directly-kill-ido-ignore-buffers
+           (string-match-p ignore-rx bufstr)
+           (cl-return-from persp-maybe-kill-buffer t))
       (dolist (name (persp-names))
         (let ((buffer-names (persp-get-buffer-names name)))
           (when (member bufstr buffer-names)

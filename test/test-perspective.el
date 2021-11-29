@@ -24,6 +24,7 @@
 
 ;; Set feature flag(s):
 (customize-set-variable 'persp-feature-flag-prevent-killing-last-buffer-in-perspective t)
+(customize-set-variable 'persp-feature-flag-directly-kill-ido-ignore-buffers nil)
 
 (defun persp-test-interesting-buffer? (buf)
   "Return t if BUF is a non-temporary buffer (i.e., lacks
