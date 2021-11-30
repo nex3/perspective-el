@@ -65,6 +65,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `persp-maybe-kill-buffer`: read perspectives' buffers directly accessing the frame's hash table for performance reasons.
 - `persp-maybe-kill-buffer`: implement `persp-feature-flag-directly-kill-ido-ignore-buffers`.
 - `persp-maybe-kill-buffer`: kill `persp--make-ignore-buffer-rx` temporary buffers (aka `ido-ignore-buffers`) skipping checks.
 - `persp-kill`: implement `persp-feature-flag-prevent-killing-last-buffer-in-perspective`.

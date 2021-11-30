@@ -919,14 +919,21 @@ See also `persp-remove-buffer'."
       (and persp-feature-flag-directly-kill-ido-ignore-buffers
            (string-match-p ignore-rx bufstr)
            (cl-return-from persp-maybe-kill-buffer t))
-      (dolist (name (persp-names))
-        (let ((buffer-names (persp-get-buffer-names name)))
-          (when (member bufstr buffer-names)
-            (if (cdr buffer-names)
-                (push name candidates-for-removal)
-              ;; We use a list for debugging purposes, a simple bool
-              ;; can suffice for what we are doing here.
-              (push name candidates-for-keeping)))))
+      ;; Directly access the frame's hash table for performance.
+      (maphash (lambda (key persp)
+                 (let* ((buffers (persp-buffers persp))
+                        (other-buffers (remq buffer buffers)))
+                   ;; If the perspective has another regular buffer,
+                   ;; this buffer can be removed, otherwise keep it.
+                   (if (cl-find-if-not (lambda (buf)
+                                         (string-match-p ignore-rx (buffer-name buf)))
+                                       other-buffers)
+                       ;; Perspective's buffer eligible for removal.
+                       (push key candidates-for-removal)
+                     ;; We use a list for debugging purposes, even a
+                     ;; simple non nil will suffice.
+                     (push key candidates-for-keeping))))
+               (frame-parameter nil 'persp--hash))
       (cond
        ;; When there aren't perspectives with the buffer as the only
        ;; buffer, it can be killed safely.  Also cleanup killed ones
