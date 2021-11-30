@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests added
 
+- `basic-persp-killing-buffers-benchmark`: benchmark `persp-maybe-kill-buffer`.
 - `basic-persp-switch-to-scratch-buffer`: evaluate `persp-switch-to-scratch-buffer`.
 - `basic-persp-get-scratch-buffer`: test scratch buffers conformity and creation.
 - `basic-persp-forget-buffer`: evaluate `persp-forget-buffer`.
