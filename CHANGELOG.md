@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ERT tests variables
 
+- `ido-ignore-buffers`: set to detect temporary buffers (aka buffers starting with a space).
 - `persp-feature-flag-directly-kill-ido-ignore-buffers`: unset flag (disable).
 - `persp-feature-flag-prevent-killing-last-buffer-in-perspective`: set flag (enable).
 
