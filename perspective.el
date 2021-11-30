@@ -904,13 +904,17 @@ this directly, otherwise the current buffer may be removed or
 killed from perspectives.
 
 See also `persp-remove-buffer'."
-  ;; List candidates where the buffer to be killed should be removed
-  ;; instead, whom are perspectives with more than one buffer.  This
-  ;; is to allow the buffer to live for perspectives that have it as
-  ;; their only buffer.
+  ;; For performance reasons, don't use `with-perspective' or switch
+  ;; perspective.  When the buffer is eligible for removal, modify a
+  ;; frame's hash table directly.  Please note that this requires to
+  ;; also update a perspective's windows configuration at some point
+  ;; to prevent pulling back removed buffers, but still found there.
   (persp-protect
+    ;; XXX: In some scenarios force updating the `current-buffer' to
+    ;; the window's buffer after killing a buffer may be required.
     (let* ((buffer (current-buffer))
            (bufstr (buffer-name buffer))
+           (current-name (persp-current-name))
            (ignore-rx (persp--make-ignore-buffer-rx))
            candidates-for-removal candidates-for-keeping)
       ;; XXX: For performance reasons, always allow killing off obviously
@@ -929,34 +933,26 @@ See also `persp-remove-buffer'."
                                          (string-match-p ignore-rx (buffer-name buf)))
                                        other-buffers)
                        ;; Perspective's buffer eligible for removal.
-                       (push key candidates-for-removal)
-                     ;; We use a list for debugging purposes, even a
-                     ;; simple non nil will suffice.
-                     (push key candidates-for-keeping))))
+                       (when (or candidates-for-removal
+                                 ;; Postpone removal if found in the
+                                 ;; current perspective.
+                                 (not (setq candidates-for-removal (string-equal key current-name))))
+                         ;; XXX: This doesn't update a perspective's
+                         ;; windows configuration.  A removed buffer
+                         ;; will be pulled back by `persp-activate',
+                         ;; if it's in the windows configuration.
+                         (setf (persp-buffers persp) other-buffers))
+                     ;; Keep the buffer in this perspective.
+                     (setq candidates-for-keeping t))))
                (frame-parameter nil 'persp--hash))
-      (cond
-       ;; When there aren't perspectives with the buffer as the only
-       ;; buffer, it can be killed safely.  Also cleanup killed ones
-       ;; found in perspectives listing the buffer to be killed.
-       ((not candidates-for-keeping)
-        ;; Switching to a perspective that isn't the current, should
-        ;; automatically cleanup previously killed buffers which are
-        ;; still in the perspective's list of buffers.  Removing the
-        ;; buffer to be killed should also keep the list clean.
-        (dolist (name candidates-for-removal)
-          (with-perspective name
-            ;; remove the buffer that has to be killed from the list
-            (setf (persp-current-buffers) (remq buffer (persp-current-buffers)))))
-        t)
-       ;; When a perspective have the buffer as the only buffer, the
-       ;; buffer should not be killed, but removed from perspectives
-       ;; that have more than one buffer.  Those perspectives should
-       ;; forget about the buffer.
-       (candidates-for-removal
-        (dolist (name candidates-for-removal)
-          (with-perspective name
-            (persp-forget-buffer buffer)))
-        nil)))))
+      ;; When a perspective have the buffer as the only buffer, the
+      ;; buffer should not be killed, but removed from perspectives
+      ;; that have more than one buffer.
+      (when candidates-for-removal
+        (persp-forget-buffer buffer))
+      ;; When there aren't perspectives with the buffer as the only
+      ;; buffer, it can be killed safely.
+      (not candidates-for-keeping))))
 
 (defun persp-forget-buffer (buffer)
   "Disassociate BUFFER with the current perspective.
