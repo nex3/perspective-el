@@ -166,7 +166,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
 (cl-defstruct (perspective
                (:conc-name persp-)
                (:constructor make-persp-internal))
-  name buffers killed local-variables
+  name buffers killed dirty local-variables
   (last-switch-time (current-time))
   (created-time (current-time))
   (window-configuration (current-window-configuration))
@@ -753,19 +753,43 @@ If NORECORD is non-nil, do not update the
   (persp-update-modestring))
 
 (defun persp-activate (persp)
-  "Activate the perspective given by the persp struct PERSP."
+  "Activate the perspective given by the persp struct PERSP.
+
+If PERSP has a dirty flag set, some of its buffers may have been
+removed by directly manipulating the frame's hash table, but the
+perspective's windows configuration was not updated.  This means
+that the windows configuration may hold removed buffers that are
+pulled back into the perspective.  If this happens, buffers that
+do not belong to PERSP will be forgotten automatically."
   (check-persp persp)
   (persp-save)
   (set-frame-parameter nil 'persp--curr persp)
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
   (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
-  (set-window-configuration (persp-window-configuration persp))
-  (when (marker-position (persp-point-marker persp))
-    (goto-char (persp-point-marker persp)))
+  ;; reset windows configuration
+  (let* ((dirty (persp-dirty persp))
+         windows-buffers-not-in-current-perspective
+         (buffers (and dirty (persp-current-buffers))))
+    (set-window-configuration (persp-window-configuration persp))
+    (when (marker-position (persp-point-marker persp))
+      (goto-char (persp-point-marker persp)))
+    ;; find windows buffers not in the current perspective
+    (when buffers
+      (walk-windows (lambda (window)
+                      (let ((buffer (window-buffer window)))
+                        (unless (memq buffer buffers)
+                          (push buffer windows-buffers-not-in-current-perspective)))))
+      ;; forget windows buffers not in the current perspective
+      (mapc (lambda (buffer)
+              ;; it's required to acknowledge the buffer to forget it
+              (persp-add-buffer buffer)
+              (persp-forget-buffer buffer))
+            windows-buffers-not-in-current-perspective)))
   (persp-update-modestring)
   ;; force update of `current-buffer'
   (set-buffer (window-buffer))
+  (setf (persp-dirty persp) nil)
   (run-hooks 'persp-activated-hook))
 
 (defun persp-switch-quick (char)
@@ -941,6 +965,7 @@ See also `persp-remove-buffer'."
                          ;; windows configuration.  A removed buffer
                          ;; will be pulled back by `persp-activate',
                          ;; if it's in the windows configuration.
+                         (setf (persp-dirty persp) t)
                          (setf (persp-buffers persp) other-buffers))
                      ;; Keep the buffer in this perspective.
                      (setq candidates-for-keeping t))))

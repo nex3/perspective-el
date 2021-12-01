@@ -65,6 +65,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `persp`: add dirty flag to the structure, that when set means that at least one buffer was removed from the perspective manipulating the frame's hash table without updating the perspective's windows configuration.
+- `persp-maybe-kill-buffer`: set a perspective's dirty flag when removing buffers accessing the frame's hash table directly.
+- `persp-activate`: forget windows buffers which do not belong to the current perspective, hence updating the windows configuration; this is required since `persp-maybe-kill-buffer` no longer updates the perspectives windows configuration.
 - `persp-mode`: when enabling the mode, activate `persp-maybe-kill-buffer-adv`.
 - `persp-maybe-kill-buffer-adv`: due to `persp-maybe-kill-buffer` amendments, after calling `kill-buffer` force update the `current-buffer` to the current window's buffer.
 - `persp-maybe-kill-buffer`: remove buffers directly accessing the frame's hash table for performance reasons.
