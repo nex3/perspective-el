@@ -65,6 +65,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `persp-mode`: when enabling the mode, activate `persp-maybe-kill-buffer-adv`.
+- `persp-maybe-kill-buffer-adv`: due to `persp-maybe-kill-buffer` amendments, after calling `kill-buffer` force update the `current-buffer` to the current window's buffer.
 - `persp-maybe-kill-buffer`: remove buffers directly accessing the frame's hash table for performance reasons.
 - `persp-maybe-kill-buffer`: read perspectives' buffers directly accessing the frame's hash table for performance reasons.
 - `persp-maybe-kill-buffer`: implement `persp-feature-flag-directly-kill-ido-ignore-buffers`.

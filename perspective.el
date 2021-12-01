@@ -1200,6 +1200,13 @@ is non-nil or with prefix arg, don't switch to the new perspective."
         (persp-update-modestring)
       (persp-activate persp))))
 
+(defadvice kill-buffer (after persp-maybe-kill-buffer-adv)
+  "Force set the `current-buffer' to the window's buffer.
+
+See also `persp-maybe-kill-buffer'."
+  (persp-protect
+    (set-buffer (window-buffer))))
+
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
 
@@ -1289,6 +1296,7 @@ named collections of buffers and window configurations."
           (setq persp-started-after-server-mode t))
         ;; TODO: Convert to nadvice, which has been available since 24.4 and is
         ;; the earliest Emacs version Perspective supports.
+        (ad-activate 'kill-buffer)
         (ad-activate 'switch-to-buffer)
         (ad-activate 'display-buffer)
         (ad-activate 'set-window-buffer)
