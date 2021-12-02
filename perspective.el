@@ -118,7 +118,7 @@ save state when exiting Emacs."
   :group 'perspective-mode
   :type 'boolean)
 
-(defcustom persp-feature-flag-directly-kill-ido-ignore-buffers t
+(defcustom persp-feature-flag-directly-kill-ido-ignore-buffers nil
   "Experimental feature flag: kill temporary buffers skipping checks.
 
 For performance reasons, a `persp-maybe-kill-buffer' call is allowed
