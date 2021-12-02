@@ -54,7 +54,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - `persp-feature-flag-directly-kill-ido-ignore-buffers`: allow/disallow `persp-maybe-kill-buffer` to kill `ido-ignore-buffers` skipping checks (default: disable).
-- `persp-feature-flag-prevent-killing-last-buffer-in-perspective`: enables/disables `persp-maybe-kill-buffer` (default: disable).
+- `persp-feature-flag-prevent-killing-last-buffer-in-perspective`: enables/disables `persp-maybe-kill-buffer` (default: enable).
 - `persp-switch-to-scratch-buffer`: interactive function to switch to the current perspective's scratch buffer, creating one if missing.
 - `persp-get-scratch-buffer`: utility function to properly get/create a scratch buffer.
 - `persp-forget-buffer`: disassociate buffer with perspective without the risk of killing it.  This balances `persp-add-buffer`.  Newly created buffers via `get-buffer-create` are rogue buffers not found in any perspective, this function allows to get back to that state.

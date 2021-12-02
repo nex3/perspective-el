@@ -113,7 +113,7 @@ save state when exiting Emacs."
   :group 'perspective-mode
   :type 'file)
 
-(defcustom persp-feature-flag-prevent-killing-last-buffer-in-perspective nil
+(defcustom persp-feature-flag-prevent-killing-last-buffer-in-perspective t
   "Experimental feature flag: prevent killing the last buffer in a perspective."
   :group 'perspective-mode
   :type 'boolean)
