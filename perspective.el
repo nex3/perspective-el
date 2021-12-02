@@ -1471,7 +1471,10 @@ PERSP-SET-IDO-BUFFERS)."
       ;; persp-interactive-completion-function, since it is expected to have
       ;; been replaced by a completion framework.
       (completing-read (format "Kill buffer (default %s): " (buffer-name (current-buffer)))
-                       (persp-current-buffer-names)
+                       (lambda (string predicate action)
+                         (if (eq 'metadata action)
+                             '(metadata (category . buffer))
+                           (complete-with-action action (persp-current-buffer-names) string predicate)))
                        nil nil nil nil
                        (buffer-name (current-buffer))))))
   (kill-buffer buffer-or-name))
