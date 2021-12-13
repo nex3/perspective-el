@@ -1863,7 +1863,7 @@ restored."
         (frame-count 0)
         (state-complete (read
                          (with-temp-buffer
-                           (insert-file-contents-literally file)
+                           (insert-file-contents file)
                            (buffer-string)))))
     ;; open all files in a temporary perspective to avoid polluting "main"
     (persp-switch tmp-persp-name)
