@@ -1409,16 +1409,20 @@ perspective beginning with the given letter."
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
-(defun persp-other-buffer (&optional buffer visible-ok frame)
-  "A version of `other-buffer' which respects perspectives."
-  (let ((other (other-buffer buffer visible-ok frame)))
-    (if (member other (persp-current-buffers))
-        other
-      ;; In cases where `other-buffer' produces a buffer that is not
-      ;; part of the current perspective, select the current
-      ;; perspective's *scratch* buffer, similar to the behaviour of
-      ;; `other-buffer'.
-      (persp-get-scratch-buffer))))
+(cl-defun persp-other-buffer (&optional skip-buffer visible-ok frame)
+  "A version of `other-buffer' which respects perspectives.
+This respects ido-ignore-buffers.
+TODO: The VISIBLE-OK parameter is currently ignored."
+  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
+    (cl-loop for b in (buffer-list frame) do
+             (let ((name (buffer-name b)))
+               (when (and (not (and (buffer-live-p skip-buffer) (equal skip-buffer b)))
+                          (not (string-prefix-p " " name))
+                          (not (string-match-p ignore-rx name))
+                          (member b (persp-current-buffers)))
+                 (cl-return-from persp-other-buffer b)))))
+  ;; fallback:
+  (persp-get-scratch-buffer))
 
 
 ;;; --- perspective-aware buffer switchers
@@ -1437,7 +1441,7 @@ PERSP-SET-IDO-BUFFERS)."
         (let ((read-buffer-function nil))
           (read-buffer-to-switch "Switch to buffer"))
       (let* ((candidates (persp-current-buffer-names))
-             (other (buffer-name (persp-other-buffer))))
+             (other (buffer-name (persp-other-buffer (current-buffer)))))
         ;; NB: This intentionally calls completing-read instead of
         ;; persp-interactive-completion-function, since it is expected to have
         ;; been replaced by a completion framework.
@@ -1450,7 +1454,7 @@ PERSP-SET-IDO-BUFFERS)."
                                '(metadata (category . buffer))
                              (complete-with-action action candidates string predicate)))
                          nil nil nil nil
-                         (buffer-name (persp-other-buffer)))))))
+                         other)))))
   (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
     (switch-to-buffer buffer)))
 

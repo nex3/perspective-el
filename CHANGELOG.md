@@ -70,6 +70,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `make-persp`: document that executing BODY saves/restores the `current-buffer`.
 - `persp-set-buffer`: follow the coding style of `persp-add-buffer`.
 - `persp-switch-to-buffer*`: tag with `'buffer` category so Marginalia can add its annotations.
+- `persp-other-buffer`: rewrite so it respects ignored buffer list.
 
 
 ### Fixed
