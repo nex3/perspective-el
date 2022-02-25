@@ -143,7 +143,7 @@ Users of [`use-package`](https://github.com/jwiegley/use-package) can install Pe
 (use-package perspective
   :bind
   ("C-x C-b" . persp-list-buffers)   ; or use a nicer switcher, see below
-  :config
+  :init
   (persp-mode))
 ```
 
