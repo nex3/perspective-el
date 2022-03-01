@@ -2260,4 +2260,39 @@ persp-test-make-sample-environment."
         (persp-test-check-sample-environment))
     (persp-test-clean-files "A1" "A2" "A3" "B1" "B2" "B3" "B4" "state-1.el")))
 
+(ert-deftest merge-and-unmerge ()
+  (let ((persp-merge-list nil))
+    (unwind-protect
+        (persp-test-with-persp
+          (persp-test-with-files nil (A1 A2 B1 B2 C1 C2)
+            (with-named-persp "A"
+              (persp-add-buffer "A1")
+              (persp-add-buffer "A2")
+              (with-named-persp "B"
+                (persp-add-buffer "B1")
+                (persp-add-buffer "B2")
+                (with-named-persp "C"
+                  (persp-add-buffer "C1")
+                  (persp-add-buffer "C2")
+                  ;; basic merging
+                  (persp-merge "B" "A")
+                  (should (equal (list (persp-scratch-buffer "B") "A1" "A2" "B1" "B2")
+                                 (sort (persp-get-buffer-names "B") #'string-lessp)))
+                  ;; merging are not transitive
+                  (persp-merge "C" "B")
+                  (should (equal (list (persp-scratch-buffer "C") "B1" "B2" "C1" "C2")
+                                 (sort (persp-get-buffer-names "C") #'string-lessp)))
+                  ;; basic unmerging
+                  (persp-unmerge "C" "B")
+                  (should (equal (list (persp-scratch-buffer "C") "C1" "C2")
+                                 (sort (persp-get-buffer-names "C") #'string-lessp)))
+                  ;; don't unmerge buffers that were in base before the merge
+                  (with-perspective "C"
+                    (persp-add-buffer "A1"))
+                  (persp-merge "C" "A")
+                  (persp-unmerge "C" "A")
+                  (should (equal (list (persp-scratch-buffer "C") "A1" "C1" "C2")
+                                 (sort (persp-get-buffer-names "C") #'string-lessp))))))))
+      (persp-test-clean-files "A1" "A2" "B1" "B2" "C1" "C2"))))
+
 ;;; test-perspective.el ends here
