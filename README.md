@@ -168,7 +168,8 @@ Commands are all prefixed by `C-x x` by default. To change the prefix key,
 customize `persp-mode-prefix-key`. Additionally, creating a key binding for
 `persp-mode-map` will also activate the prefix.
 
-Here are the main commands defined in `persp-mode-map`:
+The actual command keys (the ones pressed after the prefix) are defined in
+`perspective-map`. Here are the main commands defined in `perspective-map`:
 
 - `s` — `persp-switch`: Query a perspective to switch to, or create
 - `` ` `` — `persp-switch-by-number`: Switch to perspective by number, or switch
