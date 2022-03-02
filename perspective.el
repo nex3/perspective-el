@@ -1935,7 +1935,7 @@ NAME."
 
 (defun persp-perspectives-merged-with-base (&optional name)
   "Return a list of all perspectives that are merged to NAME."
-  (if (null base-persp-name) (setq name (persp-current-name)))
+  (if (null name) (setq name (persp-current-name)))
   (mapcar (lambda (m) (plist-get m :merged-perspective))
           (persp-merges-with-base name)))
 
