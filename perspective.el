@@ -2000,7 +2000,7 @@ were merged in from a previous call to `persp-merge'."
      (list base-persp-name to-unmerge-persp-name)))
   (let ((merge (persp-get-merge base-persp-name to-unmerge-persp-name)))
     (cond ((null to-unmerge-persp-name)
-           (message "No perspectives merged to \"s\"" base-persp-name))
+           (message "No perspectives merged to \"%s\"" base-persp-name))
           ((null merge)
            (message "\"%s\" is not merged to \"%s\"" to-unmerge-persp-name base-persp-name))
           (t (with-perspective base-persp-name
