@@ -84,7 +84,7 @@ Y, you close perspective `bugfix-Y` and return to `feature-X`.
 — see documentation below.)
 
 
-### [Perspective Merging]
+### Perspective Merging
 
 Yak shaving is useful for working on projects that are largely unrelated but
 sometimes you are working on multiple projects that are very much related, to
