@@ -246,6 +246,17 @@ show buffers in all perspectives. In addition, Perspective adds actions to
 to the prefix-argument version) and to remove buffers from the current
 perspective.
 
+**Consult**: Perspective provides `persp-consult-source` source that will list
+buffers in current perspective. You can hide default buffer source
+and add `persp-consult-source` to `consult-buffer-sources` for consult
+to only list buffers in current perspective, note that you can access
+list of all buffers by filtering with `b` key. Example configuration:
+
+```emacs-lisp
+(consult-customize consult--source-buffer :hidden t :default nil)
+(add-to-list consult-buffer-sources persp-consult-source)
+```
+
 **Ivy / Counsel**: Perspective provides two commands for listing buffers using
 Ivy and Counsel: `persp-ivy-switch-buffer` and `persp-counsel-switch-buffer`.
 When these functions are called normally, they show a list of buffers filtered
