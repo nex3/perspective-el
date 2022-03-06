@@ -253,16 +253,16 @@ like:
 (consult-customize consult--source-buffer :hidden t :default nil)
 
 (defvar consult--source-perspective
-      (list :name     "Perspective"
-            :narrow   ?s
-            :category 'buffer
-            :state    #'consult--buffer-state
-            :history  'buffer-name-history
-            :default  t
-            :items
-            (lambda () (consult--buffer-query :sort 'visibility
-                                              :predicate 'persp-is-current-buffer
-                                              :as #'buffer-name))))
+  (list :name     "Perspective"
+        :narrow   ?s
+        :category 'buffer
+        :state    #'consult--buffer-state
+        :history  'buffer-name-history
+        :default  t
+        :items
+        (lambda () (consult--buffer-query :sort 'visibility
+                                          :predicate 'persp-is-current-buffer
+                                          :as #'buffer-name))))
 
 (push consult--source-perspective consult-buffer-sources)
 ```
