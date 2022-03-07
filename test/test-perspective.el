@@ -11,6 +11,7 @@
 ;;; Code:
 
 (require 'perspective)
+(require 'benchmark)
 (require 'cl-lib)
 (require 'ert)
 
@@ -24,6 +25,10 @@
 
 ;; Set feature flag(s):
 (customize-set-variable 'persp-feature-flag-prevent-killing-last-buffer-in-perspective t)
+(customize-set-variable 'persp-feature-flag-directly-kill-ido-ignore-buffers nil)
+
+;; Set `ido-ignore-buffers' to detect temporary buffers.
+(customize-set-variable 'ido-ignore-buffers '("\\` "))
 
 (defun persp-test-interesting-buffer? (buf)
   "Return t if BUF is a non-temporary buffer (i.e., lacks
@@ -1289,6 +1294,276 @@ the number of buffers, shared or not, that it has, though."
       (should (equal (list "main") (sort (persp-names) #'string-lessp)))))
   ;; Forced cleanup when tests failed.
   (persp-test-kill-extra-buffers " *foo*" "*dummy*"))
+
+(ert-deftest basic-persp-killing-buffers-benchmark ()
+  "Benchmark `persp-maybe-kill-buffer' duty cycle.
+
+This test is just informative, but it may crash Emacs.  If it
+happens, try to run the test again.
+
+Put a load on `persp-maybe-kill-buffer' disabling performance
+flags and creating a multitude of buffers, which the function
+should evaluate when one buffer is killed."
+  (let (result
+        (n_perspectives 20)
+        (n_regular-buffers 50)
+        (n_temporary-buffers 50)
+        (regular-buffer-name "*dummy*")
+        (temporary-buffer-name " *foo*")
+        perspectives regular-buffers temporary-buffers
+        ;; `benchmark-progn' is not available before Emacs 27.1
+        (timings (lambda (t) ;; requires `benchmark-run' result
+                   (let ((elapsed (nth 0 t))
+                         (gcs-done (nth 1 t))
+                         (gc-elapsed (nth 2 t)))
+                     (format "Elapsed time: %fs%s"
+                             elapsed
+                             (if (> gcs-done 0)
+                                 (format " (%fs in %d GCs)" gc-elapsed gcs-done)
+                               ""))))))
+    ;; Starting conditions.
+    (persp-test-kill-extra-buffers regular-buffer-name temporary-buffer-name)
+    ;; Generate random perspective names.
+    (cl-loop repeat n_perspectives do (push (symbol-name (cl-gensym)) perspectives))
+    ;; Generate random regular buffer names.
+    (cl-loop repeat n_regular-buffers do (push (symbol-name (cl-gensym)) regular-buffers))
+    ;; Generate random temporary buffer names.
+    (cl-loop repeat n_temporary-buffers do (push (symbol-name (cl-gensym " ")) temporary-buffers))
+    ;; Add a killable target buffer as regular buffer.
+    (push regular-buffer-name regular-buffers)
+    ;; Add a killable target buffer as temporary buffer.
+    (push temporary-buffer-name temporary-buffers)
+    (message "")
+    (message "Benchmark - persp-maybe-kill-buffer - begin")
+    (message "%s perspectives * (%s regular buffers + %s temporary buffers)"
+             (length perspectives) (length regular-buffers) (length temporary-buffers))
+    ;; Disable `persp-maybe-kill-buffer'.
+    (message "")
+    (message "persp-maybe-kill-buffer disabled - kill regular buffer")
+    (message "(persp-set-buffer \"%s\")" regular-buffer-name)
+    (let ((persp-feature-flag-prevent-killing-last-buffer-in-perspective nil))
+      ;; Kill regular buffer via `kill-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with regular and temporary buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer regular-buffer-name)
+        (should (persp-test-buffer-in-persps regular-buffer-name (persp-current-name)))
+        (should-not (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (kill-buffer regular-buffer-name)))
+        (should-not (get-buffer regular-buffer-name))
+        (message "%s: (kill-buffer \"%s\")" (funcall timings result) regular-buffer-name))
+      ;; Kill regular buffer via `persp-remove-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with regular and temporary buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer regular-buffer-name)
+        (should (persp-test-buffer-in-persps regular-buffer-name (persp-current-name)))
+        (should-not (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (persp-remove-buffer regular-buffer-name)))
+        (should-not (get-buffer regular-buffer-name))
+        (message "%s: (persp-remove-buffer \"%s\")" (funcall timings result) regular-buffer-name)))
+    ;; Enable performance flag(s).
+    (message "")
+    (message "persp-maybe-kill-buffer performance flag(s) - kill regular buffer")
+    (message "(persp-set-buffer \"%s\")" regular-buffer-name)
+    (let ((persp-feature-flag-directly-kill-ido-ignore-buffers t))
+      ;; Kill regular buffer via `kill-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with regular and temporary buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer regular-buffer-name)
+        (should (persp-test-buffer-in-persps regular-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (kill-buffer regular-buffer-name)))
+        (should-not (get-buffer regular-buffer-name))
+        (message "%s: (kill-buffer \"%s\")" (funcall timings result) regular-buffer-name))
+      ;; Kill regular buffer via `persp-remove-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with regular and temporary buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer regular-buffer-name)
+        (should (persp-test-buffer-in-persps regular-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (persp-remove-buffer regular-buffer-name)))
+        (should-not (get-buffer regular-buffer-name))
+        (message "%s: (persp-remove-buffer \"%s\")" (funcall timings result) regular-buffer-name)))
+    ;; Disable performance flag(s).
+    (message "")
+    (message "persp-maybe-kill-buffer w/o performance flag(s) - kill regular buffer")
+    (message "(persp-set-buffer \"%s\")" regular-buffer-name)
+    (let ((persp-feature-flag-directly-kill-ido-ignore-buffers nil))
+      ;; Kill regular buffer via `kill-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with regular and temporary buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer regular-buffer-name)
+        (should (persp-test-buffer-in-persps regular-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (kill-buffer regular-buffer-name)))
+        (should-not (get-buffer regular-buffer-name))
+        (message "%s: (kill-buffer \"%s\")" (funcall timings result) regular-buffer-name))
+      ;; Kill regular buffer via `persp-remove-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with regular and temporary buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer regular-buffer-name)
+        (should (persp-test-buffer-in-persps regular-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (persp-remove-buffer regular-buffer-name)))
+        (should-not (get-buffer regular-buffer-name))
+        (message "%s: (persp-remove-buffer \"%s\")" (funcall timings result) regular-buffer-name)))
+    ;; Disable `persp-maybe-kill-buffer'.
+    (message "")
+    (message "persp-maybe-kill-buffer disabled - kill temporary buffer")
+    (message "(persp-set-buffer \"%s\")" temporary-buffer-name)
+    (let ((persp-feature-flag-prevent-killing-last-buffer-in-perspective nil))
+      ;; Kill regular buffer via `kill-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with temporary and regular buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer temporary-buffer-name)
+        (should (persp-test-buffer-in-persps temporary-buffer-name (persp-current-name)))
+        (should-not (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (kill-buffer temporary-buffer-name)))
+        (should-not (get-buffer temporary-buffer-name))
+        (message "%s: (kill-buffer \"%s\")" (funcall timings result) temporary-buffer-name))
+      ;; Kill regular buffer via `persp-remove-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with temporary and regular buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer temporary-buffer-name)
+        (should (persp-test-buffer-in-persps temporary-buffer-name (persp-current-name)))
+        (should-not (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (persp-remove-buffer temporary-buffer-name)))
+        (should-not (get-buffer temporary-buffer-name))
+        (message "%s: (persp-remove-buffer \"%s\")" (funcall timings result) temporary-buffer-name)))
+    ;; Enable performance flag(s).
+    (message "")
+    (message "persp-maybe-kill-buffer performance flag(s) - kill temporary buffer")
+    (message "(persp-set-buffer \"%s\")" temporary-buffer-name)
+    (let ((persp-feature-flag-directly-kill-ido-ignore-buffers t))
+      ;; Kill regular buffer via `kill-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with temporary and regular buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer temporary-buffer-name)
+        (should (persp-test-buffer-in-persps temporary-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (kill-buffer temporary-buffer-name)))
+        (should-not (get-buffer temporary-buffer-name))
+        (message "%s: (kill-buffer \"%s\")" (funcall timings result) temporary-buffer-name))
+      ;; Kill regular buffer via `persp-remove-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with temporary and regular buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer temporary-buffer-name)
+        (should (persp-test-buffer-in-persps temporary-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (persp-remove-buffer temporary-buffer-name)))
+        (should-not (get-buffer temporary-buffer-name))
+        (message "%s: (persp-remove-buffer \"%s\")" (funcall timings result) temporary-buffer-name)))
+    ;; Disable performance flag(s).
+    (message "")
+    (message "persp-maybe-kill-buffer w/o performance flag(s) - kill temporary buffer")
+    (message "(persp-set-buffer \"%s\")" temporary-buffer-name)
+    (let ((persp-feature-flag-directly-kill-ido-ignore-buffers nil))
+      ;; Kill regular buffer via `kill-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with temporary and regular buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer temporary-buffer-name)
+        (should (persp-test-buffer-in-persps temporary-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (kill-buffer temporary-buffer-name)))
+        (should-not (get-buffer temporary-buffer-name))
+        (message "%s: (kill-buffer \"%s\")" (funcall timings result) temporary-buffer-name))
+      ;; Kill regular buffer via `persp-remove-buffer'.
+      (persp-test-with-persp
+        ;; Populate perspectives with temporary and regular buffers.
+        (dolist (persp perspectives)
+          (persp-switch persp)
+          (dolist (buffer temporary-buffers)
+            (should (switch-to-buffer buffer)))
+          (dolist (buffer regular-buffers)
+            (should (switch-to-buffer buffer))))
+        ;; Benchmark `persp-maybe-kill-buffer'.
+        (persp-set-buffer temporary-buffer-name)
+        (should (persp-test-buffer-in-persps temporary-buffer-name (persp-current-name)))
+        (should (memq 'persp-maybe-kill-buffer kill-buffer-query-functions))
+        (setq result (benchmark-run 1 (persp-remove-buffer temporary-buffer-name)))
+        (should-not (get-buffer temporary-buffer-name))
+        (message "%s: (persp-remove-buffer \"%s\")" (funcall timings result) temporary-buffer-name)))
+    (message "")
+    (message "Benchmark - persp-maybe-kill-buffer - end")
+    (message "")
+    ;; Cleanup.
+    (persp-test-kill-extra-buffers regular-buffer-name temporary-buffer-name)))
 
 (ert-deftest basic-persp-forget-buffer ()
   "Test `persp-forget-buffer' and `persp-remove-buffer'.

@@ -113,8 +113,19 @@ save state when exiting Emacs."
   :group 'perspective-mode
   :type 'file)
 
-(defcustom persp-feature-flag-prevent-killing-last-buffer-in-perspective nil
+(defcustom persp-feature-flag-prevent-killing-last-buffer-in-perspective t
   "Experimental feature flag: prevent killing the last buffer in a perspective."
+  :group 'perspective-mode
+  :type 'boolean)
+
+(defcustom persp-feature-flag-directly-kill-ido-ignore-buffers nil
+  "Experimental feature flag: kill temporary buffers skipping checks.
+
+For performance reasons, a `persp-maybe-kill-buffer' call is allowed
+to kill `ido-ignore-buffers' (aka temporary buffers) skipping checks
+when this feature flag isn't nil.
+
+Temproray buffers usually have a name starting with a space."
   :group 'perspective-mode
   :type 'boolean)
 
@@ -155,7 +166,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
 (cl-defstruct (perspective
                (:conc-name persp-)
                (:constructor make-persp-internal))
-  name buffers killed local-variables
+  name buffers killed dirty local-variables
   (last-switch-time (current-time))
   (created-time (current-time))
   (window-configuration (current-window-configuration))
@@ -742,19 +753,43 @@ If NORECORD is non-nil, do not update the
   (persp-update-modestring))
 
 (defun persp-activate (persp)
-  "Activate the perspective given by the persp struct PERSP."
+  "Activate the perspective given by the persp struct PERSP.
+
+If PERSP has a dirty flag set, some of its buffers may have been
+removed by directly manipulating the frame's hash table, but the
+perspective's windows configuration was not updated.  This means
+that the windows configuration may hold removed buffers that are
+pulled back into the perspective.  If this happens, buffers that
+do not belong to PERSP will be forgotten automatically."
   (check-persp persp)
   (persp-save)
   (set-frame-parameter nil 'persp--curr persp)
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
   (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
-  (set-window-configuration (persp-window-configuration persp))
-  (when (marker-position (persp-point-marker persp))
-    (goto-char (persp-point-marker persp)))
+  ;; reset windows configuration
+  (let* ((dirty (persp-dirty persp))
+         windows-buffers-not-in-current-perspective
+         (buffers (and dirty (persp-current-buffers))))
+    (set-window-configuration (persp-window-configuration persp))
+    (when (marker-position (persp-point-marker persp))
+      (goto-char (persp-point-marker persp)))
+    ;; find windows buffers not in the current perspective
+    (when buffers
+      (walk-windows (lambda (window)
+                      (let ((buffer (window-buffer window)))
+                        (unless (memq buffer buffers)
+                          (push buffer windows-buffers-not-in-current-perspective)))))
+      ;; forget windows buffers not in the current perspective
+      (mapc (lambda (buffer)
+              ;; it's required to acknowledge the buffer to forget it
+              (persp-add-buffer buffer)
+              (persp-forget-buffer buffer))
+            windows-buffers-not-in-current-perspective)))
   (persp-update-modestring)
   ;; force update of `current-buffer'
   (set-buffer (window-buffer))
+  (setf (persp-dirty persp) nil)
   (run-hooks 'persp-activated-hook))
 
 (defun persp-switch-quick (char)
@@ -893,50 +928,56 @@ this directly, otherwise the current buffer may be removed or
 killed from perspectives.
 
 See also `persp-remove-buffer'."
-  ;; List candidates where the buffer to be killed should be removed
-  ;; instead, whom are perspectives with more than one buffer.  This
-  ;; is to allow the buffer to live for perspectives that have it as
-  ;; their only buffer.
+  ;; For performance reasons, don't use `with-perspective' or switch
+  ;; perspective.  When the buffer is eligible for removal, modify a
+  ;; frame's hash table directly.  Please note that this requires to
+  ;; also update a perspective's windows configuration at some point
+  ;; to prevent pulling back removed buffers, but still found there.
   (persp-protect
+    ;; XXX: In some scenarios force updating the `current-buffer' to
+    ;; the window's buffer after killing a buffer may be required.
     (let* ((buffer (current-buffer))
            (bufstr (buffer-name buffer))
+           (current-name (persp-current-name))
+           (ignore-rx (persp--make-ignore-buffer-rx))
            candidates-for-removal candidates-for-keeping)
       ;; XXX: For performance reasons, always allow killing off obviously
       ;; temporary buffers. According to Emacs convention, these buffers' names
       ;; start with a space.
-      (when (string-match-p (rx string-start (one-or-more blank)) bufstr)
-        (cl-return-from persp-maybe-kill-buffer t))
-      (dolist (name (persp-names))
-        (let ((buffer-names (persp-get-buffer-names name)))
-          (when (member bufstr buffer-names)
-            (if (cdr buffer-names)
-                (push name candidates-for-removal)
-              ;; We use a list for debugging purposes, a simple bool
-              ;; can suffice for what we are doing here.
-              (push name candidates-for-keeping)))))
-      (cond
-       ;; When there aren't perspectives with the buffer as the only
-       ;; buffer, it can be killed safely.  Also cleanup killed ones
-       ;; found in perspectives listing the buffer to be killed.
-       ((not candidates-for-keeping)
-        ;; Switching to a perspective that isn't the current, should
-        ;; automatically cleanup previously killed buffers which are
-        ;; still in the perspective's list of buffers.  Removing the
-        ;; buffer to be killed should also keep the list clean.
-        (dolist (name candidates-for-removal)
-          (with-perspective name
-            ;; remove the buffer that has to be killed from the list
-            (setf (persp-current-buffers) (remq buffer (persp-current-buffers)))))
-        t)
-       ;; When a perspective have the buffer as the only buffer, the
-       ;; buffer should not be killed, but removed from perspectives
-       ;; that have more than one buffer.  Those perspectives should
-       ;; forget about the buffer.
-       (candidates-for-removal
-        (dolist (name candidates-for-removal)
-          (with-perspective name
-            (persp-forget-buffer buffer)))
-        nil)))))
+      (and persp-feature-flag-directly-kill-ido-ignore-buffers
+           (string-match-p ignore-rx bufstr)
+           (cl-return-from persp-maybe-kill-buffer t))
+      ;; Directly access the frame's hash table for performance.
+      (maphash (lambda (key persp)
+                 (let* ((buffers (persp-buffers persp))
+                        (other-buffers (remq buffer buffers)))
+                   ;; If the perspective has another regular buffer,
+                   ;; this buffer can be removed, otherwise keep it.
+                   (if (cl-find-if-not (lambda (buf)
+                                         (string-match-p ignore-rx (buffer-name buf)))
+                                       other-buffers)
+                       ;; Perspective's buffer eligible for removal.
+                       (when (or candidates-for-removal
+                                 ;; Postpone removal if found in the
+                                 ;; current perspective.
+                                 (not (setq candidates-for-removal (string-equal key current-name))))
+                         ;; XXX: This doesn't update a perspective's
+                         ;; windows configuration.  A removed buffer
+                         ;; will be pulled back by `persp-activate',
+                         ;; if it's in the windows configuration.
+                         (setf (persp-dirty persp) t)
+                         (setf (persp-buffers persp) other-buffers))
+                     ;; Keep the buffer in this perspective.
+                     (setq candidates-for-keeping t))))
+               (frame-parameter nil 'persp--hash))
+      ;; When a perspective have the buffer as the only buffer, the
+      ;; buffer should not be killed, but removed from perspectives
+      ;; that have more than one buffer.
+      (when candidates-for-removal
+        (persp-forget-buffer buffer))
+      ;; When there aren't perspectives with the buffer as the only
+      ;; buffer, it can be killed safely.
+      (not candidates-for-keeping))))
 
 (defun persp-forget-buffer (buffer)
   "Disassociate BUFFER with the current perspective.
@@ -1184,6 +1225,13 @@ is non-nil or with prefix arg, don't switch to the new perspective."
         (persp-update-modestring)
       (persp-activate persp))))
 
+(defadvice kill-buffer (after persp-maybe-kill-buffer-adv)
+  "Force set the `current-buffer' to the window's buffer.
+
+See also `persp-maybe-kill-buffer'."
+  (persp-protect
+    (set-buffer (window-buffer))))
+
 (defadvice switch-to-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
 
@@ -1273,6 +1321,7 @@ named collections of buffers and window configurations."
           (setq persp-started-after-server-mode t))
         ;; TODO: Convert to nadvice, which has been available since 24.4 and is
         ;; the earliest Emacs version Perspective supports.
+        (ad-activate 'kill-buffer)
         (ad-activate 'switch-to-buffer)
         (ad-activate 'display-buffer)
         (ad-activate 'set-window-buffer)

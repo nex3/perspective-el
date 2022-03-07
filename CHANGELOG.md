@@ -8,8 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### ERT tests variables
+
+- `ido-ignore-buffers`: set to detect temporary buffers (aka buffers starting with a space).
+- `persp-feature-flag-directly-kill-ido-ignore-buffers`: unset flag (disable).
+- `persp-feature-flag-prevent-killing-last-buffer-in-perspective`: set flag (enable).
+
+
 ### ERT tests added
 
+- `basic-persp-killing-buffers-benchmark`: benchmark `persp-maybe-kill-buffer`.
 - `basic-persp-switch-to-scratch-buffer`: evaluate `persp-switch-to-scratch-buffer`.
 - `basic-persp-get-scratch-buffer`: test scratch buffers conformity and creation.
 - `basic-persp-forget-buffer`: evaluate `persp-forget-buffer`.
@@ -45,6 +53,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `persp-feature-flag-directly-kill-ido-ignore-buffers`: allow/disallow `persp-maybe-kill-buffer` to kill `ido-ignore-buffers` skipping checks (default: disable).
+- `persp-feature-flag-prevent-killing-last-buffer-in-perspective`: enables/disables `persp-maybe-kill-buffer` (default: enable).
 - `persp-switch-to-scratch-buffer`: interactive function to switch to the current perspective's scratch buffer, creating one if missing.
 - `persp-get-scratch-buffer`: utility function to properly get/create a scratch buffer.
 - `persp-forget-buffer`: disassociate buffer with perspective without the risk of killing it.  This balances `persp-add-buffer`.  Newly created buffers via `get-buffer-create` are rogue buffers not found in any perspective, this function allows to get back to that state.
@@ -55,6 +65,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- `persp`: add dirty flag to the structure, that when set means that at least one buffer was removed from the perspective manipulating the frame's hash table without updating the perspective's windows configuration.
+- `persp-maybe-kill-buffer`: set a perspective's dirty flag when removing buffers accessing the frame's hash table directly.
+- `persp-activate`: forget windows buffers which do not belong to the current perspective, hence updating the windows configuration; this is required since `persp-maybe-kill-buffer` no longer updates the perspectives windows configuration.
+- `persp-mode`: when enabling the mode, activate `persp-maybe-kill-buffer-adv`.
+- `persp-maybe-kill-buffer-adv`: due to `persp-maybe-kill-buffer` amendments, after calling `kill-buffer` force update the `current-buffer` to the current window's buffer.
+- `persp-maybe-kill-buffer`: remove buffers directly accessing the frame's hash table for performance reasons.
+- `persp-maybe-kill-buffer`: read perspectives' buffers directly accessing the frame's hash table for performance reasons.
+- `persp-maybe-kill-buffer`: implement `persp-feature-flag-directly-kill-ido-ignore-buffers`.
+- `persp-maybe-kill-buffer`: kill `persp--make-ignore-buffer-rx` temporary buffers (aka `ido-ignore-buffers`) skipping checks.
+- `persp-kill`: implement `persp-feature-flag-prevent-killing-last-buffer-in-perspective`.
+- `persp-mode`: implement `persp-feature-flag-prevent-killing-last-buffer-in-perspective`.
 - `perspective-map`: Add binding `C-x x B` to call `persp-switch-to-scratch-buffer`.
 - `persp-other-buffer`: call `persp-get-scratch-buffer` to get/create a scratch buffer.
 - `persp-new`: call `persp-get-scratch-buffer` to get/create a scratch buffer.
