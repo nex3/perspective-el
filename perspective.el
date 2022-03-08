@@ -1675,13 +1675,11 @@ PERSP-SET-IDO-BUFFERS)."
 ;;       :order [...]
 ;;     }
 ;;   ]
-;;   :merge-list
 ;; }
 
 (cl-defstruct persp--state-complete
   files
-  frames
-  merge-list)
+  frames)
 
 (cl-defstruct persp--state-frame
   persps
@@ -1842,8 +1840,7 @@ visible in a perspective as windows, they will be saved as
     (persp-save)
     (let ((state-complete (make-persp--state-complete
                            :files (persp--state-file-data)
-                           :frames (persp--state-frame-data)
-                           :merge-list persp-merge-list)))
+                           :frames (persp--state-frame-data))))
       ;; create or overwrite target-file:
       (with-temp-file target-file (prin1 state-complete (current-buffer))))
     ;; after hook
@@ -1900,8 +1897,6 @@ restored."
                           (window-state-put (persp--state-single-windows state-single)
                                             (frame-root-window (selected-frame))
                                             'safe)))))
-    ;; restore merge-list
-    (setq persp-merge-list (persp--state-complete-merge-list state-complete))
     ;; cleanup
     (persp-kill tmp-persp-name))
   ;; after hook
