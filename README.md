@@ -249,13 +249,15 @@ perspective.
 **Consult**: Perspective provides `persp-consult-source` source that will list
 buffers in current perspective. You can hide default buffer source
 and add `persp-consult-source` to `consult-buffer-sources` for consult
-to only list buffers in current perspective, note that you can access
-list of all buffers by filtering with `b` key. Example configuration:
+to only list buffers in current perspective like so:
 
 ```emacs-lisp
 (consult-customize consult--source-buffer :hidden t :default nil)
-(add-to-list consult-buffer-sources persp-consult-source)
+(add-to-list 'consult-buffer-sources 'persp-consult-source)
 ```
+Note that you can still access list of all buffers in all perspectives by
+[narrowing](https://github.com/minad/consult#narrowing-and-grouping)
+using prefix `b`
 
 **Ivy / Counsel**: Perspective provides two commands for listing buffers using
 Ivy and Counsel: `persp-ivy-switch-buffer` and `persp-counsel-switch-buffer`.
