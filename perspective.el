@@ -1548,17 +1548,21 @@ PERSP-SET-IDO-BUFFERS)."
 
 ;; Buffer switching integration: Consult
 
-(defvar persp-consult-source
-  (list :name     "Perspective"
-        :narrow   ?s
-        :category 'buffer
-        :state    #'consult--buffer-state
-        :history  'buffer-name-history
-        :default  t
-        :items
-        (lambda () (consult--buffer-query :sort 'visibility
-                                          :predicate 'persp-is-current-buffer
-                                          :as #'buffer-name))))
+(with-eval-after-load 'consult
+  (declare-function consult--buffer-state "consult.el")
+  (declare-function consult--buffer-query "consult.el")
+
+  (defvar persp-consult-source
+    (list :name     "Perspective"
+          :narrow   ?s
+          :category 'buffer
+          :state    #'consult--buffer-state
+          :history  'buffer-name-history
+          :default  t
+          :items
+          #'(lambda () (consult--buffer-query :sort 'visibility
+                                            :predicate 'persp-is-current-buffer
+                                            :as #'buffer-name)))))
 
 ;; Buffer switching integration: Ivy.
 ;;
