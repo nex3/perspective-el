@@ -1912,32 +1912,28 @@ restored."
 
 ;;; --- perspective merging
 
-(defvar persp-merge-list nil
-  "A list of the all the current perspective merges.")
-
-(defun persp-get-merge (base-name merged-name)
-  "Return a merge with :base-perspective BASE-NAME and :merged-perspective
-MERGED-NAME."
+(defun persp-get-merge (base-name merged-name &optional frame)
+  "Return a merge in FRAME with :base-perspective BASE-NAME and 
+:merged-perspective MERGED-NAME."
   (cl-find-if
    (lambda (m)
      (and (string= base-name (plist-get m :base-perspective))
           (string= merged-name (plist-get m :merged-perspective))))
-   persp-merge-list))
+   (frame-parameter frame 'persp-merge-list)))
 
-(defun persp-merges-with-base (&optional name)
-  "Return a list of all merges in `persp-merge-list' with base perspective
-NAME."
+(defun persp-merges-with-base (&optional name frame)
+  "Return a list of all merges in FRAME with base perspective NAME."
   (if (null name) (setq name (persp-current-name)))
   (cl-remove-if-not
    (lambda (m)
      (string= name (plist-get m :base-perspective)))
-   persp-merge-list))
+   (frame-parameter frame 'persp-merge-list)))
 
-(defun persp-perspectives-merged-with-base (&optional name)
-  "Return a list of all perspectives that are merged to NAME."
+(defun persp-perspectives-merged-with-base (&optional name frame)
+  "Return a list of all perspectives in FRAME that are merged to NAME."
   (if (null name) (setq name (persp-current-name)))
   (mapcar (lambda (m) (plist-get m :merged-perspective))
-          (persp-merges-with-base name)))
+          (persp-merges-with-base name frame)))
 
 (defun persp-merge (base-persp-name to-merge-persp-name)
   "Merge the buffer list of TO-MERGE-PERSP-NAME into the buffer list for
@@ -1946,11 +1942,9 @@ BASE-PERSP-NAME."
    (list (persp-current-name)
          (funcall persp-interactive-completion-function
                   "Perspective name: "
-                  (remove (persp-current-name) (persp-all-names))
-                  nil
-                  t)))
-  (cl-assert (member base-persp-name (persp-all-names)))
-  (cl-assert (member to-merge-persp-name (persp-all-names)))
+                  (remove (persp-current-name) (persp-names)) nil t)))
+  (cl-assert (member base-persp-name (persp-names)))
+  (cl-assert (member to-merge-persp-name (persp-names)))
   (let* ((merge (persp-get-merge base-persp-name to-merge-persp-name))
          (all-to-merge-persp-buffers (persp-get-buffer-names to-merge-persp-name))
          (merged-into-to-merge-persp-buffers (cl-loop for m in (persp-merges-with-base to-merge-persp-name)
@@ -1969,20 +1963,27 @@ BASE-PERSP-NAME."
               (unless (persp-is-current-buffer (get-buffer buf))
                 (persp-add-buffer buf)
                 (push buf merged-buffers)))
-            (cl-nsubstitute-if (list :base-perspective base-persp-name
-                                     :merged-perspective to-merge-persp-name
-                                     :merged-buffers merged-buffers)
-                               (lambda (m) (equal merge m))
-                               persp-merge-list))
+            (set-frame-parameter
+             nil
+             'persp-merge-list
+             (cl-nsubstitute-if (list :base-perspective base-persp-name
+                                      :merged-perspective to-merge-persp-name
+                                      :merged-buffers merged-buffers)
+                                (lambda (m) (equal merge m))
+                                (frame-parameter nil 'persp-merge-list))))
         ;; create a new merge
         (let ((merged-buffers))
           (dolist (buf buffers-to-merge)
             (unless (persp-is-current-buffer (get-buffer buf))
               (persp-add-buffer buf)
               (push buf merged-buffers)))
-          (add-to-list 'persp-merge-list (list :base-perspective base-persp-name
-                                               :merged-perspective to-merge-persp-name
-                                               :merged-buffers merged-buffers)))))))
+          (set-frame-parameter
+           nil
+           'persp-merge-list
+           (push (list :base-perspective base-persp-name
+                       :merged-perspective to-merge-persp-name
+                       :merged-buffers merged-buffers)
+                 (frame-parameter nil 'persp-merge-list))))))))
 
 (defun persp-unmerge (base-persp-name to-unmerge-persp-name)
   "Unmerge the buffers from TO-UNMERGE-PERSP-NAME from BASE-PERSP-NAME that were
@@ -1994,9 +1995,7 @@ were merged in from a previous call to `persp-merge'."
            (when persps-merged-with-base
              (funcall persp-interactive-completion-function
                       "Perspective name: "
-                      persps-merged-with-base
-                      nil
-                      t))))
+                      persps-merged-with-base nil t))))
      (list base-persp-name to-unmerge-persp-name)))
   (let ((merge (persp-get-merge base-persp-name to-unmerge-persp-name)))
     (cond ((null to-unmerge-persp-name)
@@ -2006,7 +2005,10 @@ were merged in from a previous call to `persp-merge'."
           (t (with-perspective base-persp-name
                (dolist (buf (plist-get merge :merged-buffers))
                  (persp-remove-buffer buf))
-               (setq persp-merge-list (remove merge persp-merge-list)))))))
+               (set-frame-parameter
+                nil
+                'persp-merge-list
+                (remove merge (frame-parameter nil 'persp-merge-list))))))))
 
 
 ;;; --- ibuffer filter group code
