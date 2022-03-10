@@ -1696,8 +1696,9 @@ PERSP-SET-IDO-BUFFERS)."
   windows)
 
 (defun persp--state-complete-v2 (state-complete)
-  "If STATE-COMPLETE has a frames version 1 field then coerce its frames into
-persp--state-frame-v2 struct."
+  "Return a persp--state-complete struct based off of STATE-COMPLETE that is
+guarenteed to be compatible with perspective state version 2 which supports
+saving perspective merge lists."
   (let* ((state-frames (persp--state-complete-frames state-complete))
          (state-frames-v2
           (mapcar (lambda (state-frame)
