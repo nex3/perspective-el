@@ -2278,7 +2278,7 @@ persp-test-make-sample-environment."
                   (persp-merge "B" "A")
                   (should (equal (list (persp-scratch-buffer "B") "A1" "A2" "B1" "B2")
                                  (sort (persp-get-buffer-names "B") #'string-lessp)))
-                  ;; merging are not transitive
+                  ;; merges are not transitive
                   (persp-merge "C" "B")
                   (should (equal (list (persp-scratch-buffer "C") "B1" "B2" "C1" "C2")
                                  (sort (persp-get-buffer-names "C") #'string-lessp)))
