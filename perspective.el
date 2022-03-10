@@ -1682,6 +1682,7 @@ PERSP-SET-IDO-BUFFERS)."
   files
   frames)
 
+;; Keep around old version to maintain backwards compatibility.
 (cl-defstruct persp--state-frame
   persps
   order)
@@ -1696,9 +1697,9 @@ PERSP-SET-IDO-BUFFERS)."
   windows)
 
 (defun persp--state-complete-v2 (state-complete)
-  "Return a persp--state-complete struct based off of STATE-COMPLETE that is
-guarenteed to be compatible with perspective state version 2 which supports
-saving perspective merge lists."
+  "Apply this function to persp--state-complete structs to be guarenteed a 
+persp--state-complete that is compatible with merge-list saving. Useful for
+maintaining backwards compatibility."
   (let* ((state-frames (persp--state-complete-frames state-complete))
          (state-frames-v2
           (mapcar (lambda (state-frame)
