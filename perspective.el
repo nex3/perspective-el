@@ -1908,15 +1908,15 @@ restored."
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
              (cl-incf frame-count)
              (when (> frame-count 1)
-               (let ((new-frame (make-frame-command))
-                     (frame-merge-list (persp--state-frame-v2-merge-list frame)))
-                 (set-frame-parameter new-frame 'merge-list frame-merge-list)))
+               (make-frame-command))
              (let* ((frame-persp-table (persp--state-frame-v2-persps frame))
-                    (frame-persp-order (reverse (persp--state-frame-v2-order frame))))
+                    (frame-persp-order (reverse (persp--state-frame-v2-order frame)))
+                    (frame-persp-merge-list (persp--state-frame-v2-merge-list frame)))
                ;; iterate over the perspectives in the frame in the appropriate order
                (cl-loop for persp in frame-persp-order do
                         (let ((state-single (gethash persp frame-persp-table)))
                           (persp-switch persp)
+                          (set-frame-parameter nil 'persp-merge-list frame-persp-merge-list)
                           (cl-loop for buffer in (persp--state-single-buffers state-single) do
                                    (persp-add-buffer buffer))
                           ;; XXX: split-window-horizontally is necessary for
