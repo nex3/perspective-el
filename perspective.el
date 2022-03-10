@@ -1908,12 +1908,11 @@ restored."
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
              (cl-incf frame-count)
              (when (> frame-count 1)
-               (make-frame-command))
+               (let ((new-frame (make-frame-command))
+                     (frame-merge-list (persp--state-frame-v2-merge-list frame)))
+                 (set-frame-parameter new-frame 'merge-list frame-merge-list)))
              (let* ((frame-persp-table (persp--state-frame-v2-persps frame))
-                    (frame-persp-order (reverse (persp--state-frame-v2-order frame)))
-                    (frame-merge-list (persp--state-frame-v2-merge-list frame)))
-               ;; restore merge list
-               (set-frame-parameter nil 'persp-merge-list frame-merge-list)
+                    (frame-persp-order (reverse (persp--state-frame-v2-order frame))))
                ;; iterate over the perspectives in the frame in the appropriate order
                (cl-loop for persp in frame-persp-order do
                         (let ((state-single (gethash persp frame-persp-table)))
