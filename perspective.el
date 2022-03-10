@@ -1673,6 +1673,7 @@ PERSP-SET-IDO-BUFFERS)."
 ;;         }
 ;;       }
 ;;       :order [...]
+;;       :merge-list
 ;;     }
 ;;   ]
 ;; }
@@ -1685,9 +1686,31 @@ PERSP-SET-IDO-BUFFERS)."
   persps
   order)
 
+(cl-defstruct persp--state-frame-v2
+  persps
+  order
+  merge-list)
+
 (cl-defstruct persp--state-single
   buffers
   windows)
+
+(defun persp--state-complete-v2 (state-complete)
+  "If STATE-COMPLETE has a frames version 1 field then coerce its frames into
+persp--state-frame-v2 struct."
+  (let* ((state-frames (persp--state-complete-frames state-complete))
+         (state-frames-v2
+          (mapcar (lambda (state-frame)
+                    (if (persp--state-frame-v2-p state-frame)
+                        state-frame
+                      (make-persp--state-frame-v2
+                       :persps (persp--state-frame-persps state-frame)
+                       :order (persp--state-frame-order state-frame)
+                       :merge-list nil)))
+                  state-frames)))
+    (make-persp--state-complete
+     :files (persp--state-complete-files state-complete)
+     :frames state-frames-v2)))
 
 (defun persp--state-interesting-buffer-p (buffer)
   (and (buffer-name buffer)
@@ -1776,9 +1799,10 @@ to the perspective's *scratch* buffer."
                                                 :buffers buffers
                                                 :windows windows)
                                                persps-in-frame)))))
-                       (make-persp--state-frame
+                       (make-persp--state-frame-v2
                         :persps persps-in-frame
-                        :order persp-names-in-order)))))
+                        :order persp-names-in-order
+                        :merge-list (frame-parameter nil 'persp-merge-list))))))
 
 ;;;###autoload
 (cl-defun persp-state-save (&optional file interactive?)
@@ -1868,10 +1892,11 @@ restored."
   ;; actually load
   (let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
         (frame-count 0)
-        (state-complete (read
-                         (with-temp-buffer
-                           (insert-file-contents file)
-                           (buffer-string)))))
+        (state-complete (persp--state-complete-v2
+                         (read
+                          (with-temp-buffer
+                            (insert-file-contents file)
+                            (buffer-string))))))
     ;; open all files in a temporary perspective to avoid polluting "main"
     (persp-switch tmp-persp-name)
     (cl-loop for file in (persp--state-complete-files state-complete) do
@@ -1882,8 +1907,11 @@ restored."
              (cl-incf frame-count)
              (when (> frame-count 1)
                (make-frame-command))
-             (let* ((frame-persp-table (persp--state-frame-persps frame))
-                    (frame-persp-order (reverse (persp--state-frame-order frame))))
+             (let* ((frame-persp-table (persp--state-frame-v2-persps frame))
+                    (frame-persp-order (reverse (persp--state-frame-v2-order frame)))
+                    (frame-merge-list (persp--state-frame-v2-merge-list frame)))
+               ;; restore merge list
+               (set-frame-parameter nil 'persp-merge-list frame-merge-list)
                ;; iterate over the perspectives in the frame in the appropriate order
                (cl-loop for persp in frame-persp-order do
                         (let ((state-single (gethash persp frame-persp-table)))
