@@ -1409,7 +1409,7 @@ perspective beginning with the given letter."
   (setq persp-show-modestring t)
   (persp-update-modestring))
 
-(cl-defun persp-other-buffer (&optional skip-buffer visible-ok frame)
+(cl-defun persp-other-buffer (&optional skip-buffer _visible-ok frame)
   "A version of `other-buffer' which respects perspectives.
 This respects ido-ignore-buffers.
 TODO: The VISIBLE-OK parameter is currently ignored."
