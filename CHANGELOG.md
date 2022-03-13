@@ -51,6 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `persp-maybe-kill-buffer`: designed as `kill-buffer-query-functions` hook to keep a perspective's last left buffer from being killed.
 - `persp-get-buffer-names`: get any perspective's list of live buffers.
 - `persp-get-buffers`: get any perspective's list of buffers.
+- Support for using Consult's `consult-buffer` as a Perspective-aware buffer switcher.
 
 
 ### Changed

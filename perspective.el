@@ -1547,7 +1547,6 @@ PERSP-SET-IDO-BUFFERS)."
     (ibuffer)))
 
 ;; Buffer switching integration: Consult
-
 (with-eval-after-load 'consult
   (declare-function consult--buffer-state "consult.el")
   (declare-function consult--buffer-query "consult.el")
