@@ -1881,7 +1881,7 @@ visible in a perspective as windows, they will be saved as
 FILE defaults to the value of persp-state-default-file if it is
 set.
 
-Frames are restored, along with each frame's perspective list.
+Frames are restored, along with each frame's perspective list and merge list.
 Each perspective's buffer list and window layout are also
 restored."
   (interactive (list
@@ -1909,25 +1909,27 @@ restored."
     ;; iterate over the frames
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
              (cl-incf frame-count)
-             (when (> frame-count 1)
-               (make-frame-command))
-             (let* ((frame-persp-table (persp--state-frame-v2-persps frame))
-                    (frame-persp-order (reverse (persp--state-frame-v2-order frame)))
-                    (frame-persp-merge-list (persp--state-frame-v2-merge-list frame)))
-               ;; iterate over the perspectives in the frame in the appropriate order
-               (cl-loop for persp in frame-persp-order do
-                        (let ((state-single (gethash persp frame-persp-table)))
-                          (persp-switch persp)
-                          (set-frame-parameter nil 'persp-merge-list frame-persp-merge-list)
-                          (cl-loop for buffer in (persp--state-single-buffers state-single) do
-                                   (persp-add-buffer buffer))
-                          ;; XXX: split-window-horizontally is necessary for
-                          ;; window-state-put to succeed? Something goes haywire with root
-                          ;; windows without it.
-                          (split-window-horizontally)
-                          (window-state-put (persp--state-single-windows state-single)
-                                            (frame-root-window (selected-frame))
-                                            'safe)))))
+             (let ((emacs-frame (if (> frame-count 1) (make-frame-command) (selected-frame)))
+                   (frame-persp-table (persp--state-frame-v2-persps frame))
+                   (frame-persp-order (reverse (persp--state-frame-v2-order frame)))
+                   (frame-persp-merge-list (persp--state-frame-v2-merge-list frame)))
+               (with-selected-frame emacs-frame
+                 ;; restore the merge list
+                 (set-frame-parameter emacs-frame 'persp-merge-list frame-persp-merge-list)
+                 ;; iterate over the perspectives in the frame in the appropriate order
+                 (cl-loop for persp in frame-persp-order do
+                          (let ((state-single (gethash persp frame-persp-table)))
+                            (persp-switch persp)
+                            (set-frame-parameter nil 'persp-merge-list frame-persp-merge-list)
+                            (cl-loop for buffer in (persp--state-single-buffers state-single) do
+                                     (persp-add-buffer buffer))
+                            ;; XXX: split-window-horizontally is necessary for
+                            ;; window-state-put to succeed? Something goes haywire with root
+                            ;; windows without it.
+                            (split-window-horizontally)
+                            (window-state-put (persp--state-single-windows state-single)
+                                              (frame-root-window emacs-frame)
+                                              'safe))))))
     ;; cleanup
     (persp-kill tmp-persp-name))
   ;; after hook
