@@ -27,6 +27,7 @@ please refer to it for release notes.
 - [Sample Use Cases](#sample-use-cases)
     - [Multiple Projects](#multiple-projects)
     - [Yak Shaving](#yak-shaving)
+    - [Perspective Merging](#perspective-merging)
 - [Similar Packages](#similar-packages)
 - [Compatibility](#compatibility)
 - [Installation](#installation)
@@ -81,6 +82,35 @@ Y, you close perspective `bugfix-Y` and return to `feature-X`.
 
 (Hint: this workflow works best with the `persp-sort` variable set to `'created`
 — see documentation below.)
+
+
+### Perspective Merging
+
+Yak shaving is useful for working on projects that are largely unrelated but
+sometimes you are working on multiple projects that are very much related, to
+the point that you want to view files from both projects at the same time. This
+is where perspective merging comes in.
+
+Suppose you are working on a project that requires developing multiple auxiliary
+libraries. It may get messy to develop both the main project and all the
+libraries from the same perspective so instead you put each library in its own
+perspective so you can work on them in isolation. All of a sudden though you
+wish to see library code from the main projects perspective. Instead of
+switching back and forth between the library and main projects perspectives you
+can run `M-x persp-merge` and import the buffers from the libraries perspective.
+When you are done you can run remove the imported buffers with
+`M-x persp-unmerge`.
+
+The purpose of perspective merging is to combine the buffer lists of different
+perspectives while keeping a clear distinction of which buffers belong to which
+perspective.
+
+- You can merge together as many perspectives as you want.
+- Merging is one directional so if you merge A into B, B's buffers will not be
+available in A.
+- Merging is not transitive so if you merge A into B, then B into C, the buffers
+in A will not be available in C.
+- The merge state is saved across sessions when using [persp-state-{save,load}](#saving-sessions-to-disk).
 
 
 ## Similar Packages
