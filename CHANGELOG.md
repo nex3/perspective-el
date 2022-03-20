@@ -52,6 +52,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `persp-get-buffer-names`: get any perspective's list of live buffers.
 - `persp-get-buffers`: get any perspective's list of buffers.
 - Support for using Consult's `consult-buffer` as a Perspective-aware buffer switcher.
+- `persp-merge` and `persp-unmerge`: temporarily import buffers from one perspective into another.
 
 
 ### Changed
