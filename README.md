@@ -215,6 +215,8 @@ The actual command keys (the ones pressed after the prefix) are defined in
 - `i` — `persp-import`: Import a given perspective from another frame.
 - `n`, `<right>` — `persp-next`: Switch to next perspective
 - `p`, `<left>` — `persp-prev`: Switch to previous perspective
+- `m` — `persp-merge`: Temporarily merge the buffers from one perspective into another
+- `C-m` — `persp-unmerge`: Undo the effects of a `persp-merge`
 - `C-s` — `persp-state-save`: Save all perspectives in all frames to a file
 - `C-l` — `persp-state-load`: Load all perspectives from a file
 

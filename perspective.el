@@ -1716,7 +1716,7 @@ PERSP-SET-IDO-BUFFERS)."
   windows)
 
 (defun persp--state-complete-v2 (state-complete)
-  "Apply this function to persp--state-complete structs to be guarenteed a 
+  "Apply this function to persp--state-complete structs to be guaranteed a
 persp--state-complete that is compatible with merge-list saving. Useful for
 maintaining backwards compatibility."
   (let* ((state-frames (persp--state-complete-frames state-complete))
@@ -1958,7 +1958,7 @@ restored."
 ;;; --- perspective merging
 
 (defun persp-get-merge (base-name merged-name &optional frame)
-  "Return a merge in FRAME with :base-perspective BASE-NAME and 
+  "Return a merge in FRAME with :base-perspective BASE-NAME and
 :merged-perspective MERGED-NAME."
   (cl-find-if
    (lambda (m)
