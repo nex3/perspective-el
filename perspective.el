@@ -548,13 +548,15 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   (let ((old (cl-gensym)))
     `(progn
        (let ((,old (with-current-perspective (persp-current-name)))
-             (last-persp-cache (persp-last)))
+             (last-persp-cache (persp-last))
+             (result))
          (unwind-protect
              (progn
                (persp-switch ,name 'norecord)
-               ,@body)
+               (setq result (progn ,@body)))
            (when ,old (persp-switch ,old 'norecord)))
-         (set-frame-parameter nil 'persp--last last-persp-cache)))))
+         (set-frame-parameter nil 'persp--last last-persp-cache)
+         result))))
 
 (defun persp-reset-windows ()
   "Remove all windows, ensure the remaining one has no window parameters.
