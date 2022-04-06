@@ -226,6 +226,9 @@ The actual command keys (the ones pressed after the prefix) are defined in
 Since Perspective maintains distinct buffer lists for each perspective, it helps
 to use a Perspective-aware buffer switcher.
 
+When using one of the following buffer switchers you will only be prompted for
+buffers in the current perspective and the frame global perspective.
+
 **Ido**: [Interactive Do (Ido,
 `ido-mode`)](https://www.gnu.org/software/emacs/manual/html_node/ido/index.html),
 in particular its `ido-switch-buffer` command, is automatically
