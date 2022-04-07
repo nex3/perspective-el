@@ -182,24 +182,31 @@ After BODY is evaluated, frame parameters are reset to their original values."
     ;; return a regex which matches nothing, and therefore should ignore nothing
     "$^"))
 
-(defmacro persp-current-buffers (&optional include-global)
-  "Return a list of all buffers in the current perspective. Include the buffers
-in the frames global perspective if INCLUDE-GLOBAL."
-  `(if (not ,include-global)
-       (persp-buffers (persp-curr))
-     (let ((bufs (append (persp-buffers (persp-curr))
-                         (with-perspective persp-frame-global-perspective-name
-                           (if persp-frame-global-perspective-include-scratch-buffer
-                               (persp-buffers (persp-curr))
-                             (remove (persp-get-scratch-buffer) (persp-buffers (persp-curr))))))))
-       (delete-dups bufs))))
+(defmacro persp-current-buffers ()
+  "Return a list of all buffers in the current perspective.
+
+NOTE: This macro is used as a place for setf expressions so be careful with how
+you modify it as you may break things in surprising ways."
+  `(persp-buffers (persp-curr)))
+
+(defun persp-current-buffers* (&optional include-global)
+  "Same as `persp-current-buffers' but if INCLUDE-GLOBAL include buffers from
+the frame global perspective."
+  (if (not include-global)
+      (persp-current-buffers)
+    (delete-dups
+     (append (persp-current-buffers)
+             (with-perspective persp-frame-global-perspective-name
+               (if persp-frame-global-perspective-include-scratch-buffer
+                   (persp-current-buffers)
+                 (remove (persp-get-scratch-buffer) (persp-current-buffers))))))))
 
 (defun persp-current-buffer-names (&optional include-global)
   "Return a list of names of all living buffers in the current perspective.
 Include the names of the buffers in the frame global perspective when
 INCLUDE-GLOBAL."
   (let ((ignore-rx (persp--make-ignore-buffer-rx)))
-    (cl-loop for buf in (persp-current-buffers include-global)
+    (cl-loop for buf in (persp-current-buffers* include-global)
              if (and (buffer-live-p buf)
                      (not (string-match-p ignore-rx (buffer-name buf))))
              collect (buffer-name buf))))
@@ -207,7 +214,7 @@ INCLUDE-GLOBAL."
 (defun persp-is-current-buffer (buf &optional include-global)
   "Return T if BUF is in the current perspective. When INCLUDE-GLOBAL also 
 return T if BUF is in the frame global perspective."
-  (memq buf (persp-current-buffers include-global)))
+  (memq buf (persp-current-buffers* include-global)))
 
 (defun persp-buffer-filter (buf &optional include-global)
   "Return F if BUF is in the current perspective. when INCLUDE-GLOBAL also 
@@ -1448,7 +1455,7 @@ it. In addition, if one exists already, runs BODY in it immediately."
   "Restrict the ido buffer to the current perspective."
   (defvar ido-temp-list)
   (let ((persp-names
-         (remq nil (mapcar 'buffer-name (persp-current-buffers))))
+         (remq nil (mapcar 'buffer-name (persp-current-buffers* t))))
         (indices (make-hash-table :test 'equal)))
     (cl-loop for elt in ido-temp-list
              for i upfrom 0
@@ -1563,7 +1570,7 @@ PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (if (and persp-mode (null arg))
       (switch-to-buffer
-       (list-buffers-noselect nil (seq-filter 'buffer-live-p (persp-current-buffers t))))
+       (list-buffers-noselect nil (seq-filter 'buffer-live-p (persp-current-buffers* t))))
     (switch-to-buffer (list-buffers-noselect))))
 
 ;; Buffer switching integration: list-buffers.
@@ -1573,7 +1580,7 @@ PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (if (and persp-mode (null arg))
       (display-buffer
-       (list-buffers-noselect nil (seq-filter 'buffer-live-p (persp-current-buffers t))))
+       (list-buffers-noselect nil (seq-filter 'buffer-live-p (persp-current-buffers* t))))
     (display-buffer (list-buffers-noselect))))
 
 ;; Buffer switching integration: bs.el.
@@ -1654,7 +1661,7 @@ PERSP-SET-IDO-BUFFERS)."
   (declare-function ivy-read "ivy.el")
   (if (and persp-mode (null arg))
       (let ((real-ivy-read (symbol-function 'ivy-read))
-            (current-bufs (persp-current-buffers t)))
+            (current-bufs (persp-current-buffers* t)))
         (cl-letf (((symbol-function 'ivy-read)
                    (lambda (&rest args)
                      (apply real-ivy-read
