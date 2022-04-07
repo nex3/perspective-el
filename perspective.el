@@ -195,10 +195,11 @@ the frame global perspective."
       (persp-current-buffers)
     (delete-dups
      (append (persp-current-buffers)
-             (with-perspective persp-frame-global-perspective-name
-               (if persp-frame-global-perspective-include-scratch-buffer
-                   (persp-current-buffers)
-                 (remove (persp-get-scratch-buffer) (persp-current-buffers))))))))
+             (when (member persp-frame-global-perspective-name (persp-names))
+               (with-perspective persp-frame-global-perspective-name
+                 (if persp-frame-global-perspective-include-scratch-buffer
+                     (persp-current-buffers)
+                   (remove (persp-get-scratch-buffer) (persp-current-buffers)))))))))
 
 (defun persp-current-buffer-names (&optional include-global)
   "Return a list of names of all living buffers in the current perspective.
