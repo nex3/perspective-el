@@ -182,11 +182,10 @@ After BODY is evaluated, frame parameters are reset to their original values."
     ;; return a regex which matches nothing, and therefore should ignore nothing
     "$^"))
 
+;; NOTE: This macro is used as a place for setf expressions so be careful with
+;; how you modify it as you may break things in surprising ways.
 (defmacro persp-current-buffers ()
-  "Return a list of all buffers in the current perspective.
-
-NOTE: This macro is used as a place for setf expressions so be careful with how
-you modify it as you may break things in surprising ways."
+  "Return a list of all buffers in the current perspective."
   `(persp-buffers (persp-curr)))
 
 (defun persp-current-buffers* (&optional include-global)
