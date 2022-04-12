@@ -169,10 +169,12 @@ You should install Perspective from [MELPA](https://melpa.org/) or [MELPA Stable
 
 Users of [`use-package`](https://github.com/jwiegley/use-package) can install Perspective as follows:
 
-```
+```elisp
 (use-package perspective
   :bind
-  ("C-x C-b" . persp-list-buffers)   ; or use a nicer switcher, see below
+  ("C-x C-b" . persp-list-buffers)         ; or use a nicer switcher, see below
+  :custom
+  (persp-mode-prefix-key (kbd "C-c M-p"))  ; pick your own prefix key here
   :init
   (persp-mode))
 ```
@@ -181,8 +183,15 @@ Replace the binding for `C-x C-b`, the default Emacs buffer switcher, with one
 of the nicer implementations described in the [Buffer
 switchers](#buffer-switchers) section.
 
-Alternately, put `perspective.el` from this source repository in your load path
-and run `(require 'perspective)`.
+If not using `use-package`, put `perspective.el` from this source repository
+somewhere on your load path, and use something similar to this:
+
+```elisp
+(require 'perspective)
+(global-set-key (kbd "C-x C-b") 'persp-list-buffers)
+(customize-set-variable 'persp-mode-prefix-key (kbd "C-c M-p"))
+(persp-mode)
+```
 
 Users of Debian 9 or later or Ubuntu 16.04 or later may simply `apt-get install
 elpa-perspective`, though be aware that the stable version provided in these
@@ -191,12 +200,21 @@ repositories is likely to be (extremely) outdated.
 
 ## Usage
 
-To activate perspective use `(persp-mode)`. This creates a single default `main`
-perpsective.
+To activate Perspective, use `(persp-mode)`. This creates a single default
+`main` perpsective.
 
-Commands are all prefixed by `C-x x` by default. To change the prefix key,
-customize `persp-mode-prefix-key`. Additionally, creating a key binding for
-`persp-mode-map` will also activate the prefix.
+> :information_source: Since the release of Emacs 28, Perspective no longer
+> ships with a default command prefix. Users should pick a prefix comfortable
+> for them. In the days of Emacs 27 and earlier, the default prefix was `C-x x`.
+> This conflicts with bindings built into Emacs 28.
+
+To set a prefix key for all Perspective commands, customize
+`persp-mode-prefix-key`. Reasonable choices include `C-x x` (for users who don't
+care about the Emacs buffer-related commands this shadows), `C-z` (for users who
+don't suspend Emacs to shell background), `C-c C-p` (for users who don't mind
+the conflicting keys with `org-mode` and `markdown-mode`), `C-c M-p` (for users
+who don't mind the slightly awkward chord), and `H-p` (for users who don't mind
+relying exclusively on a non-standard Hyper modifier).
 
 The actual command keys (the ones pressed after the prefix) are defined in
 `perspective-map`. Here are the main commands defined in `perspective-map`:

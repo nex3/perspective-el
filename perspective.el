@@ -73,7 +73,7 @@ instead of the full perspective list."
   :group 'perspective-mode
   :type 'boolean)
 
-(defcustom persp-mode-prefix-key (kbd "C-x x")
+(defcustom persp-mode-prefix-key (if (version< emacs-version "28.0") (kbd "C-x x") nil)
   "Prefix key to activate perspective-map."
   :group 'perspective-mode
   :set (lambda (sym value)
@@ -81,7 +81,8 @@ instead of the full perspective list."
                     (bound-and-true-p perspective-map))
            (persp-mode-set-prefix-key value))
          (set-default sym value))
-  :type 'key-sequence)
+  :type '(choice (const :tag "None" nil)
+                 key-sequence))
 
 (defcustom persp-interactive-completion-function
   (if ido-mode 'ido-completing-read 'completing-read)
@@ -123,6 +124,11 @@ makes it easy to use in, e.g., `kill-emacs-hook` to automatically
 save state when exiting Emacs."
   :group 'perspective-mode
   :type 'file)
+
+(defcustom persp-suppress-no-prefix-key-warning nil
+  "When non-nil, do not warn the user about `persp-mode-prefix-key' not being set."
+  :group 'perspective-mode
+  :type 'boolean)
 
 (defcustom persp-feature-flag-prevent-killing-last-buffer-in-perspective nil
   "Experimental feature flag: prevent killing the last buffer in a perspective."
@@ -357,7 +363,8 @@ Run with the activated perspective active.")
   "Sub-keymap for perspective-mode")
 
 (define-prefix-command 'perspective-map)
-(define-key persp-mode-map persp-mode-prefix-key 'perspective-map)
+(when persp-mode-prefix-key
+  (define-key persp-mode-map persp-mode-prefix-key 'perspective-map))
 
 (define-key perspective-map (kbd "s") 'persp-switch)
 (define-key perspective-map (kbd "k") 'persp-remove-buffer)
@@ -372,7 +379,6 @@ Run with the activated perspective active.")
 (define-key perspective-map (kbd "<right>") 'persp-next)
 (define-key perspective-map (kbd "p") 'persp-prev)
 (define-key perspective-map (kbd "<left>") 'persp-prev)
-(define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
 (define-key perspective-map (kbd "m") 'persp-merge)
 (define-key perspective-map (kbd "u") 'persp-unmerge)
 (define-key perspective-map (kbd "g") 'persp-add-buffer-to-frame-global)
@@ -460,7 +466,8 @@ FRAME defaults to the currently selected frame."
 (defun persp-mode-set-prefix-key (newkey)
   "Set NEWKEY as the prefix key to activate persp-mode."
   (substitute-key-definition 'perspective-map nil persp-mode-map)
-  (define-key persp-mode-map newkey 'perspective-map))
+  (when newkey
+    (define-key persp-mode-map newkey 'perspective-map)))
 
 (defvar persp-protected nil
   "Whether a perspective error should cause persp-mode to be disabled.
@@ -1369,6 +1376,11 @@ named collections of buffers and window configurations."
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
         (setf (persp-current-buffers) (buffer-list))
+        (unless (or persp-mode-prefix-key persp-suppress-no-prefix-key-warning)
+          (display-warning
+           'perspective
+           (format-message "persp-mode-prefix-key is not set! If you see this warning, you are using Emacs 28 or later, and have not customized persp-mode-prefix-key. Please refer to the Perspective documentation for further information (https://github.com/nex3/perspective-el). To suppress this warning without choosing a prefix key, set persp-suppress-no-prefix-key-warning to `t'.")
+           :warning))
         (run-hooks 'persp-mode-hook))
     (persp--helm-disable)
     (ad-deactivate-regexp "^persp-.*")
