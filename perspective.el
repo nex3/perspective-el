@@ -359,7 +359,7 @@ Run with the activated perspective active.")
 (define-key perspective-map persp-mode-prefix-key 'persp-switch-last)
 (define-key perspective-map (kbd "m") 'persp-merge)
 (define-key perspective-map (kbd "u") 'persp-unmerge)
-(define-key perspective-map (kbd "g") 'persp-add-frame-global-buffer)
+(define-key perspective-map (kbd "g") 'persp-add-buffer-to-frame-global)
 (define-key perspective-map (kbd "C-s") 'persp-state-save)
 (define-key perspective-map (kbd "C-l") 'persp-state-load)
 (define-key perspective-map (kbd "`") 'persp-switch-by-number)
@@ -868,10 +868,10 @@ See also `persp-switch' and `persp-remove-buffer'."
       (unless (persp-is-current-buffer buffer)
         (push buffer (persp-current-buffers))))))
 
-(defun persp-add-frame-global-buffer (buffer-or-name)
+(defun persp-add-buffer-to-frame-global (buffer-or-name)
   "Associate BUFFER-OR-NAME with the frame global perspective.
 
-See also `persp-add-buffer'"
+See also `persp-add-buffer'."
   (interactive
    (list
     (let ((read-buffer-function nil))
