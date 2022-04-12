@@ -217,6 +217,7 @@ The actual command keys (the ones pressed after the prefix) are defined in
 - `p`, `<left>` — `persp-prev`: Switch to previous perspective
 - `m` — `persp-merge`: Temporarily merge the buffers from one perspective into another
 - `u` — `persp-unmerge`: Undo the effects of a `persp-merge`
+- `g` — `persp-add-buffer-to-frame-global`: Add buffer to a frame-specific "global" perspective
 - `C-s` — `persp-state-save`: Save all perspectives in all frames to a file
 - `C-l` — `persp-state-load`: Load all perspectives from a file
 
@@ -226,8 +227,12 @@ The actual command keys (the ones pressed after the prefix) are defined in
 Since Perspective maintains distinct buffer lists for each perspective, it helps
 to use a Perspective-aware buffer switcher.
 
-When using one of the following buffer switchers you will only be prompted for
-buffers in the current perspective and the frame global perspective.
+When using one of the following buffer switchers, you will only be prompted for
+buffers in the current perspective and the frame-specific "global" shared
+perspective. (The `persp-add-buffer-to-frame-global` command adds a buffer to
+this special frame-specific perspective, whose name is determined by
+`persp-frame-global-perspective-name` and defaults to `GLOBAL`.)
+
 
 **Ido**: [Interactive Do (Ido,
 `ido-mode`)](https://www.gnu.org/software/emacs/manual/html_node/ido/index.html),

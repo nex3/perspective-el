@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- `persp-add-buffer-to-frame-global`: support for special frame-specific "global" perspectives; buffers which they contain will appear in Perspective-aware buffer listings in _all_ perspectives in their containing frames
 - `persp-switch-to-scratch-buffer`: interactive function to switch to the current perspective's scratch buffer, creating one if missing.
 - `persp-forget-buffer`: disassociate buffer with perspective without the risk of killing it.  This balances `persp-add-buffer`.  Newly created buffers via `get-buffer-create` are rogue buffers not found in any perspective, this function allows to get back to that state.
 - Support for using Consult's `consult-buffer` as a Perspective-aware buffer switcher.
