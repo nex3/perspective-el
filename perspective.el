@@ -172,6 +172,28 @@ After BODY is evaluated, frame parameters are reset to their original values."
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
 
+(defmacro with-current-perspective (&rest body)
+  "Operate on BODY when we are in a perspective."
+  (declare (indent 0))
+  `(when (persp-curr)
+     ,@body))
+
+(defmacro with-perspective (name &rest body)
+  "Switch to the perspective given by NAME while evaluating BODY."
+  (declare (indent 1))
+  (let ((old (cl-gensym)))
+    `(progn
+       (let ((,old (with-current-perspective (persp-current-name)))
+             (last-persp-cache (persp-last))
+             (result))
+         (unwind-protect
+             (progn
+               (persp-switch ,name 'norecord)
+               (setq result (progn ,@body)))
+           (when ,old (persp-switch ,old 'norecord)))
+         (set-frame-parameter nil 'persp--last last-persp-cache)
+         result))))
+
 (defun persp--make-ignore-buffer-rx ()
   (defvar ido-ignore-buffers)
   (if ido-ignore-buffers
@@ -212,12 +234,12 @@ INCLUDE-GLOBAL."
              collect (buffer-name buf))))
 
 (defun persp-is-current-buffer (buf &optional include-global)
-  "Return T if BUF is in the current perspective. When INCLUDE-GLOBAL also 
+  "Return T if BUF is in the current perspective. When INCLUDE-GLOBAL, also
 return T if BUF is in the frame global perspective."
   (memq buf (persp-current-buffers* include-global)))
 
 (defun persp-buffer-filter (buf &optional include-global)
-  "Return F if BUF is in the current perspective. when INCLUDE-GLOBAL also 
+  "Return F if BUF is in the current perspective. When INCLUDE-GLOBAL, also
 return F if BUF is in the frame global perspective. Used for filtering in buffer
 display modes like ibuffer."
   (not (persp-is-current-buffer buf include-global)))
@@ -233,12 +255,6 @@ EXCLUDE-GLOBAL include buffers that are members of the frame global perspective.
   "Return T if NAME is a valid perspective name."
   (and (not (null name))
        (not (string= "" name))))
-
-(defmacro with-current-perspective (&rest body)
-  "Operate on BODY when we are in a perspective."
-  (declare (indent 0))
-  `(when (persp-curr)
-     ,@body))
 
 (defun persp-current-name ()
   "Get the name of the current perspective."
@@ -573,22 +589,6 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
                    ": ")
            (persp-names)
            nil require-match nil nil default))
-
-(defmacro with-perspective (name &rest body)
-  "Switch to the perspective given by NAME while evaluating BODY."
-  (declare (indent 1))
-  (let ((old (cl-gensym)))
-    `(progn
-       (let ((,old (with-current-perspective (persp-current-name)))
-             (last-persp-cache (persp-last))
-             (result))
-         (unwind-protect
-             (progn
-               (persp-switch ,name 'norecord)
-               (setq result (progn ,@body)))
-           (when ,old (persp-switch ,old 'norecord)))
-         (set-frame-parameter nil 'persp--last last-persp-cache)
-         result))))
 
 (defun persp-reset-windows ()
   "Remove all windows, ensure the remaining one has no window parameters.
