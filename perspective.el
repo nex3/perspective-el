@@ -2208,16 +2208,22 @@ were merged in from a previous call to `persp-merge'."
 ;; xref is not available in Emacs 24, so be careful:
 (with-eval-after-load 'xref
   (defvar persp--xref-marker-ring (make-hash-table :test 'equal))
+  (if (boundp 'xref--history)
+      (defun persp--set-xref-marker-ring ()
+        "Set xref--history per persp."
+        (let ((persp-curr-name (persp-name (persp-curr))))
+          (unless (gethash persp-curr-name persp--xref-marker-ring)
+            (puthash persp-curr-name (cons nil nil)
+                     persp--xref-marker-ring))
+          (setq xref--history (gethash persp-curr-name persp--xref-marker-ring))))
+    (defun persp--set-xref-marker-ring ()
+      "Set xref--marker-ring per persp."
+      (let ((persp-curr-name (persp-name (persp-curr))))
+        (unless (gethash persp-curr-name persp--xref-marker-ring)
+          (puthash persp-curr-name (make-ring xref-marker-ring-length)
+                   persp--xref-marker-ring))
+        (setq xref--marker-ring (gethash persp-curr-name persp--xref-marker-ring))))))
 
-  (defun persp--set-xref-marker-ring ()
-    "Set xref--marker-ring per persp."
-    (defvar xref-marker-ring-length)
-    (defvar xref--marker-ring)
-    (let ((persp-curr-name (persp-name (persp-curr))))
-      (unless (gethash persp-curr-name persp--xref-marker-ring)
-        (puthash persp-curr-name (make-ring xref-marker-ring-length)
-                 persp--xref-marker-ring))
-      (setq xref--marker-ring (gethash persp-curr-name persp--xref-marker-ring)))))
 
 
 ;;; --- done
