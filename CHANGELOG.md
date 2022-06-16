@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `persp-activate`: force update the `current-buffer` to the current window's buffer due to `make-persp` saving/restoring the `current-buffer` when executing it's BODY.  This properly updates the `current-buffer` to what should be the real current buffer when switching to a new perspective.
 - `persp-add-buffer`: discard unexisting buffer as argument.
 - Added a workaround for potential problems caused by recursive minibuffer use.
+- Made activating `persp-mode` repeatedly idempotent (should fix [interactive enable-theme invocation bug](https://github.com/nex3/perspective-el/issues/185)).
 
 
 ## [2.17] — 2021-09-18

@@ -1356,32 +1356,37 @@ named collections of buffers and window configurations."
   :global t
   :keymap persp-mode-map
   (if persp-mode
-      (persp-protect
-        (when (bound-and-true-p server-process)
-          (setq persp-started-after-server-mode t))
-        ;; TODO: Convert to nadvice, which has been available since 24.4 and is
-        ;; the earliest Emacs version Perspective supports.
-        (ad-activate 'switch-to-buffer)
-        (ad-activate 'display-buffer)
-        (ad-activate 'set-window-buffer)
-        (ad-activate 'switch-to-prev-buffer)
-        (ad-activate 'recursive-edit)
-        (ad-activate 'exit-recursive-edit)
-        (persp--helm-enable)
-        (add-hook 'after-make-frame-functions 'persp-init-frame)
-        (add-hook 'delete-frame-functions 'persp-delete-frame)
-        (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
-        (when persp-feature-flag-prevent-killing-last-buffer-in-perspective
-          (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer))
-        (setq read-buffer-function 'persp-read-buffer)
-        (mapc 'persp-init-frame (frame-list))
-        (setf (persp-current-buffers) (buffer-list))
-        (unless (or persp-mode-prefix-key persp-suppress-no-prefix-key-warning)
-          (display-warning
-           'perspective
-           (format-message "persp-mode-prefix-key is not set! If you see this warning, you are using Emacs 28 or later, and have not customized persp-mode-prefix-key. Please refer to the Perspective documentation for further information (https://github.com/nex3/perspective-el). To suppress this warning without choosing a prefix key, set persp-suppress-no-prefix-key-warning to `t'.")
-           :warning))
-        (run-hooks 'persp-mode-hook))
+      ;; activate persp-mode, preferably in an idempotent manner: the presence
+      ;; of a non-nil 'persp--hash parameter in (selected-frame) should be a
+      ;; good proxy for whether the mode is actually active...
+      (unless (frame-parameter nil 'persp--hash)
+        (persp-protect
+          (when (bound-and-true-p server-process)
+            (setq persp-started-after-server-mode t))
+          ;; TODO: Convert to nadvice, which has been available since 24.4 and is
+          ;; the earliest Emacs version Perspective supports.
+          (ad-activate 'switch-to-buffer)
+          (ad-activate 'display-buffer)
+          (ad-activate 'set-window-buffer)
+          (ad-activate 'switch-to-prev-buffer)
+          (ad-activate 'recursive-edit)
+          (ad-activate 'exit-recursive-edit)
+          (persp--helm-enable)
+          (add-hook 'after-make-frame-functions 'persp-init-frame)
+          (add-hook 'delete-frame-functions 'persp-delete-frame)
+          (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
+          (when persp-feature-flag-prevent-killing-last-buffer-in-perspective
+            (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer))
+          (setq read-buffer-function 'persp-read-buffer)
+          (mapc 'persp-init-frame (frame-list))
+          (setf (persp-current-buffers) (buffer-list))
+          (unless (or persp-mode-prefix-key persp-suppress-no-prefix-key-warning)
+            (display-warning
+             'perspective
+             (format-message "persp-mode-prefix-key is not set! If you see this warning, you are using Emacs 28 or later, and have not customized persp-mode-prefix-key. Please refer to the Perspective documentation for further information (https://github.com/nex3/perspective-el). To suppress this warning without choosing a prefix key, set persp-suppress-no-prefix-key-warning to `t'.")
+             :warning))
+          (run-hooks 'persp-mode-hook)))
+    ;; deactivate persp-mode
     (persp--helm-disable)
     (ad-deactivate-regexp "^persp-.*")
     (remove-hook 'delete-frame-functions 'persp-delete-frame)
