@@ -130,10 +130,18 @@ save state when exiting Emacs."
   :group 'perspective-mode
   :type 'boolean)
 
-(defcustom persp-feature-flag-prevent-killing-last-buffer-in-perspective nil
-  "Experimental feature flag: prevent killing the last buffer in a perspective."
+(defcustom persp-avoid-killing-last-buffer-in-perspective t
+  "Avoid killing the last buffer in a perspective.
+
+This should not be set to nil unless there's a bug. This was
+formerly a feature flag (persp-feature-flag-prevent-killing-last-buffer-in-perspective),
+but it seems likely to stick around as a just-in-case for a while. It makes sense
+to upgrade this from an experimental feature flag to a toggle.
+TODO: Eventually eliminate this setting?"
   :group 'perspective-mode
   :type 'boolean)
+(defalias 'persp-avoid-killing-last-buffer-in-perspective
+  'persp-feature-flag-prevent-killing-last-buffer-in-perspective)
 
 
 ;;; --- implementation
@@ -1102,7 +1110,7 @@ perspective and no others are killed."
     (run-hooks 'persp-killed-hook)
     (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
-  (when persp-feature-flag-prevent-killing-last-buffer-in-perspective
+  (when persp-avoid-killing-last-buffer-in-perspective
     (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer))
   (remhash name (perspectives-hash))
   (when (boundp 'persp--xref-marker-ring) (remhash name persp--xref-marker-ring))
@@ -1375,7 +1383,7 @@ named collections of buffers and window configurations."
           (add-hook 'after-make-frame-functions 'persp-init-frame)
           (add-hook 'delete-frame-functions 'persp-delete-frame)
           (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
-          (when persp-feature-flag-prevent-killing-last-buffer-in-perspective
+          (when persp-avoid-killing-last-buffer-in-perspective
             (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer))
           (setq read-buffer-function 'persp-read-buffer)
           (mapc 'persp-init-frame (frame-list))

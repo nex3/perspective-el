@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Avoid killing the last buffer in a perspective by default (`persp-avoid-killing-last-buffer-in-perspective`, default `t`; this was formerly the experimental feature flag `persp-feature-flag-prevent-killing-last-buffer-in-perspective` which defaulted to `nil`).
 - **Breaking change:** (Emacs 28+ only): no longer provide a default `persp-mode-prefix-key`. It was `C-x x` in the past, which conflicts with key bindings shipping with Emacs 28. Users of Emacs 28 must now pick their own prefix key. The default remains unchanged for users of Emacs 27 and earlier.
 - `persp-remove-buffer`: do not kill/remove a perspective's last left buffer.
 - `persp-switch-to-buffer*`: tag with `'buffer` category so Marginalia can add its annotations.
