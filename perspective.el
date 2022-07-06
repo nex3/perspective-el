@@ -54,7 +54,7 @@ header line instead."
   :group 'perspective-mode
   :type '(choice (const :tag "Off" nil)
                  (const :tag "Modeline" t)
-                 (const :tag "Header" 'header)))
+                 (const :tag "Header" header)))
 
 (defcustom persp-modestring-dividers '("[" "]" "|")
   "Plist of strings used to create the string shown in the modeline.
