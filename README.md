@@ -415,6 +415,10 @@ customize`). The following are likely to be of most interest:
   the modeline).
 - `persp-modestring-short`: When set to `t`, show a shortened modeline string
   with only the current perspective instead of the full list. Defaults to `nil`.
+- `persp-purge-initial-persp-on-save`: When set to `t`, will kill all buffers
+  of the initial perspective upon calling `perps-state-save`. The buffers whose name
+  match a regexp in the list `persp-purge-initial-persp-on-save-exceptions` won't
+  get killed.
 
 To change keys used after the prefix key, with `use-package` you can do:
 
