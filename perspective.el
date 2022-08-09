@@ -159,6 +159,15 @@ won't be killed upon state save if persp-purge-initial-persp-on-save is t"
   :group 'perspective-mode
   :type '(repeat regexp))
 
+(defcustom persp-state-defer-loading nil
+  "When non-nil, will defer the loading of the files when using `persp-state-load`.
+
+Useful when the state contains a high number of files, or when files are slow to load
+(e.g. files opened using SSH). The files will then be openend upon switching to their 
+perspective."
+  :group 'perspective-mode
+  :type 'boolean)
+
 
 ;;; --- implementation
 
@@ -196,7 +205,8 @@ After BODY is evaluated, frame parameters are reset to their original values."
 (cl-defstruct (perspective
                (:conc-name persp-)
                (:constructor make-persp-internal))
-  name buffers killed local-variables
+  name buffers files killed local-variables
+  (defered nil)
   (last-switch-time (current-time))
   (created-time (current-time))
   (window-configuration (current-window-configuration))
@@ -551,14 +561,14 @@ will need to be changed again after calling `make-persp'."
        (with-current-perspective
          (setf (persp-local-variables persp) (persp-local-variables (persp-curr))))
        (puthash (persp-name persp) persp (perspectives-hash))
-       (with-perspective (persp-name persp)
-         ,(when args
+       ,(when args
+          `(with-perspective (persp-name persp)
             ;; Body form given
-            `(save-excursion ,@args))
+            (save-excursion ,@args)
          ;; If the `current-buffer' changes while in `save-excursion',
          ;; that change isn't kept when getting out, since the current
          ;; buffer is saved before executing BODY and restored after.
-         (run-hooks 'persp-created-hook))
+         (run-hooks 'persp-created-hook)))
        persp)))
 
 (defun persp-save ()
@@ -654,7 +664,7 @@ window-side creating perspectives."
 The new perspective will start with only an `initial-major-mode'
 buffer called \"*scratch* (NAME)\"."
   (or (gethash name (perspectives-hash))
-      (make-persp :name name
+      (make-persp :name name :defered nil
         (switch-to-buffer (persp-get-scratch-buffer name))
         (persp-reset-windows))))
 
@@ -815,8 +825,16 @@ If NORECORD is non-nil, do not update the
   (set-frame-parameter nil 'persp--curr persp)
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
-  (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
-  (set-window-configuration (persp-window-configuration persp))
+  (if (persp-defered persp)
+      (progn ;; defered - open the files
+        (cl-loop for file in (persp-files persp) do
+                 (when (file-exists-p file)
+                   (find-file file)))
+        (window-state-put (persp-window-configuration persp) (frame-root-window) 'safe)
+        (setf (persp-defered persp) nil))
+    ;; not defered - files are already open
+    (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
+    (set-window-configuration (persp-window-configuration persp)))
   (when (marker-position (persp-point-marker persp))
     (goto-char (persp-point-marker persp)))
   (persp-update-modestring)
@@ -1819,7 +1837,6 @@ PERSP-SET-IDO-BUFFERS)."
 ;; }
 
 (cl-defstruct persp--state-complete
-  files
   frames)
 
 ;; Keep around old version to maintain backwards compatibility.
@@ -1834,7 +1851,8 @@ PERSP-SET-IDO-BUFFERS)."
 
 (cl-defstruct persp--state-single
   buffers
-  windows)
+  windows
+  files)
 
 (defun persp--state-complete-v2 (state-complete)
   "Apply this function to persp--state-complete structs to be guaranteed a
@@ -1851,7 +1869,6 @@ maintaining backwards compatibility."
                        :merge-list nil)))
                   state-frames)))
     (make-persp--state-complete
-     :files (persp--state-complete-files state-complete)
      :frames state-frames-v2)))
 
 (defun persp--state-interesting-buffer-p (buffer)
@@ -1933,13 +1950,20 @@ to the perspective's *scratch* buffer."
                                             (cl-loop for buffer in (persp-current-buffers)
                                                      if (persp--state-interesting-buffer-p buffer)
                                                      collect (buffer-name buffer)))
+                                           (files
+                                            (cl-loop for buffer in (persp-current-buffers)
+                                                     if (persp--state-interesting-buffer-p buffer)
+                                                     collect (or (buffer-file-name buffer)
+                                                                 (with-current-buffer buffer ; dired special case
+                                                                   default-directory))))
                                            (windows
                                             (cl-loop for entry in (window-state-get (frame-root-window) t)
                                                      collect (persp--state-window-state-massage entry persp buffers))))
                                       (puthash persp
                                                (make-persp--state-single
                                                 :buffers buffers
-                                                :windows windows)
+                                                :windows windows
+                                                :files files)
                                                persps-in-frame)))))
                        (make-persp--state-frame-v2
                         :persps persps-in-frame
@@ -2015,7 +2039,6 @@ visible in a perspective as windows, they will be saved as
     ;; actually save
     (persp-save)
     (let ((state-complete (make-persp--state-complete
-                           :files (persp--state-file-data)
                            :frames (persp--state-frame-data))))
       ;; create or overwrite target-file:
       (with-temp-file target-file (prin1 state-complete (current-buffer))))
@@ -2049,11 +2072,12 @@ restored."
                           (with-temp-buffer
                             (insert-file-contents file)
                             (buffer-string))))))
+    (unless persp-state-defer-loading
     ;; open all files in a temporary perspective to avoid polluting "main"
-    (persp-switch tmp-persp-name)
-    (cl-loop for file in (persp--state-complete-files state-complete) do
-             (when (file-exists-p file)
-               (find-file file)))
+      (persp-switch tmp-persp-name)
+      (cl-loop for file in (persp--state-complete-files state-complete) do
+               (when (file-exists-p file)
+                 (find-file file))))
     ;; iterate over the frames
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
              (cl-incf frame-count)
@@ -2067,17 +2091,22 @@ restored."
                  ;; iterate over the perspectives in the frame in the appropriate order
                  (cl-loop for persp in frame-persp-order do
                           (let ((state-single (gethash persp frame-persp-table)))
-                            (persp-switch persp)
-                            (set-frame-parameter nil 'persp-merge-list frame-persp-merge-list)
-                            (cl-loop for buffer in (persp--state-single-buffers state-single) do
-                                     (persp-add-buffer buffer))
-                            ;; XXX: split-window-horizontally is necessary for
-                            ;; window-state-put to succeed? Something goes haywire with root
-                            ;; windows without it.
-                            (split-window-horizontally)
-                            (window-state-put (persp--state-single-windows state-single)
-                                              (frame-root-window emacs-frame)
-                                              'safe))))))
+                            (if persp-state-defer-loading
+                                (make-persp :name persp :defered t
+                                  :files (persp--state-single-files state-single)
+                                  :window-configuration (persp--state-single-windows state-single))
+                              ;; open the files directly
+                              (persp-switch persp)
+                              (cl-loop for buffer in (persp--state-single-buffers state-single) do
+                                       (persp-add-buffer buffer))
+                              ;; XXX: split-window-horizontally is necessary for
+                              ;; window-state-put to succeed? Something goes haywire with root
+                              ;; windows without it.
+                              (split-window-horizontally)
+                              (window-state-put (persp--state-single-windows state-single)
+                                                (frame-root-window emacs-frame)
+                                                'safe))
+                            (set-frame-parameter nil 'persp-merge-list frame-persp-merge-list))))))
     ;; cleanup
     (persp-kill tmp-persp-name))
   ;; after hook
