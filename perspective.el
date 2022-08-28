@@ -2249,6 +2249,7 @@ were merged in from a previous call to `persp-merge'."
       ;; Emacs 29:
       (defun persp--set-xref-marker-ring ()
         "Set xref--history per persp."
+        (defvar xref--history)
         (let ((persp-curr-name (persp-name (persp-curr))))
           (unless (gethash persp-curr-name persp--xref-marker-ring)
             (puthash persp-curr-name (cons nil nil)
@@ -2257,6 +2258,8 @@ were merged in from a previous call to `persp-merge'."
     ;; Emacs 28 and earlier:
     (defun persp--set-xref-marker-ring ()
       "Set xref--marker-ring per persp."
+      (defvar xref-marker-ring-length)
+      (defvar xref--marker-ring)
       (let ((persp-curr-name (persp-name (persp-curr))))
         (unless (gethash persp-curr-name persp--xref-marker-ring)
           (puthash persp-curr-name (make-ring xref-marker-ring-length)
