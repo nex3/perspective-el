@@ -146,8 +146,10 @@ TODO: Eventually eliminate this setting?"
 (defcustom persp-purge-initial-persp-on-save nil
   "When non-nil, kills all the buffers in the initial perspective upon state save.
 
-When calling `persp-state-save`, all the buffers in the initial perspective (\"main\" by default)
-are killed, expect the buffers whose name match the regex blabla"
+When calling `persp-state-save`, all the buffers in the initial
+perspective (\"main\" by default) are killed, expect the buffers
+whose name match the regexes in
+`persp-purge-initial-persp-on-save-exceptions'."
   :group 'perspective-mode
   :type 'boolean)
 
@@ -2005,6 +2007,7 @@ visible in a perspective as windows, they will be saved as
       (user-error "Cancelled persp-state-save"))
     ;; before hook
     (run-hooks 'persp-state-before-save-hook)
+    ;; optionally purge initial perspective of entries
     (when persp-purge-initial-persp-on-save
       (mapc 'kill-buffer (cl-remove-if #'persp-purge-exception-p (persp-all-get persp-initial-frame-name nil))))
     ;; actually save
