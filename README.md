@@ -418,7 +418,7 @@ customize`). The following are likely to be of most interest:
 - `persp-purge-initial-persp-on-save`: When set to `t`, will kill all buffers
   of the initial perspective upon calling `perps-state-save`. The buffers whose name
   match a regexp in the list `persp-purge-initial-persp-on-save-exceptions` won't
-  get killed.
+  get killed. This allows using the initial perspective as a kind of scratch space.
 
 To change keys used after the prefix key, with `use-package` you can do:
 
