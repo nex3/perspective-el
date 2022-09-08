@@ -1947,9 +1947,11 @@ to the perspective's *scratch* buffer."
                         :merge-list (frame-parameter nil 'persp-merge-list))))))
 
 (defun persp-purge-exception-p (buffer)
-  (let (result)
-    (dolist (exception persp-purge-initial-persp-on-save-exceptions result)
-      (setq result (or result (string-match-p exception (buffer-name buffer)))))))
+  (if (buffer-live-p buffer)
+      (let (result)
+        (dolist (exception persp-purge-initial-persp-on-save-exceptions result)
+          (setq result (or result (string-match-p exception (buffer-name buffer))))))
+    nil))
 
 ;;;###autoload
 (cl-defun persp-state-save (&optional file interactive?)
