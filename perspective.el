@@ -206,7 +206,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
                (:conc-name persp-)
                (:constructor make-persp-internal))
   name buffers files killed local-variables
-  (defered nil)
+  (deferred nil)
   (last-switch-time (current-time))
   (created-time (current-time))
   (window-configuration (current-window-configuration))
@@ -664,7 +664,7 @@ window-side creating perspectives."
 The new perspective will start with only an `initial-major-mode'
 buffer called \"*scratch* (NAME)\"."
   (or (gethash name (perspectives-hash))
-      (make-persp :name name :defered nil
+      (make-persp :name name :deferred nil
         (switch-to-buffer (persp-get-scratch-buffer name))
         (persp-reset-windows))))
 
@@ -825,14 +825,14 @@ If NORECORD is non-nil, do not update the
   (set-frame-parameter nil 'persp--curr persp)
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
-  (if (persp-defered persp)
-      (progn ;; defered - open the files
+  (if (persp-deferred persp)
+      (progn ;; deferred - open the files
         (cl-loop for file in (persp-files persp) do
                  (when (file-exists-p file)
                    (find-file file)))
         (window-state-put (persp-window-configuration persp) (frame-root-window) 'safe)
-        (setf (persp-defered persp) nil))
-    ;; not defered - files are already open
+        (setf (persp-deferred persp) nil))
+    ;; not deferred - files are already open
     (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
     (set-window-configuration (persp-window-configuration persp)))
   (when (marker-position (persp-point-marker persp))
@@ -2092,7 +2092,7 @@ restored."
                  (cl-loop for persp in frame-persp-order do
                           (let ((state-single (gethash persp frame-persp-table)))
                             (if persp-state-defer-loading
-                                (make-persp :name persp :defered t
+                                (make-persp :name persp :deferred t
                                   :files (persp--state-single-files state-single)
                                   :window-configuration (persp--state-single-windows state-single))
                               ;; open the files directly
