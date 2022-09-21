@@ -467,21 +467,7 @@ compile`? The answer is to fix the broken defaults. This is fairly easy:
 (customize-set-variable 'even-window-sizes nil)     ; avoid resizing
 ```
 
-(An earlier version of this hint modified `display-buffer-alist` instead of
-`display-buffer-base-action`. This was [too
-aggressive](https://debbugs.gnu.org/cgi/bugreport.cgi?bug=49069#25) and can
-impact packages which may legitimately want to split windows.)
-
-The Emacs framework responsible for "pop-up" windows is `display-buffer`. The
-relevant [section of the Emacs
-manual](https://www.gnu.org/software/emacs/manual/html_node/elisp/Displaying-Buffers.html#Displaying-Buffers)
-is dense and difficult to read, so there have been attempts to summarize the
-most important bits:
-
-- https://ess.r-project.org/Manual/ess.html#Controlling-buffer-display
-- https://old.reddit.com/r/emacs/comments/cpdr6m/any_additional_docstutorials_on_displaybuffer_and/ews94n1/
-
-The suggested settings above do the following:
+These settings do the following:
 
 1. Tell `display-buffer` to reuse existing windows as much as possible,
    including in other frames. For example, if there is already a `*compilation*`
@@ -500,3 +486,17 @@ The suggested settings above do the following:
    window layouts, since the appropriate command can simply be run in a window
    prepared for it in advance. (If this is a step too far, then replace
    `display-buffer-same-window` with `display-buffer-pop-up-window`.)
+
+(An earlier version of this hint modified `display-buffer-alist` instead of
+`display-buffer-base-action`. This was [too
+aggressive](https://debbugs.gnu.org/cgi/bugreport.cgi?bug=49069#25) and can
+impact packages which may legitimately want to split windows.)
+
+[Documentation of the Emacs framework responsible for "pop-up" windows,
+`display-buffer`](https://www.gnu.org/software/emacs/manual/html_node/elisp/Displaying-Buffers.html#Displaying-Buffers),
+is dense and difficult to read, so there have been attempts to summarize the
+most important bits:
+
+- https://ess.r-project.org/Manual/ess.html#Controlling-buffer-display
+- https://old.reddit.com/r/emacs/comments/cpdr6m/any_additional_docstutorials_on_displaybuffer_and/ews94n1/
+- https://www.masteringemacs.org/article/demystifying-emacs-window-manager
