@@ -1245,11 +1245,16 @@ See also `persp-get-buffers' to get all buffers."
   (let ((name (if (stringp persp-or-name)
                   persp-or-name
                 (persp-name (or persp-or-name (persp-curr)))))
+        (persp (if (perspective-p persp-or-name)
+                   persp-or-name
+                 (persp-new persp-or-name)))
         buffers)
     (with-selected-frame (or frame (selected-frame))
       (when (member name (persp-names))
-        (with-perspective name
-          (setq buffers (persp-current-buffer-names)))))
+        (if (persp-deferred persp)
+            (setq buffers (mapcar 'buffer-name (persp-buffers persp)))
+          (with-perspective name
+            (setq buffers (persp-current-buffer-names))))))
     buffers))
 
 (defun persp-read-buffer (prompt &optional def require-match predicate)
