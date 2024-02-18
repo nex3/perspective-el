@@ -2215,6 +2215,8 @@ were merged in from a previous call to `persp-merge'."
 ;;;###autoload
 (defun persp-ibuffer-generate-filter-groups ()
   "Create a set of ibuffer filter groups based on the persp name of buffers."
+  (unless (featurep 'ibuf-ext)
+    (require 'ibuf-ext))
   (declare-function ibuffer-remove-duplicates "ibuf-ext.el")
   (declare-function ibuffer-push-filter "ibuf-ext.el")
   (declare-function ibuffer-pop-filter "ibuf-ext.el")
