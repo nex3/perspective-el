@@ -1605,6 +1605,19 @@ PERSP-SET-IDO-BUFFERS)."
                        (buffer-name (current-buffer))))))
   (kill-buffer buffer-or-name))
 
+;; Buffer killing integration: kill all buffers in the current perspective
+;; except the current one and the perspective's scratch buffer.
+;;;###autoload
+(defun persp-kill-other-buffers ()
+  "Kill all buffers in the current perspective other than the current one.
+Also excludes the perspective's scratch buffer."
+  (interactive)
+  (when (y-or-n-p "Are you sure you want to kill all buffers in the current perspective except the current buffer? ")
+    (cl-loop for buf in (persp-current-buffers)
+             unless (or (eq buf (current-buffer))
+                        (eq buf (get-buffer (persp-scratch-buffer))))
+             do (kill-buffer buf))))
+
 ;; Buffer switching integration: buffer-menu.
 ;;;###autoload
 (defun persp-buffer-menu (arg)
