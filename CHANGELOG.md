@@ -6,7 +6,7 @@ Perspective was started in 2008 and this log was only added in 2021.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
-## Unreleased
+## [2.19] — 2024-10-30
 
 ### Fixed
 
