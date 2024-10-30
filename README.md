@@ -32,7 +32,7 @@ please refer to it for release notes.
 - [Compatibility](#compatibility)
 - [Installation](#installation)
 - [Usage](#usage)
-    - [Buffer Switchers](#buffer-switchers)
+    - [Buffer Switching](#buffer-switching)
     - [Notes on `completing-read` Enhancements](#notes-on-completing-read-enhancements)
 - [Saving Sessions to Disk](#saving-sessions-to-disk)
 - [Customization](#customization)
@@ -240,10 +240,19 @@ The actual command keys (the ones pressed after the prefix) are defined in
 - `C-l` — `persp-state-load`: Load all perspectives from a file
 
 
-### Buffer Switchers
+### Buffer Switching
 
 Since Perspective maintains distinct buffer lists for each perspective, it helps
-to use a Perspective-aware buffer switcher.
+to use Perspective-aware methods for buffer switching.
+
+Since Emacs 27.1, the commands `previous-buffer` and `next-buffer` can be made
+Perspective-aware using the `switch-to-prev-buffer-skip` variable as follows:
+
+```elisp
+(setq switch-to-prev-buffer-skip
+      (lambda (win buff bury-or-kill)
+        (not (persp-is-current-buffer buff))))
+```
 
 When using one of the following buffer switchers, you will only be prompted for
 buffers in the current perspective and the frame-specific "global" shared
