@@ -664,7 +664,7 @@ Returns BUFFERS with all non-living buffers removed.
 
 See also `other-buffer'."
   (cl-loop for buf in (reverse (buffer-list))
-           when (member buf buffers)
+           when (and (buffer-live-p buf) (member buf buffers))
            collect buf into result-buffers
            and do (switch-to-buffer buf)
            finally return result-buffers))
