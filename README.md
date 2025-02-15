@@ -31,6 +31,7 @@ please refer to it for release notes.
 - [Similar Packages](#similar-packages)
 - [Compatibility](#compatibility)
 - [Installation](#installation)
+- [Getting Started](#getting-started)
 - [Usage](#usage)
     - [Buffer Switching](#buffer-switching)
     - [Notes on `completing-read` Enhancements](#notes-on-completing-read-enhancements)
