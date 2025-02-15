@@ -663,11 +663,11 @@ buffer called \"*scratch* (NAME)\"."
 Returns BUFFERS with all non-living buffers removed.
 
 See also `other-buffer'."
-  (cl-loop for buf in (reverse buffers)
-           when (buffer-live-p buf)
-           collect buf into living-buffers
+  (cl-loop for buf in (reverse (buffer-list))
+           when (and (buffer-live-p buf) (member buf buffers))
+           collect buf into result-buffers
            and do (switch-to-buffer buf)
-           finally return (nreverse living-buffers)))
+           finally return result-buffers))
 
 (defun persp-set-local-variables (vars)
   "Set the local variables given in VARS.
