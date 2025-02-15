@@ -198,6 +198,28 @@ elpa-perspective`, though be aware that the stable version provided in these
 repositories is likely to be (extremely) outdated.
 
 
+## Getting Started
+
+Assuming you installed Perspective using `use-package` as noted in the
+Installation section, `persp-mode` should now be active, and you should be in
+the `main` perspective. Any buffers you have open now will be associated with
+`main`. (If you have no buffers open, you should open a couple for the purposes
+of this exercise.)
+
+Now, press <kbd>C-c M-p s</kbd>. Note that <kbd>C-c M-p</kbd> is the Perspective
+prefix, and you had to define it in the `use-package` invocation. If you changed
+it to something else, use your own prefix instead! <kbd>s</kbd> is the prefixed
+binding of the `persp-switch` command. Enter the name of a different perspective
+(e.g. `two`). Emacs will switch to perspective `two`. The buffers you have
+associated with `main` will be backgrounded, and you will see the scratch buffer
+associated with perspective `two` (`*scratch* two`). Any buffers you open now
+will be associated with perspective `two`.
+
+Now, press <kbd>C-c M-p s</kbd> again, and type `main` when prompted. Emacs will
+then background perspective `two` and bring up perspective `main`, restoring its
+window layout and buffer list.
+
+
 ## Usage
 
 To activate Perspective, use `(persp-mode)`. This creates a single default
