@@ -1031,6 +1031,9 @@ See also `persp-remove-buffer'."
   "Disassociate BUFFER with the current perspective.
 If BUFFER isn't in any perspective, then it is in limbo.
 
+XXX: This function is hard to understand, with a lot of
+subtleties around visible buffers, and needs to get revisited.
+
 See also `persp-add-buffer' and `persp-remove-buffer'."
   (interactive
    (list (funcall persp-interactive-completion-function "Disassociate buffer with perspective: " (persp-current-buffer-names))))
@@ -1050,10 +1053,14 @@ See also `persp-add-buffer' and `persp-remove-buffer'."
                              ;; Burying the current buffer should also
                              ;; act as an `unrecord-window-buffer'.
                              (with-selected-window window (bury-buffer)))))
-           (let ((window (get-buffer-window buffer)))
-             (when window
-               (error "Buried buffer %s found in window %s, but it shouldn't"
-                      buffer window)))
+           ;; XXX: The next expression has compatibility problems with
+           ;; switch-to-prev-buffer-skip. Since it seems to just error out when
+           ;; the buffer is visible even though it has already been buried,
+           ;; let's just not do that for now and see what happens.
+           ;;(let ((window (get-buffer-window buffer)))
+           ;;  (when window
+           ;;    (error "Buried buffer %s found in window %s, but it shouldn't"
+           ;;           buffer window)))
            ;; `with-selected-window' restores the `current-buffer'.
            ;; If the current buffer is buried, it should not be the
            ;; next current buffer.  Remember to fix it later.
