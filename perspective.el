@@ -312,7 +312,12 @@ Create it if the current perspective doesn't have one yet."
         (when (and (zerop (buffer-size))
                    initial-scratch-message)
           (insert (substitute-command-keys initial-scratch-message))
-          (set-buffer-modified-p nil))))
+          (set-buffer-modified-p nil))
+        ;; Turn flymake off to prevent the annoying error in the
+        ;; minibuffer
+        (when (and (require 'flymake nil t)
+                   (boundp flymake-mode))
+          (flymake-mode -1))))
     scratch-buffer))
 
 (defun persp-switch-to-scratch-buffer ()
