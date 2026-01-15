@@ -342,7 +342,7 @@ and add `persp-consult-source` to `consult-buffer-sources` for consult
 to only list buffers in current perspective like so:
 
 ```emacs-lisp
-(consult-customize consult--source-buffer :hidden t :default nil)
+(consult-customize consult-source-buffer :hidden t :default nil)
 (add-to-list 'consult-buffer-sources persp-consult-source)
 ```
 Note that you can still access list of all buffers in all perspectives by
