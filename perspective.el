@@ -99,11 +99,13 @@ instead of the full perspective list."
   "What order to sort perspectives.
 If 'name, then sort alphabetically.
 If 'access, then sort by last time accessed (latest first).
-If 'created, then sort by time created (latest first)."
+If 'created, then sort by time created (latest first).
+If 'manual, then sorting is managed by the user."
   :group 'perspective-mode
   :type '(choice (const :tag "By Name"          name)
                  (const :tag "By Time Accessed" access)
-                 (const :tag "By Time Created"  created)))
+                 (const :tag "By Time Created"  created)
+                 (const :tag "Manual"           manual)))
 
 (defcustom persp-frame-global-perspective-name "GLOBAL"
   "The name for a frames global perspective."
@@ -199,6 +201,7 @@ After BODY is evaluated, frame parameters are reset to their original values."
   name buffers killed local-variables
   (last-switch-time (current-time))
   (created-time (current-time))
+  (sorted-time (current-time))
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
 
@@ -592,6 +595,11 @@ first."
   (let ((persps (hash-table-values (perspectives-hash))))
     (cond ((eq persp-sort 'name)
            (sort (mapcar 'persp-name persps) 'string<))
+          ((eq persp-sort 'manual)
+           (mapcar 'persp-name
+                   (sort persps (lambda (a b)
+                                  (time-less-p (persp-sorting-time a)
+                                               (persp-sorting-time b))))))
           ((eq persp-sort 'access)
            (mapcar 'persp-name
                    (sort persps (lambda (a b)
@@ -602,6 +610,36 @@ first."
                    (sort persps (lambda (a b)
                                   (time-less-p (persp-created-time b)
                                                (persp-created-time a)))))))))
+
+(defun persp-sorting-move-left (name)
+  "Move the perspective left/up in the list of perspectives"
+  (interactive)
+  (let* ((persps (persp-names))
+         (before (car (last persps))))
+    (dolist (p persps)
+      (if (equal p name)
+          (let ((p1 (persp-new before))
+                (p2 (persp-new name)))
+            (setf (persp-sorting-time p1)
+                  (prog1
+                      (persp-sorting-time p2)
+                    (setf (persp-sorting-time p2) (persp-sorting-time p1)))))
+        (setq before p)))))
+
+(defun persp-sorting-move-right (name)
+  "Move the perspective right/down in the list of perspectives"
+  (interactive)
+  (let* ((persps (reverse (persp-names)))
+         (before (car (last persps))))
+    (dolist (p persps)
+      (if (equal p name)
+          (let ((p1 (persp-new before))
+                (p2 (persp-new name)))
+            (setf (persp-sorting-time p1)
+                  (prog1
+                      (persp-sorting-time p2)
+                    (setf (persp-sorting-time p2) (persp-sorting-time p1)))))
+        (setq before p)))))
 
 (defun persp-all-names (&optional not-frame)
   "Return a list of the perspective names for all frames.
