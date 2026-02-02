@@ -82,7 +82,7 @@ When you finish looking at Z, you close perspective `feature-Z`, and return to
 Y, you close perspective `bugfix-Y` and return to `feature-X`.
 
 (Hint: this workflow works best with the `persp-sort` variable set to `'created`
-— see documentation below.)
+or `'oldest` — see documentation below.)
 
 
 ### Perspective Merging
@@ -245,7 +245,7 @@ The actual command keys (the ones pressed after the prefix) are defined in
 - `s` — `persp-switch`: Query a perspective to switch to, or create
 - `` ` `` — `persp-switch-by-number`: Switch to perspective by number, or switch
   quickly using numbers `1, 2, 3.. 0` as prefix args; note this will probably be
-  most useful with `persp-sort` set to `'created`
+  most useful with `persp-sort` set to `'created` or `'oldest`
 - `k` — `persp-remove-buffer`: Query a buffer to remove from current perspective
 - `c` — `persp-kill` : Query a perspective to kill
 - `r` — `persp-rename`: Rename current perspective
@@ -425,9 +425,11 @@ customize`). The following are likely to be of most interest:
 
 - `persp-sort`: Select the order in which to sort perspectives when calling
   `persp-switch`. Defaults to `'name` (alphabetical), but `'access` (by most
-  recently accessed) and `'created` (by order created) are available. Note that
+  recently accessed), `'created` (by order created, descending) and `'oldest`
+  (by order created, ascending) are available. Note that
   `persp-switch-by-number` is likely to be confusing when this is set to
-  `'access`, as the numbers associated with a perspective will change all the time.
+  `'access`, as the numbers associated with a perspective will change all the
+  time.
 - `persp-interactive-completion-function`: Used for prompting for a perspective
   name. `completing-read` is the default, with `ido-completing-read` enabled
   with `ido-mode`. `ivy-completing-read` is broadly compatible, but
