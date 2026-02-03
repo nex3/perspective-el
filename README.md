@@ -224,7 +224,7 @@ window layout and buffer list.
 ## Usage
 
 To activate Perspective, use `(persp-mode)`. This creates a single default
-`main` perpsective.
+`main` perspective.
 
 > :information_source: Since the release of Emacs 28, Perspective no longer
 > ships with a default command prefix. Users should pick a prefix comfortable
