@@ -2229,17 +2229,32 @@ persp-test-make-sample-environment."
 
 (ert-deftest issue-90-persp-last--vs--persp-find-some ()
   (persp-test-with-persp
-   (let ((persp-sort 'created))         ; this should be respected when killing
-     (should-persp-equal       '("main")             "main" nil    "main")
-     (with-named-persp "A"
-       (should-persp-equal     '("A" "main")         "A"    "main" "main")
-       (with-named-persp "B"
-         (should-persp-equal   '("B" "A" "main")     "B"    "A"    "A")
-         (with-named-persp "C"
-           (should-persp-equal '("C" "B" "A" "main") "C"    "B"    "B")) ; pop C
-         (should-persp-equal   '("B" "A" "main")     "B"    nil    "B")) ; pop B
-       (should-persp-equal     '("A" "main")         "A"    nil    "A")) ; pop A
-     (should-persp-equal       '("main")             "main" nil    "main"))))
+    (let ((persp-sort 'created))         ; this should be respected when killing
+      (should-persp-equal       '("main")             "main" nil    "main")
+      (with-named-persp "A"
+        (should-persp-equal     '("A" "main")         "A"    "main" "main")
+        (with-named-persp "B"
+          (should-persp-equal   '("B" "A" "main")     "B"    "A"    "A")
+          (with-named-persp "C"
+            (should-persp-equal '("C" "B" "A" "main") "C"    "B"    "B")) ; pop C
+          (should-persp-equal   '("B" "A" "main")     "B"    nil    "B")) ; pop B
+        (should-persp-equal     '("A" "main")         "A"    nil    "A")) ; pop A
+      (should-persp-equal       '("main")             "main" nil    "main"))))
+
+(ert-deftest sort-by-oldest ()
+  (persp-test-with-persp
+    (let ((persp-sort 'oldest))
+      ;;                         persp-order          curr   last   find-some
+      (should-persp-equal       '("main")             "main" nil    "main")
+      (with-named-persp "A"
+        (should-persp-equal     '("main" "A")         "A"    "main" "main")
+        (with-named-persp "B"
+          (should-persp-equal   '("main" "A" "B")     "B"    "A"    "A")
+          (with-named-persp "C"
+            (should-persp-equal '("main" "A" "B" "C") "C"    "B"    "B"))
+          (should-persp-equal   '("main" "A" "B")     "B"    nil    "main"))
+        (should-persp-equal     '("main" "A")         "main" nil    "main"))
+      (should-persp-equal       '("main")             "main" nil    "main"))))
 
 (ert-deftest state-save-and-load ()
   (unwind-protect
