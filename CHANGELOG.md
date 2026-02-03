@@ -6,6 +6,13 @@ Perspective was started in 2008 and this log was only added in 2021.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
+## Unreleased
+
+### Added
+
+- `persp-sort`: now supports `'oldest` sorting, which inverts sort order compared to `'created` ([#224](https://github.com/nex3/perspective-el/pull/224)).
+
+
 ## [2.20] — 2025-05-23
 
 ### Changed
