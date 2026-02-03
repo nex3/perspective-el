@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## Unreleased
 
+### Fixed
+
+- Integrate `winner-mode` state per perspective to prevent `winner-undo` crossing perspectives ([#137](https://github.com/nex3/perspective-el/issues/137)).
+
+
 ### Added
 
 - `persp-sort`: now supports `'oldest` sorting, which inverts sort order compared to `'created` ([#224](https://github.com/nex3/perspective-el/pull/224)).

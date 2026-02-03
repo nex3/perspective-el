@@ -387,6 +387,9 @@ Run with the activated perspective active.")
 (defvar persp-state-after-load-hook nil
   "A hook run immediately after loading persp state from disk.")
 
+(defvar persp--winner-after-load-registered nil
+  "Non-nil when Winner setup has been registered via `eval-after-load'.")
+
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
 
@@ -1421,9 +1424,16 @@ named collections of buffers and window configurations."
           (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
           (when persp-avoid-killing-last-buffer-in-perspective
             (add-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer))
+          (add-hook 'persp-created-hook #'persp--winner-reset-on-created -50)
           (setq read-buffer-function 'persp-read-buffer)
           (mapc 'persp-init-frame (frame-list))
           (setf (persp-current-buffers) (buffer-list))
+          ;; Must run after initial perspectives exist, since it relies on
+          ;; `persp-curr' to register variables.
+          (persp--winner-setup)
+          (unless persp--winner-after-load-registered
+            (eval-after-load 'winner '(persp--winner-setup))
+            (setq persp--winner-after-load-registered t))
           (unless (or persp-mode-prefix-key persp-suppress-no-prefix-key-warning)
             (display-warning
              'perspective
@@ -1437,6 +1447,10 @@ named collections of buffers and window configurations."
     (remove-hook 'after-make-frame-functions 'persp-init-frame)
     (remove-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
     (remove-hook 'kill-buffer-query-functions 'persp-maybe-kill-buffer)
+    (remove-hook 'persp-created-hook #'persp--winner-reset-on-created)
+    ;; No cleanup for Winner here: persp-local variables live on perspective
+    ;; structs that are unreachable while `persp-mode' is off, so this avoids
+    ;; surprising global side effects while keeping re-enable behavior correct.
     (setq read-buffer-function nil)
     (set-frame-parameter nil 'persp--hash nil)
     (setq global-mode-string (delete '(:eval (persp-mode-line)) global-mode-string))
@@ -1498,6 +1512,22 @@ from the current perspective at time of creation."
       (dolist (frame (frame-list))
         (cl-loop for persp being the hash-values of (perspectives-hash frame)
                  do (push entry (persp-local-variables persp)))))))
+
+(defun persp--winner-setup ()
+  "Make Winner state perspective-local when Winner is available."
+  (when (and persp-mode (featurep 'winner)
+             (boundp 'winner-ring-alist)
+             (boundp 'winner-currents))
+    (persp-make-variable-persp-local 'winner-ring-alist)
+    (persp-make-variable-persp-local 'winner-currents)))
+
+(defun persp--winner-reset-on-created ()
+  "Reset Winner state for newly created perspectives."
+  (when (and (featurep 'winner)
+             (boundp 'winner-ring-alist)
+             (boundp 'winner-currents))
+    (setq winner-ring-alist nil
+          winner-currents nil)))
 
 (defmacro persp-setup-for (name &rest body)
   "Add code that should be run to set up the perspective named NAME.
