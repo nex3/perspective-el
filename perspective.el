@@ -145,6 +145,20 @@ TODO: Eventually eliminate this setting?"
 (defalias 'persp-avoid-killing-last-buffer-in-perspective
   'persp-feature-flag-prevent-killing-last-buffer-in-perspective)
 
+(defcustom persp-switch-to-buffer-behavior 'import
+  "How Perspective-owned buffer switchers should handle other-perspective buffers.
+
+If the value is `import', display the selected buffer in the current
+perspective, importing it if necessary.
+
+If the value is `switch', switch to a perspective that already contains
+the selected buffer before displaying it.
+
+This currently affects `persp-switch-to-buffer*'."
+  :group 'perspective-mode
+  :type '(choice (const :tag "Import into current perspective" import)
+                 (const :tag "Switch to owning perspective" switch)))
+
 (defcustom persp-purge-initial-persp-on-save nil
   "When non-nil, kills all the buffers in the initial perspective upon state save.
 
@@ -974,19 +988,35 @@ Prefers perspectives in the selected frame."
                             (cons frame (persp-name persp)))))
   nil)
 
-(defun persp-switch-to-buffer (buffer-or-name)
+(cl-defun persp--show-buffer (buffer-or-name &key norecord (behavior 'import))
+  "Display BUFFER-OR-NAME according to BEHAVIOR.
+
+If BEHAVIOR is `import', display the buffer in the current perspective.
+If it is `switch', switch to a perspective containing the buffer first.
+
+If NORECORD is non-nil, pass it through to `switch-to-buffer' and
+`persp-switch'."
+  (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
+    (cl-ecase behavior
+      (import
+       (switch-to-buffer buffer norecord))
+      (switch
+       (if (persp-is-current-buffer buffer)
+           (switch-to-buffer buffer norecord)
+         (let ((other-persp (persp-buffer-in-other-p buffer)))
+           (when (eq (car-safe other-persp) (selected-frame))
+             (persp-switch (cdr other-persp) norecord))
+           (if-let ((window (get-buffer-window buffer (selected-frame))))
+               (select-window window norecord)
+             (switch-to-buffer buffer norecord))))))))
+
+(defun persp-switch-to-buffer (buffer-or-name &optional norecord)
   "Like `switch-to-buffer', but switches to another perspective if necessary."
   (interactive
    (list
     (let ((read-buffer-function nil))
       (read-buffer-to-switch "Switch to buffer: "))))
-  (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
-    (if (persp-is-current-buffer buffer)
-        (switch-to-buffer buffer)
-      (let ((other-persp (persp-buffer-in-other-p buffer)))
-        (when (eq (car-safe other-persp) (selected-frame))
-          (persp-switch (cdr other-persp)))
-        (switch-to-buffer buffer)))))
+  (persp--show-buffer buffer-or-name :norecord norecord :behavior 'switch))
 
 (cl-defun persp-maybe-kill-buffer ()
   "Don't kill a buffer if it's the only buffer in a perspective.
@@ -1639,7 +1669,7 @@ PERSP-SET-IDO-BUFFERS)."
                          nil nil nil nil
                          other)))))
   (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
-    (switch-to-buffer buffer)))
+    (persp--show-buffer buffer :behavior persp-switch-to-buffer-behavior)))
 
 ;; Buffer killing integration: useful for frameworks which enhance the
 ;; built-in completing-read (e.g., Selectrum).

@@ -383,6 +383,10 @@ Both these functions behave like the built-ins, but use `completing-read`
 directly. When called normally, they list buffers filtered by the current
 perspective. With a prefix argument, they list buffers in all perspectives.
 
+`persp-switch-to-buffer*` imports a selected buffer into the current
+perspective by default; set `persp-switch-to-buffer-behavior` to `switch` if
+you prefer it to jump to an existing owning perspective instead.
+
 The following sample `use-package` invocation changes Emacs default key bindings
 to use the replacements:
 

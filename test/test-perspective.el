@@ -2130,6 +2130,69 @@ buffers into any perspective."
       (should-not (persp-is-current-buffer dummy-buffer))
       (should (persp-test-buffer-in-persps dummy-buffer "A")))))
 
+(ert-deftest basic-persp-switch-to-buffer*-imports-by-default ()
+  "Test that `persp-switch-to-buffer*' imports other-perspective buffers by default."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (dummy-buffer)
+      (persp-switch "A")
+      (switch-to-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (persp-switch "main")
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (let ((persp-switch-to-buffer-behavior 'import))
+        (persp-switch-to-buffer* dummy-buffer))
+      (should (equal (persp-current-name) "main"))
+      (should (eq (current-buffer) dummy-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "main" "A")))))
+
+(ert-deftest basic-persp-switch-to-buffer*-switches-when-configured ()
+  "Test that `persp-switch-to-buffer*' can switch to the owning perspective."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (dummy-buffer)
+      (persp-switch "A")
+      (switch-to-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (persp-switch "main")
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (let ((persp-switch-to-buffer-behavior 'switch))
+        (persp-switch-to-buffer* dummy-buffer))
+      (should (equal (persp-current-name) "A"))
+      (should (eq (current-buffer) dummy-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "A")))))
+
+(ert-deftest basic-persp-switch-to-buffer*-selects-existing-window-when-switching ()
+  "Test that switching prefers an existing visible window for the target buffer."
+  (unwind-protect
+      (persp-test-with-persp
+      (persp-test-with-files nil (A1 A2 A3 B1 B2 B3 B4)
+          (persp-test-make-sample-environment)
+          (persp-switch "A")
+          (persp-set-buffer A2)
+          (persp-switch "main")
+          (let ((persp-switch-to-buffer-behavior 'switch))
+            (persp-switch-to-buffer* A2))
+          (should (equal (persp-current-name) "A"))
+          (should (eq (current-buffer) A2))
+          (should (eq (window-buffer (selected-window)) A2))
+          (should (equal (list "A1" "A2" "A3")
+                         (sort (mapcar #'buffer-name (mapcar #'window-buffer (window-list)))
+                               #'string-lessp)))))
+    (persp-test-clean-files "A1" "A2" "A3" "B1" "B2" "B3" "B4")))
+
+(ert-deftest basic-persp-switch-to-buffer-ignores-configured-import-behavior ()
+  "Test that `persp-switch-to-buffer' keeps its switch semantics."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (dummy-buffer)
+      (persp-switch "A")
+      (switch-to-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (persp-switch "main")
+      (let ((persp-switch-to-buffer-behavior 'import))
+        (persp-switch-to-buffer dummy-buffer))
+      (should (equal (persp-current-name) "A"))
+      (should (eq (current-buffer) dummy-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "A")))))
+
 (defmacro persp-test-make-sample-environment ()
   "Make a test environment with the following window layout:
 
