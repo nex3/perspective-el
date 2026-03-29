@@ -507,6 +507,11 @@ FRAME defaults to the currently selected frame."
   "Whether a perspective error should cause persp-mode to be disabled.
 Dynamically bound by `persp-protect'.")
 
+(defvar persp--inhibit-buffer-association nil
+  "When non-nil, suppress automatic association of displayed buffers.
+Dynamically bound around temporary buffer displays, such as
+`switch-to-buffer' calls with non-nil NORECORD.")
+
 (defface persp-selected-face
   '((t (:weight bold :foreground "Blue")))
   "The face used to highlight the current perspective on the modeline.")
@@ -1319,21 +1324,26 @@ is non-nil or with prefix arg, don't switch to the new perspective."
         (persp-update-modestring)
       (persp-activate persp))))
 
-(defadvice switch-to-buffer (after persp-add-buffer-adv)
+(defadvice switch-to-buffer (around persp-add-buffer-adv)
   "Add BUFFER to the current perspective.
 
 See also `persp-add-buffer'."
-  (persp-protect
-    (let ((buf (ad-get-arg 0)))
-      (when buf
-        (persp-add-buffer buf)))))
+  (let ((persp--inhibit-buffer-association
+         (or persp--inhibit-buffer-association
+             (ad-get-arg 1))))
+    ad-do-it
+    (persp-protect
+      (let ((buf (ad-get-arg 0)))
+        (when (and buf (not persp--inhibit-buffer-association))
+          (persp-add-buffer buf))))))
 
 (defadvice display-buffer (after persp-add-buffer-adv)
   "Add BUFFER to the perspective for the frame on which it's displayed.
 
 See also `persp-add-buffer'."
   (persp-protect
-    (when ad-return-value
+    (when (and ad-return-value
+               (not persp--inhibit-buffer-association))
       (let ((buf (ad-get-arg 0))
             (frame (window-frame ad-return-value)))
         (when (and buf frame)
@@ -1347,7 +1357,8 @@ See also `persp-add-buffer'."
   (persp-protect
     (let ((buf (ad-get-arg 1))
           (frame (window-frame (ad-get-arg 0))))
-      (when (and buf frame)
+      (when (and buf frame
+                 (not persp--inhibit-buffer-association))
         (with-selected-frame frame
           (persp-add-buffer buf))))))
 

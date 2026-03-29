@@ -2113,6 +2113,23 @@ buffers into any perspective."
     (should (kill-buffer "*dummy*"))
     (should-not (get-buffer "*dummy*"))))
 
+(ert-deftest basic-switch-to-buffer-norecord-does-not-add-buffer ()
+  "Test that temporary `switch-to-buffer' displays do not add buffers."
+  (persp-test-with-persp
+    (let ((dummy-buffer (get-buffer-create "*dummy*")))
+      (persp-switch "A")
+      (switch-to-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "A"))
+      (persp-switch "main")
+      (should-not (persp-is-current-buffer dummy-buffer))
+      ;; `consult--buffer-state' previews use `switch-to-buffer' with
+      ;; NORECORD non-nil.  That should not associate the buffer with
+      ;; the current perspective.
+      (switch-to-buffer dummy-buffer t)
+      (should (eq (current-buffer) dummy-buffer))
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (should (persp-test-buffer-in-persps dummy-buffer "A")))))
+
 (defmacro persp-test-make-sample-environment ()
   "Make a test environment with the following window layout:
 
