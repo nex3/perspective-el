@@ -483,7 +483,7 @@ POINT-MARKER is the point position in the active buffer.
 Otherwise, when multiple windows are visiting the same buffer,
 all but one of their points will be overwritten.
 
-LOCAL-VARIABLES is an alist from variable names to their
+LOCAL-VARIABLES is a list of `(VARIABLE VALUE)' pairs for
 perspective-local values."
   ;; XXX: This must return a non-nil value to avoid breaking frames initialized
   ;; with after-make-frame-functions bound to nil.
@@ -706,7 +706,7 @@ See also `other-buffer'."
 
 (defun persp-set-local-variables (vars)
   "Set the local variables given in VARS.
-VARS should be an alist of variable names to values."
+VARS should be a list of `(VARIABLE VALUE)' pairs."
   (dolist (var vars) (apply 'set var)))
 
 (defun persp-intersperse (list interspersed-val)
