@@ -1040,42 +1040,53 @@ See also `persp-remove-buffer'."
   (persp-protect
     (let* ((buffer (current-buffer))
            (bufstr (buffer-name buffer))
-           candidates-for-removal candidates-for-keeping)
+           (current-name (persp-current-name))
+           (ignore-rx (persp--make-ignore-buffer-rx))
+           current-persp-removal-needed
+           candidates-for-removal
+           candidates-for-keeping)
       ;; XXX: For performance reasons, always allow killing off obviously
       ;; temporary buffers. According to Emacs convention, these buffers' names
       ;; start with a space.
       (when (string-match-p (rx string-start (one-or-more blank)) bufstr)
         (cl-return-from persp-maybe-kill-buffer t))
-      (dolist (name (persp-names))
-        (let ((buffer-names (persp-get-buffer-names name)))
-          (when (member bufstr buffer-names)
-            (if (cdr buffer-names)
-                (push name candidates-for-removal)
-              ;; We use a list for debugging purposes, a simple bool
-              ;; can suffice for what we are doing here.
-              (push name candidates-for-keeping)))))
+      (maphash
+       (lambda (name persp)
+         (let ((buffers (persp-buffers persp)))
+           (when (memq buffer buffers)
+             (if (cl-loop for other-buffer in buffers
+                          thereis (and (not (eq other-buffer buffer))
+                                       (buffer-live-p other-buffer)
+                                       (not (string-match-p ignore-rx
+                                                            (buffer-name other-buffer)))))
+                 (if (equal name current-name)
+                     (setq current-persp-removal-needed t)
+                   (push name candidates-for-removal))
+               ;; We use a list for debugging purposes, a simple bool
+               ;; can suffice for what we are doing here.
+               (push name candidates-for-keeping)))))
+       (perspectives-hash))
       (cond
        ;; When there aren't perspectives with the buffer as the only
        ;; buffer, it can be killed safely.  Also cleanup killed ones
        ;; found in perspectives listing the buffer to be killed.
        ((not candidates-for-keeping)
-        ;; Switching to a perspective that isn't the current, should
-        ;; automatically cleanup previously killed buffers which are
-        ;; still in the perspective's list of buffers.  Removing the
-        ;; buffer to be killed should also keep the list clean.
         (dolist (name candidates-for-removal)
           (with-perspective name
-            ;; remove the buffer that has to be killed from the list
-            (setf (persp-current-buffers) (remq buffer (persp-current-buffers)))))
+            (persp-forget-buffer buffer)))
+        (when current-persp-removal-needed
+          (setf (persp-current-buffers) (remq buffer (persp-current-buffers))))
         t)
        ;; When a perspective have the buffer as the only buffer, the
        ;; buffer should not be killed, but removed from perspectives
        ;; that have more than one buffer.  Those perspectives should
        ;; forget about the buffer.
-       (candidates-for-removal
+       ((or candidates-for-removal current-persp-removal-needed)
         (dolist (name candidates-for-removal)
           (with-perspective name
             (persp-forget-buffer buffer)))
+        (when current-persp-removal-needed
+          (persp-forget-buffer buffer))
         nil)))))
 
 (defun persp-forget-buffer (buffer)

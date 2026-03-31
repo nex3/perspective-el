@@ -24,6 +24,7 @@
 
 ;; Set feature flag(s):
 (customize-set-variable 'persp-feature-flag-prevent-killing-last-buffer-in-perspective t)
+(customize-set-variable 'persp-suppress-no-prefix-key-warning t)
 
 (defun persp-test-interesting-buffer? (buf)
   "Return t if BUF is a non-temporary buffer (i.e., lacks
@@ -2129,6 +2130,42 @@ buffers into any perspective."
       (should (eq (current-buffer) dummy-buffer))
       (should-not (persp-is-current-buffer dummy-buffer))
       (should (persp-test-buffer-in-persps dummy-buffer "A")))))
+
+(ert-deftest basic-persp-maybe-kill-buffer-ignores-unrelated-perspectives ()
+  "Test that unrelated perspectives do not affect `persp-maybe-kill-buffer'."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (dummy-buffer other-buffer)
+      (switch-to-buffer dummy-buffer)
+      (should (persp-test-buffer-in-persps dummy-buffer "main"))
+      (persp-switch "A")
+      (switch-to-buffer other-buffer)
+      (should (persp-test-buffer-in-persps other-buffer "A"))
+      (should-not (persp-is-current-buffer dummy-buffer))
+      (persp-switch "main")
+      (should (kill-buffer dummy-buffer))
+      (should-not (buffer-live-p dummy-buffer))
+      (should-not (persp-test-buffer-in-persps dummy-buffer))
+      (should (persp-test-buffer-in-persps other-buffer "A")))))
+
+(ert-deftest basic-persp-maybe-kill-buffer-preserves-last-buffer ()
+  "Test that `persp-maybe-kill-buffer' preserves a perspective's last buffer."
+  (persp-test-with-persp
+    (let ((ido-ignore-buffers '("^\\*scratch\\*")))
+      (persp-test-with-temp-buffers (dummy-buffer helper-buffer)
+        (switch-to-buffer dummy-buffer)
+        (should (persp-test-buffer-in-persps dummy-buffer "main"))
+        (persp-switch "A")
+        (switch-to-buffer dummy-buffer)
+        (should (persp-test-buffer-in-persps dummy-buffer "main" "A"))
+        (persp-switch "main")
+        (switch-to-buffer helper-buffer)
+        (should (persp-test-buffer-in-persps helper-buffer "main"))
+        (switch-to-buffer dummy-buffer)
+        (should-not (kill-buffer dummy-buffer))
+        (should (buffer-live-p dummy-buffer))
+        (should (persp-test-buffer-in-persps dummy-buffer "A"))
+        (should-not (persp-is-current-buffer dummy-buffer))
+        (should (persp-test-buffer-in-persps helper-buffer "main"))))))
 
 (ert-deftest basic-persp-switch-to-buffer*-imports-by-default ()
   "Test that `persp-switch-to-buffer*' imports other-perspective buffers by default."

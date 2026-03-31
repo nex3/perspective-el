@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Temporary `switch-to-buffer` displays with non-nil `norecord` no longer add the displayed buffer to the current perspective. This fixes `consult-buffer` preview importing previewed buffers ([#225](https://github.com/nex3/perspective-el/issues/225)).
+- `persp-maybe-kill-buffer`: improve performance by avoiding switching perspectives and rebuilding buffer-name lists ([#226](https://github.com/nex3/perspective-el/issues/226)).
 
 
 ### Added
