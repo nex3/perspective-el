@@ -2427,4 +2427,25 @@ persp-test-make-sample-environment."
                                  (sort (persp-get-buffer-names "C") #'string-lessp))))))))
       (persp-test-clean-files "A1" "A2" "B1" "B2" "C1" "C2"))))
 
+(ert-deftest basic-persp-delete-frame-ignores-reentrant-calls ()
+  "Test that `persp-delete-frame' ignores nested reentrant calls."
+  (persp-test-with-persp
+    (persp-switch "A")
+    (persp-switch "B")
+    (let ((expected-names (sort (copy-sequence (persp-names)) #'string-lessp))
+          killed-names
+          reentered)
+      (cl-letf (((symbol-function 'persp-kill)
+                 (lambda (name)
+                   (push name killed-names)
+                   ;; Simulate a nested `delete-frame' triggered while
+                   ;; perspective cleanup is already in progress.
+                   (unless reentered
+                     (setq reentered t)
+                     (persp-delete-frame (selected-frame))))))
+        (persp-delete-frame (selected-frame)))
+      (should reentered)
+      (should (equal expected-names
+                     (sort killed-names #'string-lessp))))))
+
 ;;; test-perspective.el ends here

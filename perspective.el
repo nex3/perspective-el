@@ -404,6 +404,12 @@ Run with the activated perspective active.")
 (defvar persp--winner-after-load-registered nil
   "Non-nil when Winner setup has been registered via `eval-after-load'.")
 
+(defvar persp--delete-frame-in-progress nil
+  "Non-nil while `persp-delete-frame' is cleaning up a frame.
+This prevents reentrant calls when killing a perspective causes a
+buffer kill, which may trigger another `delete-frame' while the
+original frame teardown is still in progress.")
+
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
 
@@ -1551,8 +1557,10 @@ By default, this uses the current frame."
   "Clean up perspectives in FRAME.
 By default this uses the current frame."
   (with-selected-frame frame
-    (unless persp-started-after-server-mode
-      (mapcar #'persp-kill (persp-names)))))
+    (unless (or persp-started-after-server-mode
+                persp--delete-frame-in-progress)
+      (let ((persp--delete-frame-in-progress t))
+        (mapc #'persp-kill (persp-names))))))
 
 (defun persp-make-variable-persp-local (variable)
   "Make VARIABLE become perspective-local.
