@@ -225,18 +225,22 @@ After BODY is evaluated, frame parameters are reset to their original values."
      ,@body))
 
 (defmacro with-perspective (name &rest body)
-  "Switch to the perspective given by NAME while evaluating BODY."
+  "Switch to the perspective given by NAME while evaluating BODY.
+Restore the current buffer afterwards: switching perspectives
+restores window configurations, which would otherwise leave the
+selected window's buffer current instead of the caller's buffer."
   (declare (indent 1))
   (let ((old (cl-gensym)))
     `(progn
        (let ((,old (with-current-perspective (persp-current-name)))
              (last-persp-cache (persp-last))
              (result))
-         (unwind-protect
-             (progn
-               (persp-switch ,name 'norecord)
-               (setq result (progn ,@body)))
-           (when ,old (persp-switch ,old 'norecord)))
+         (save-current-buffer
+           (unwind-protect
+               (progn
+                 (persp-switch ,name 'norecord)
+                 (setq result (progn ,@body)))
+             (when ,old (persp-switch ,old 'norecord))))
          (set-frame-parameter nil 'persp--last last-persp-cache)
          result))))
 
