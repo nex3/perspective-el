@@ -1622,6 +1622,21 @@ has its scratch buffer set as `current-buffer'."
         (cl-loop for buf in (list A1 A2 B1 B2) do
                  (should-not (memq buf (persp-buffers (persp-curr)))))))))
 
+(ert-deftest basic-persp-with-perspective-preserves-current-buffer ()
+  "Verify that with-perspective does not change the current buffer.
+The perspective round-trip restores window configurations, which
+would otherwise leave the selected window's buffer current. This
+matters for callers operating on a buffer not shown in any window,
+e.g. code running inside `find-file-noselect' or mode hooks."
+  (persp-test-with-persp
+    (persp-switch "A")
+    (persp-switch "main")
+    (with-temp-buffer
+      (let ((buf (current-buffer)))
+        (with-perspective "A"
+          (current-buffer))
+        (should (eq (current-buffer) buf))))))
+
 (ert-deftest basic-persp-get-scratch-buffer ()
   "Verify that creating a new perspective also creates its own
 *scratch* buffer, if missing, or adds the existing one.  If
