@@ -1166,7 +1166,12 @@ To disassociate BUFFER without the chance of killing it, see
 
 See also `persp-switch' and `persp-add-buffer'."
   (interactive
-   (list (funcall persp-interactive-completion-function "Remove buffer from perspective: " (persp-current-buffer-names))))
+   (list
+    (let* ((fn      persp-interactive-completion-function)
+           (current (buffer-name (current-buffer)))
+           (prompt  (concat "Remove buffer from perspective [" current "]: "))
+           (bufs    (persp-current-buffer-names)))
+      (funcall fn prompt bufs nil nil nil nil current t))))
   (setq buffer (when buffer (get-buffer buffer)))
   (cond ((not (buffer-live-p buffer)))
         ;; Do not kill or remove a buffer if the perspective will then
