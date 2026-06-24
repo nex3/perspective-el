@@ -182,7 +182,7 @@ Users of [`use-package`](https://github.com/jwiegley/use-package) can install Pe
 
 Replace the binding for `C-x C-b`, the default Emacs buffer switcher, with one
 of the nicer implementations described in the [Buffer
-switchers](#buffer-switchers) section.
+switchers](#buffer-switching) section.
 
 If not using `use-package`, put `perspective.el` from this source repository
 somewhere on your load path, and use something similar to this:
