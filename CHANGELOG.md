@@ -6,6 +6,13 @@ Perspective was started in 2008 and this log was only added in 2021.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 
+## [Unreleased]
+
+### Fixed
+
+- `persp-current-buffers*` (and therefore `persp-is-current-buffer`, `persp-buffer-filter`, and friends) with INCLUDE-GLOBAL no longer switches perspectives to read the frame global perspective's buffer list. The `with-perspective` round-trip restored window configurations from inside what callers treat as a pure predicate; when reached from code evaluated during redisplay (for example a menu-bar item's `:enable` form calling a buffer predicate), the mid-redisplay window-configuration change reallocated glyph matrices under the display engine and segfaulted Emacs. Also protects the frame global perspective's live buffer list from the destructive `delete-dups`.
+
+
 ## [2.22] — 2026-06-23
 
 ### Fixed
