@@ -268,10 +268,25 @@ the frame global perspective."
     (delete-dups
      (append (persp-current-buffers)
              (when (member persp-frame-global-perspective-name (persp-names))
-               (with-perspective persp-frame-global-perspective-name
+               ;; Read the frame global perspective's buffer list directly
+               ;; instead of round-tripping through `with-perspective': that
+               ;; runs `persp-switch' (twice), which restores window
+               ;; configurations — a side effect callers of this function
+               ;; (buffer predicates and filters) don't expect, and one that
+               ;; crashes Emacs when it happens inside redisplay, e.g. when
+               ;; a menu-bar item's :enable form reaches this through a
+               ;; buffer predicate. `copy-sequence' keeps the destructive
+               ;; `delete-dups' above off the perspective's live buffer
+               ;; list.
+               (let ((global-buffers
+                      (persp-buffers
+                       (gethash persp-frame-global-perspective-name
+                                (perspectives-hash)))))
                  (if persp-frame-global-perspective-include-scratch-buffer
-                     (persp-current-buffers)
-                   (remove (persp-get-scratch-buffer) (persp-current-buffers)))))))))
+                     (copy-sequence global-buffers)
+                   (remove (persp-get-scratch-buffer
+                            persp-frame-global-perspective-name)
+                           global-buffers))))))))
 
 (defun persp-current-buffer-names (&optional include-global)
   "Return a list of names of all living buffers in the current perspective.
