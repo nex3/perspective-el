@@ -774,6 +774,68 @@ Expect the list of a perspective's live buffers."
   ;; cleanup
   (persp-test-kill-extra-buffers " *foo*"))
 
+(ert-deftest basic-persp-current-buffers*-includes-frame-global-buffers ()
+  "Test frame-global buffer and scratch inclusion in `persp-current-buffers*'."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (main-buffer global-buffer other-buffer)
+      (persp-add-buffer main-buffer)
+      (persp-add-buffer-to-frame-global global-buffer)
+      (persp-switch "A")
+      (persp-add-buffer other-buffer)
+      (persp-switch "main")
+      (let ((global-scratch
+             (get-buffer
+              (persp-scratch-buffer persp-frame-global-perspective-name))))
+        (should (buffer-live-p global-scratch))
+        (let* ((persp-frame-global-perspective-include-scratch-buffer nil)
+               (buffers (persp-current-buffers* t)))
+          (should (memq main-buffer buffers))
+          (should (memq global-buffer buffers))
+          (should-not (memq global-scratch buffers))
+          (should-not (memq other-buffer buffers)))
+        (let* ((persp-frame-global-perspective-include-scratch-buffer t)
+               (buffers (persp-current-buffers* t)))
+          (should (memq main-buffer buffers))
+          (should (memq global-buffer buffers))
+          (should (memq global-scratch buffers))
+          (should-not (memq other-buffer buffers)))))))
+
+(ert-deftest basic-persp-current-buffers*-does-not-switch-or-create-scratch ()
+  "Test that reading frame-global buffers has no perspective side effects."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (global-buffer)
+      (persp-add-buffer-to-frame-global global-buffer)
+      (let* ((scratch-name
+              (persp-scratch-buffer persp-frame-global-perspective-name))
+             (global-scratch (get-buffer scratch-name)))
+        (should (buffer-live-p global-scratch))
+        (should (kill-buffer global-scratch))
+        (should-not (get-buffer scratch-name))
+        (cl-letf (((symbol-function 'persp-switch)
+                   (lambda (&rest _args)
+                     (error "`persp-current-buffers*' switched perspectives"))))
+          (should (memq global-buffer (persp-current-buffers* t))))
+        (should-not (get-buffer scratch-name))))))
+
+(ert-deftest basic-persp-current-buffers*-does-not-mutate-frame-global-buffers ()
+  "Test that duplicate removal does not mutate frame-global perspective state."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (shared-buffer global-buffer)
+      (persp-add-buffer shared-buffer)
+      (persp-add-buffer-to-frame-global shared-buffer)
+      ;; Put another buffer before SHARED-BUFFER so destructive duplicate
+      ;; removal would have to splice the frame-global list.
+      (persp-add-buffer-to-frame-global global-buffer)
+      (let* ((global-persp
+              (gethash persp-frame-global-perspective-name
+                       (perspectives-hash)))
+             (before (copy-sequence (persp-buffers global-persp)))
+             (persp-frame-global-perspective-include-scratch-buffer t)
+             (buffers (persp-current-buffers* t)))
+        (should (equal before (persp-buffers global-persp)))
+        (should (= 1 (cl-count shared-buffer buffers :test #'eq)))
+        (should (memq global-buffer buffers))))))
+
 (ert-deftest basic-persp-add-buffer ()
   "Test that `persp-add-buffer' shares buffers between perspectives.
 A non-existing buffer passed as argument should be discarded."

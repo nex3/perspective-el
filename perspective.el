@@ -284,8 +284,11 @@ the frame global perspective."
                                 (perspectives-hash)))))
                  (if persp-frame-global-perspective-include-scratch-buffer
                      (copy-sequence global-buffers)
-                   (remove (persp-get-scratch-buffer
-                            persp-frame-global-perspective-name)
+                   ;; Do not create a missing scratch buffer from this read
+                   ;; path, since callers may run it during redisplay.
+                   (remove (get-buffer
+                            (persp-scratch-buffer
+                             persp-frame-global-perspective-name))
                            global-buffers))))))))
 
 (defun persp-current-buffer-names (&optional include-global)
