@@ -244,15 +244,16 @@ selected window's buffer current instead of the caller's buffer."
          (set-frame-parameter nil 'persp--last last-persp-cache)
          result))))
 
-(defun persp--make-ignore-buffer-rx ()
+(defun persp--ignore-buffer-p (name)
+  "Check if buffer with NAME should be ignored based on `ido-ignore-buffers'."
   (defvar ido-ignore-buffers)
-  (if ido-ignore-buffers
-      ;; convert a list of regexps to one
-      (rx-to-string (append (list 'or)
-                            (mapcar (lambda (rx) `(regexp ,rx))
-                                    ido-ignore-buffers)))
-    ;; return a regex which matches nothing, and therefore should ignore nothing
-    "$^"))
+  ;; convert a list of regexps to one
+  (cl-find-if (lambda (el)
+                (if (functionp el)
+                    (funcall el name)
+                  (string-match-p el name)))
+              ido-ignore-buffers)
+  )
 
 ;; NOTE: This macro is used as a place for setf expressions so be careful with
 ;; how you modify it as you may break things in surprising ways.
@@ -295,11 +296,10 @@ the frame global perspective."
   "Return a list of names of all living buffers in the current perspective.
 Include the names of the buffers in the frame global perspective when
 INCLUDE-GLOBAL."
-  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
-    (cl-loop for buf in (persp-current-buffers* include-global)
-             if (and (buffer-live-p buf)
-                     (not (string-match-p ignore-rx (buffer-name buf))))
-             collect (buffer-name buf))))
+  (cl-loop for buf in (persp-current-buffers* include-global)
+           if (and (buffer-live-p buf)
+                   (not (persp--ignore-buffer-p (buffer-name buf))))
+           collect (buffer-name buf)))
 
 (defun persp-is-current-buffer (buf &optional include-global)
   "Return T if BUF is in the current perspective. When INCLUDE-GLOBAL, also
@@ -1070,7 +1070,6 @@ See also `persp-remove-buffer'."
     (let* ((buffer (current-buffer))
            (bufstr (buffer-name buffer))
            (current-name (persp-current-name))
-           (ignore-rx (persp--make-ignore-buffer-rx))
            current-persp-removal-needed
            candidates-for-removal
            candidates-for-keeping)
@@ -1086,8 +1085,8 @@ See also `persp-remove-buffer'."
              (if (cl-loop for other-buffer in buffers
                           thereis (and (not (eq other-buffer buffer))
                                        (buffer-live-p other-buffer)
-                                       (not (string-match-p ignore-rx
-                                                            (buffer-name other-buffer)))))
+                                       (not (persp--ignore-buffer-p (buffer-name other-buffer)))
+                                       ))
                  (if (equal name current-name)
                      (setq current-persp-removal-needed t)
                    (push name candidates-for-removal))
@@ -1673,14 +1672,13 @@ perspective beginning with the given letter."
   "A version of `other-buffer' which respects perspectives.
 This respects ido-ignore-buffers.
 TODO: The VISIBLE-OK parameter is currently ignored."
-  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
-    (cl-loop for b in (buffer-list frame) do
-             (let ((name (buffer-name b)))
-               (when (and (not (and (buffer-live-p skip-buffer) (equal skip-buffer b)))
-                          (not (string-prefix-p " " name))
-                          (not (string-match-p ignore-rx name))
-                          (member b (persp-current-buffers)))
-                 (cl-return-from persp-other-buffer b)))))
+  (cl-loop for b in (buffer-list frame) do
+           (let ((name (buffer-name b)))
+             (when (and (not (and (buffer-live-p skip-buffer) (equal skip-buffer b)))
+                        (not (string-prefix-p " " name))
+                        (not (persp--ignore-buffer-p name))
+                        (member b (persp-current-buffers)))
+               (cl-return-from persp-other-buffer b))))
   ;; fallback:
   (persp-get-scratch-buffer))
 
@@ -1789,12 +1787,13 @@ PERSP-SET-IDO-BUFFERS)."
     (user-error "bs not loaded"))
   (defvar bs-configurations)
   (declare-function bs--show-with-configuration "bs.el")
-  (let* ((ignore-rx (persp--make-ignore-buffer-rx))
-         (bs-configurations (append bs-configurations
+  (let* ((bs-configurations (append bs-configurations
                                     (list `("perspective" nil nil
-                                            ,ignore-rx (lambda (buf) (persp-buffer-filter buf t)) nil))
+                                            nil
+                                            (lambda (buf) (or (persp--ignore-buffer-p (buffer-name buf)) (persp-buffer-filter buf t)))
+                                            nil))
                                     (list `("all-perspectives" nil nil
-                                            ,ignore-rx nil nil)))))
+                                            nil (lambda (buf) (persp--ignore-buffer-p (buffer-name buf))) nil)))))
     (if (and persp-mode (null arg))
         (bs--show-with-configuration "perspective")
       (bs--show-with-configuration "all-perspectives"))))
