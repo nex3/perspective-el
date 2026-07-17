@@ -8,9 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Perspective's ignored-buffer handling now supports function entries in `ido-ignore-buffers`, including the BS and IBuffer integrations. As in Ido, these functions receive the buffer name ([#232](https://github.com/nex3/perspective-el/pull/232)).
+
+
 ### Fixed
 
-- `persp-current-buffers*` (and therefore `persp-is-current-buffer`, `persp-buffer-filter`, and friends) with INCLUDE-GLOBAL no longer switches perspectives to read the frame global perspective's buffer list. The `with-perspective` round-trip restored window configurations from inside what callers treat as a pure predicate; when reached from code evaluated during redisplay (for example a menu-bar item's `:enable` form calling a buffer predicate), the mid-redisplay window-configuration change reallocated glyph matrices under the display engine and segfaulted Emacs. Also protects the frame global perspective's live buffer list from the destructive `delete-dups`.
+- `persp-current-buffers*` (and therefore `persp-is-current-buffer`, `persp-buffer-filter`, and friends) with INCLUDE-GLOBAL no longer switches perspectives or creates a frame-global scratch buffer while reading the frame-global perspective's buffer list. The `with-perspective` round-trip restored window configurations from inside what callers treat as a pure predicate; when reached from code evaluated during redisplay (for example a menu-bar item's `:enable` form calling a buffer predicate), the mid-redisplay window-configuration change reallocated glyph matrices under the display engine and segfaulted Emacs. The frame-global perspective's live buffer list is also protected from the destructive `delete-dups` ([#233](https://github.com/nex3/perspective-el/pull/233)).
 
 
 ## [2.22] — 2026-06-23

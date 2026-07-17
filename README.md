@@ -283,6 +283,10 @@ perspective. (The `persp-add-buffer-to-frame-global` command adds a buffer to
 this special frame-specific perspective, whose name is determined by
 `persp-frame-global-perspective-name` and defaults to `GLOBAL`.)
 
+When filtering to the current perspective, Perspective's buffer prompts and its
+BS and IBuffer wrappers also honor `ido-ignore-buffers`. As in Ido, entries may
+be regular expressions or functions; functions receive the buffer name.
+
 
 **Ido**: [Interactive Do (Ido,
 `ido-mode`)](https://www.gnu.org/software/emacs/manual/html_node/ido/index.html),
