@@ -1809,12 +1809,12 @@ PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (unless (featurep 'ibuffer)
     (user-error "IBuffer not loaded"))
-  (defvar ido-ignore-buffers)
   (defvar ibuffer-maybe-show-predicates)
   (if (and persp-mode (null arg))
       (let ((ibuffer-maybe-show-predicates (append ibuffer-maybe-show-predicates
                                                    (list #'(lambda (buf) (persp-buffer-filter buf t)))
-                                                   ido-ignore-buffers)))
+                                                   (list #'(lambda (buf)
+                                                             (persp--ignore-buffer-p (buffer-name buf)))))))
         (ibuffer))
     (ibuffer)))
 

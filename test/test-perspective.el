@@ -188,6 +188,36 @@ deleted at cleanup."
            (when (file-exists-p f)
              (delete-file f))))
 
+(defun persp-test-bs-buffer-list (arg buffers)
+  "Run `persp-bs-show' for ARG and return its filtered list of BUFFERS."
+  (require 'bs)
+  (let ((bs--buffer-coming-from nil)
+        (bs--show-all nil)
+        (bs-current-configuration bs-current-configuration)
+        (bs-must-show-regexp bs-must-show-regexp)
+        (bs-must-show-function bs-must-show-function)
+        (bs-dont-show-regexp bs-dont-show-regexp)
+        (bs-dont-show-function bs-dont-show-function)
+        (bs-buffer-sort-function bs-buffer-sort-function))
+    (cl-letf (((symbol-function 'bs--show-with-configuration)
+               (lambda (name &optional _arg)
+                 (bs-set-configuration name)
+                 (bs-buffer-list buffers))))
+      (persp-bs-show arg))))
+
+(defun persp-test-ibuffer-buffer-list (arg buffers)
+  "Run `persp-ibuffer' for ARG and return its filtered list of BUFFERS."
+  (require 'ibuffer)
+  (let ((ibuffer-maybe-show-predicates nil))
+    (cl-letf (((symbol-function 'ibuffer)
+               (lambda (&rest _args)
+                 (cl-remove-if
+                  (lambda (buf)
+                    (ibuffer-buf-matches-predicates
+                     buf ibuffer-maybe-show-predicates))
+                  buffers))))
+      (persp-ibuffer arg))))
+
 (ert-deftest helper-macros ()
   (should (= 0 (length (persp-test-buffer-list-all))))
   (let ((saved-path-B1 "")
@@ -2306,6 +2336,92 @@ buffers into any perspective."
       (should (equal (persp-current-name) "A"))
       (should (eq (current-buffer) dummy-buffer))
       (should (persp-test-buffer-in-persps dummy-buffer "A")))))
+
+(ert-deftest basic-persp-bs-show-filters-ignored-buffers ()
+  "Test that `persp-bs-show' filters ignored buffers in the current perspective."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (kept-buffer ignored-buffer other-buffer)
+      (with-current-buffer ignored-buffer
+        (rename-buffer "persp-test-ignored" t))
+      (persp-add-buffer kept-buffer)
+      (persp-add-buffer ignored-buffer)
+      (persp-switch "A")
+      (persp-add-buffer other-buffer)
+      (persp-switch "main")
+      (let* ((ido-ignore-buffers '("\\`persp-test-ignored\\'"))
+             (buffers (list kept-buffer ignored-buffer other-buffer))
+             (result (persp-test-bs-buffer-list nil buffers)))
+        (should (memq kept-buffer result))
+        (should-not (memq ignored-buffer result))
+        (should-not (memq other-buffer result))))))
+
+(ert-deftest basic-persp-bs-show-supports-ignore-functions ()
+  "Test that `persp-bs-show' supports functions in `ido-ignore-buffers'."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (kept-buffer ignored-buffer)
+      (with-current-buffer ignored-buffer
+        (rename-buffer "persp-test-ignored" t))
+      (persp-add-buffer kept-buffer)
+      (persp-add-buffer ignored-buffer)
+      (let* ((ido-ignore-buffers
+              (list (lambda (name)
+                      (equal name "persp-test-ignored"))))
+             (buffers (list kept-buffer ignored-buffer))
+             (result (persp-test-bs-buffer-list nil buffers)))
+        (should (memq kept-buffer result))
+        (should-not (memq ignored-buffer result))))))
+
+(ert-deftest basic-persp-bs-show-all-filters-ignored-buffers ()
+  "Test that `persp-bs-show' filters ignored buffers with a prefix argument."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (main-buffer ignored-buffer other-buffer)
+      (with-current-buffer ignored-buffer
+        (rename-buffer "persp-test-ignored" t))
+      (persp-add-buffer main-buffer)
+      (persp-add-buffer ignored-buffer)
+      (persp-switch "A")
+      (persp-add-buffer other-buffer)
+      (persp-switch "main")
+      (let* ((ido-ignore-buffers '("\\`persp-test-ignored\\'"))
+             (buffers (list main-buffer ignored-buffer other-buffer))
+             (result (persp-test-bs-buffer-list t buffers)))
+        (should (memq main-buffer result))
+        (should-not (memq ignored-buffer result))
+        (should (memq other-buffer result))))))
+
+(ert-deftest basic-persp-ibuffer-filters-ignored-buffers ()
+  "Test that `persp-ibuffer' filters ignored and out-of-perspective buffers."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (kept-buffer ignored-buffer other-buffer)
+      (with-current-buffer ignored-buffer
+        (rename-buffer "persp-test-ignored" t))
+      (persp-add-buffer kept-buffer)
+      (persp-add-buffer ignored-buffer)
+      (persp-switch "A")
+      (persp-add-buffer other-buffer)
+      (persp-switch "main")
+      (let* ((ido-ignore-buffers '("\\`persp-test-ignored\\'"))
+             (buffers (list kept-buffer ignored-buffer other-buffer))
+             (result (persp-test-ibuffer-buffer-list nil buffers)))
+        (should (memq kept-buffer result))
+        (should-not (memq ignored-buffer result))
+        (should-not (memq other-buffer result))))))
+
+(ert-deftest basic-persp-ibuffer-supports-ignore-functions ()
+  "Test that `persp-ibuffer' supports functions in `ido-ignore-buffers'."
+  (persp-test-with-persp
+    (persp-test-with-temp-buffers (kept-buffer ignored-buffer)
+      (with-current-buffer ignored-buffer
+        (rename-buffer "persp-test-ignored" t))
+      (persp-add-buffer kept-buffer)
+      (persp-add-buffer ignored-buffer)
+      (let* ((ido-ignore-buffers
+              (list (lambda (name)
+                      (equal name "persp-test-ignored"))))
+             (buffers (list kept-buffer ignored-buffer))
+             (result (persp-test-ibuffer-buffer-list nil buffers)))
+        (should (memq kept-buffer result))
+        (should-not (memq ignored-buffer result))))))
 
 (defmacro persp-test-make-sample-environment ()
   "Make a test environment with the following window layout:
