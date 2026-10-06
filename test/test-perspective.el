@@ -2642,7 +2642,8 @@ persp-test-make-sample-environment."
           (should-not (string-match-p "unsaved shell output" (buffer-string)))))
       (with-current-buffer browser
         (should (eq major-mode 'dired-mode))
-        (should (equal default-directory directory)))
+        ;; Dired abbreviates paths under home, where CI creates temporary files.
+        (should (equal (expand-file-name default-directory) directory)))
       (persp-switch "A")
       (should (get-buffer-window shell-a))
       (should (get-buffer-window browser))
