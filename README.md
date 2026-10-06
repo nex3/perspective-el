@@ -419,11 +419,23 @@ perspective sessions when Emacs exits:
 (add-hook 'kill-emacs-hook #'persp-state-save)
 ```
 
-A limitation of `persp-state-save` and `persp-state-load` is that they do not
-attempt to deal with non-file-visiting buffers with non-trivial state. Saving
-shell, REPL, and `compilation-mode` buffers is not supported. When saved to a
-file, any windows pointing to them are changed to point to the perspective's
-`*scratch*` buffer. (Live windows are, of course, left alone.)
+In addition to file-visiting buffers, sessions preserve basic Dired, Eshell,
+and Magit status buffers. Their names and directories are saved: Dired reopens
+the directory, Eshell starts a fresh shell there, and Magit refreshes the
+repository's status. Perspective membership and window layouts are restored,
+but buffer contents and mode-specific state, such as Dired marks, Eshell
+scrollback, or Magit section visibility, are not saved. Magit is optional and
+must be installed to restore its status buffers.
+
+File and Dired buffers whose names begin with `*`, including Dired search
+buffers such as `*Find*`, are not saved.
+
+Other non-file buffers, including other Magit views, `shell-mode`, REPLs, and
+`compilation-mode`, are not supported. Windows pointing to unsupported buffers
+are saved as the perspective's `*scratch*` buffer. (Live windows are, of course,
+left alone.) Buffers that cannot be recreated also fall back to `*scratch*` when
+loading. Existing state files remain readable, but older Perspective versions
+cannot read the new state format.
 
 
 ## Customization

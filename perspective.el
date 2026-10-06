@@ -1953,7 +1953,7 @@ PERSP-SET-IDO-BUFFERS)."
 ;; The (on-disk) data structure looks like this:
 ;;
 ;; {
-;;   :files [...]
+;;   :files [(TYPE NAME PATH) ...]
 ;;   :frames [
 ;;     {
 ;;       :persps {
@@ -1969,6 +1969,8 @@ PERSP-SET-IDO-BUFFERS)."
 ;; }
 
 (cl-defstruct persp--state-complete
+  ;; The historical slot name is retained for compatibility. Older states
+  ;; contain bare file/directory paths; new states contain buffer records.
   files
   frames)
 
@@ -2004,26 +2006,81 @@ maintaining backwards compatibility."
      :files (persp--state-complete-files state-complete)
      :frames state-frames-v2)))
 
-(defun persp--state-interesting-buffer-p (buffer)
-  (and (buffer-name buffer)
-       (not (string-match "^[[:space:]]*\\*" (buffer-name buffer)))
-       (or (buffer-file-name buffer)
-           (with-current-buffer buffer (equal major-mode 'dired-mode)))))
+(defun persp--state-buffer-type (buffer)
+  "Return the supported persistence type of BUFFER, or nil."
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (cond
+       ((memq major-mode '(eshell-mode magit-status-mode))
+        major-mode)
+       ((not (string-match "^[[:space:]]*\\*" (buffer-name)))
+        (cond
+         (buffer-file-name 'file)
+         ((eq major-mode 'dired-mode) 'dired-mode)))))))
 
-(defun persp--state-file-data ()
+(defun persp--state-buffer-data ()
+  "Return (TYPE NAME PATH) records for supported buffers."
   (cl-loop for buffer in (buffer-list)
-        if (persp--state-interesting-buffer-p buffer)
-        collect (or (buffer-file-name buffer)
-                    (with-current-buffer buffer ; dired special case
-                      default-directory))))
+           for type = (persp--state-buffer-type buffer)
+           when type
+           collect (with-current-buffer buffer
+                     (list type (buffer-name)
+                           (if (eq type 'file)
+                               buffer-file-name
+                             default-directory)))))
 
-(defun persp--state-window-state-massage (entry persp valid-buffers)
+(declare-function dired-noselect "dired" (dir-or-list &optional switches))
+(declare-function eshell "eshell" (&optional arg))
+(declare-function magit-toplevel "magit-git" (&optional directory))
+(declare-function magit-status-setup-buffer "magit-status" (&optional directory))
+(defvar eshell-buffer-name)
+(defvar magit-display-buffer-function)
+(defvar magit-display-buffer-noselect)
+
+(defun persp--state-restore-buffer (data)
+  "Restore buffer record DATA, or a path from an older state file.
+Return the buffer, or nil if it could not be restored."
+  (condition-case err
+      (pcase-let ((`(,type ,name ,path)
+                   (if (stringp data) (list 'file nil data) data)))
+        (when (if (eq type 'file) (file-exists-p path) (file-directory-p path))
+          (let* ((default-directory (if (eq type 'file) default-directory path))
+                 (buffer
+                  (pcase type
+                    (`file (find-file-noselect path))
+                    (`dired-mode
+                     (require 'dired)
+                     (dired-noselect path))
+                    (`eshell-mode
+                     (require 'eshell)
+                     (let ((existing (get-buffer name))
+                           (eshell-buffer-name name))
+                       (if (and existing
+                                (with-current-buffer existing
+                                  (and (eq major-mode 'eshell-mode)
+                                       (equal default-directory path))))
+                           existing
+                         (save-window-excursion (eshell t)))))
+                    (`magit-status-mode
+                     (unless (require 'magit-status nil t)
+                       (error "Magit is not available"))
+                     (when (magit-toplevel)
+                       (let ((magit-display-buffer-function #'identity)
+                             (magit-display-buffer-noselect t))
+                         (magit-status-setup-buffer path)))))))
+            (when (buffer-live-p buffer)
+              buffer))))
+    (error
+     (message "Could not restore perspective buffer %S: %s"
+              data (error-message-string err))
+     nil)))
+
+(defun persp--state-window-state-massage (entry persp valid-buffers &optional buffer-map)
   "This is a primitive code walker. It removes references to
 potentially problematic buffers from the data structure created
 by window-state-get and replaces them with references to the
 perspective-specific *scratch* buffer. Buffers are considered
-'problematic' when they have no underlying file, or are otherwise
-transient.
+'problematic' when their names are not in VALID-BUFFERS.
 
 The need for a recursive walk, and the consequent complexity of
 this function, arises from the nature of the data structure
@@ -2045,7 +2102,11 @@ everything it finds. When it notices a 'leaf, it iterates over
 its properties until it finds a 'buffer. If the 'buffer points to
 a buffer which can be reasonably saved, it leaves it alone.
 Otherwise, it replaces that buffer's node with one which points
-to the perspective's *scratch* buffer."
+to the perspective's *scratch* buffer.
+
+Optional BUFFER-MAP maps saved names to restored buffers, or nil
+for buffers that could not be restored. When provided, buffer
+names are updated before checking VALID-BUFFERS."
   (cond
     ;; base case 1
     ((not (consp entry))
@@ -2053,6 +2114,10 @@ to the perspective's *scratch* buffer."
     ;; base case 2
     ((atom (cdr entry))
      entry)
+    ;; a root leaf has an extra size-constraints entry before the `leaf' tag
+    ((eq 'leaf (cadr entry))
+     (cons (car entry) (persp--state-window-state-massage
+                       (cdr entry) persp valid-buffers buffer-map)))
     ;; leaf: modify this
     ((eq 'leaf (car entry))
      (let ((leaf-props (cdr entry)))
@@ -2061,14 +2126,21 @@ to the perspective's *scratch* buffer."
                    collect (if (not (eq 'buffer (car prop)))
                                prop
                              (let ((bn (cadr prop)))
+                               (when buffer-map
+                                 (let ((buffer (gethash bn buffer-map bn)))
+                                   (setq bn (if (bufferp buffer)
+                                                (buffer-name buffer)
+                                              buffer))))
                                (if (member bn valid-buffers)
-                                   prop
+                                   (if buffer-map
+                                       (cons 'buffer (cons bn (cddr prop)))
+                                     prop)
                                  (cons 'buffer
                                        (cons (persp-scratch-buffer persp)
                                              (cddr prop))))))))))
     ;; recurse
     (t (cons (car entry) (cl-loop for e in (cdr entry)
-                               collect (persp--state-window-state-massage e persp valid-buffers))))))
+                               collect (persp--state-window-state-massage e persp valid-buffers buffer-map))))))
 
 (defun persp--state-frame-data ()
   (cl-loop for frame in (frame-list)
@@ -2081,11 +2153,12 @@ to the perspective's *scratch* buffer."
                                   (with-perspective persp
                                     (let* ((buffers
                                             (cl-loop for buffer in (persp-current-buffers)
-                                                     if (persp--state-interesting-buffer-p buffer)
+                                                     if (persp--state-buffer-type buffer)
                                                      collect (buffer-name buffer)))
                                            (windows
-                                            (cl-loop for entry in (window-state-get (frame-root-window) t)
-                                                     collect (persp--state-window-state-massage entry persp buffers))))
+                                            (persp--state-window-state-massage
+                                             (window-state-get (frame-root-window) t)
+                                             persp buffers)))
                                       (puthash persp
                                                (make-persp--state-single
                                                 :buffers buffers
@@ -2114,10 +2187,12 @@ Each perspective's buffer list and window layout will be saved.
 Frames and their associated perspectives will also be saved,
 but not the original frame sizes.
 
-Buffers with * characters in their names, as well as buffers without
-associated files will be ignored. If such buffers are currently
-visible in a perspective as windows, they will be saved as
-'*scratch* (persp)' buffers."
+File-visiting buffers, Dired buffers, Eshell buffers, and Magit status
+buffers are supported. For the latter three, only the buffer name and
+directory are saved; their contents and other mode-specific state are
+not preserved. File and Dired buffers whose names begin with * are ignored.
+Windows showing unsupported buffers are saved as '*scratch* (persp)'
+buffers."
   (interactive (list
                 (read-file-name "Save perspective state to file: "
                                 persp-state-default-file
@@ -2165,7 +2240,7 @@ visible in a perspective as windows, they will be saved as
     ;; actually save
     (persp-save)
     (let ((state-complete (make-persp--state-complete
-                           :files (persp--state-file-data)
+                           :files (persp--state-buffer-data)
                            :frames (persp--state-frame-data))))
       ;; create or overwrite target-file:
       (with-temp-file target-file (prin1 state-complete (current-buffer))))
@@ -2194,16 +2269,26 @@ restored."
   ;; actually load
   (let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
         (frame-count 0)
+        (buffer-map (make-hash-table :test 'equal))
         (state-complete (persp--state-complete-v2
                          (read
                           (with-temp-buffer
                             (insert-file-contents file)
                             (buffer-string))))))
-    ;; open all files in a temporary perspective to avoid polluting "main"
+    ;; recreate buffers before restoring perspective membership and windows
     (persp-switch tmp-persp-name)
-    (cl-loop for file in (persp--state-complete-files state-complete) do
-             (when (file-exists-p file)
-               (find-file file)))
+    (dolist (data (persp--state-complete-files state-complete))
+      (let ((buffer (persp--state-restore-buffer data)))
+        (when buffer (persp-add-buffer buffer))
+        (unless (stringp data)
+          (puthash (nth 1 data) buffer buffer-map))))
+    ;; let uniquify finish naming all buffers before restoring custom names
+    (maphash (lambda (name buffer)
+               (when (buffer-live-p buffer)
+                 (with-current-buffer buffer
+                   (unless (equal name (buffer-name))
+                     (rename-buffer name t)))))
+             buffer-map)
     ;; iterate over the frames
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
              (cl-incf frame-count)
@@ -2216,18 +2301,27 @@ restored."
                  (set-frame-parameter emacs-frame 'persp-merge-list frame-persp-merge-list)
                  ;; iterate over the perspectives in the frame in the appropriate order
                  (cl-loop for persp in frame-persp-order do
-                          (let ((state-single (gethash persp frame-persp-table)))
+                          (let* ((state-single (gethash persp frame-persp-table))
+                                 (buffers
+                                  (delq nil
+                                        (mapcar
+                                         (lambda (name)
+                                           (let ((buffer (gethash name buffer-map name)))
+                                             (and buffer (get-buffer buffer))))
+                                         (persp--state-single-buffers state-single)))))
                             (persp-switch persp)
                             (set-frame-parameter nil 'persp-merge-list frame-persp-merge-list)
-                            (cl-loop for buffer in (persp--state-single-buffers state-single) do
-                                     (persp-add-buffer buffer))
+                            (mapc #'persp-add-buffer buffers)
                             ;; XXX: split-window-horizontally is necessary for
                             ;; window-state-put to succeed? Something goes haywire with root
                             ;; windows without it.
                             (split-window-horizontally)
-                            (window-state-put (persp--state-single-windows state-single)
-                                              (frame-root-window emacs-frame)
-                                              'safe))))))
+                            (window-state-put
+                             (persp--state-window-state-massage
+                              (persp--state-single-windows state-single)
+                              persp (mapcar #'buffer-name buffers) buffer-map)
+                             (frame-root-window emacs-frame)
+                             'safe))))))
     ;; cleanup
     (persp-kill tmp-persp-name))
   ;; after hook
